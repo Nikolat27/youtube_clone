@@ -1455,7 +1455,7 @@ a {
 }
 
 .playlist-videos-container div {
-    flex: 0 0 auto
+    flex: 0 0 auto;
 }
 
 .playlist-video.active {

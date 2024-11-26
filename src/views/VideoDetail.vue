@@ -1,11 +1,26 @@
 <script setup>
 import { ref, computed } from 'vue';
 
+
 // Description Toggling
 const showFullDescription = ref(false);
 const toggleFullDescription = () => {
     showFullDescription.value = !showFullDescription.value;
 };
+
+const comments = [
+    {
+        id: 1, text: "Hello World", replies: [
+            { id: 2, parent_id: 1, text: `Reply 1`, replies: [] },
+            {
+                id: 3, parent_id: 1, text: `Reply 2`, replies: [
+                    { parent_id: 3, id: 4, text: "Reply 3" },
+                ]
+            },
+            { id: 5, parent_id: 1, text: `Reply 4`, replies: [] },
+        ]
+    }
+]
 
 const truncatedDescription = computed(() => {
     const description = "<p id=''>Lorem ipsum dolor sit amet consectetur adipisicing elit. Perspiciatis eos doloribus quibusdam quidem tempore qui voluptatibus ducimus veritatis sunt alias aliquid inventore iure, ex dolor consectetur eveniet, deleniti nobis aperiam.</p>";
@@ -13,6 +28,7 @@ const truncatedDescription = computed(() => {
         ? description
         : `${description.substring(0, 60)}...`;
 });
+
 
 // Video Comment Toggling
 const videoCommentButtonsShow = ref(false);
@@ -24,16 +40,8 @@ const submitVideoComment = () => {
 };
 
 
-// Creating Test Comments
-const testComments = Array.from({ length: 9 }, (_, i) => ({
-    id: i + 1,
-    text: "Hello World"
-}));
-
-// Comment and Reply Management
+// Comment and Reply Toggling Management
 const commentStates = ref({});
-
-// Toggle State Handler
 const toggleCommentState = (commentId, state) => {
     if (!commentStates.value[commentId]) {
         commentStates.value[commentId] = { repliesVisible: false, replyContainerVisible: false, replyCommentButtonVisible: false };
@@ -41,11 +49,23 @@ const toggleCommentState = (commentId, state) => {
     commentStates.value[commentId][state] = !commentStates.value[commentId][state];
 };
 
-// User Comment Reply Toggling
 const toggleUserCommentReplyButtons = (commentId) => toggleCommentState(commentId, 'repliesVisible');
 const toggleReplyContainer = (commentId) => toggleCommentState(commentId, 'replyContainerVisible');
 const toggleReplyCommentButtons = (commentId) => toggleCommentState(commentId, 'replyCommentButtonVisible');
 
+
+// Playlist Toggling
+let playlistExpanded = ref(false);
+const playListExpandingToggle = () => {
+    playlistExpanded.value = !playlistExpanded.value;
+}
+
+const relatedVideosStyle = computed(() => ({
+    position: 'absolute',
+    right: '191px',
+    top: playlistExpanded.value ? '580px' : '150px',
+    transition: 'top 0.1s ease-in-out'
+}));
 </script>
 
 <template>
@@ -130,6 +150,7 @@ const toggleReplyCommentButtons = (commentId) => toggleCommentState(commentId, '
             <track kind="captions" srclang="en" src="@/assets/subtitles.vtt">
         </video>
     </div>
+
     <h1 class="video-title">Video title</h1>
 
     <div class="video-detail-info">
@@ -168,7 +189,7 @@ const toggleReplyCommentButtons = (commentId) => toggleCommentState(commentId, '
 
     <div class="comments-header mt-4">
         <div class="comments-stats">
-            <p class="total-comments">161 Comments</p>
+            <p class="total-comments">{{ comments.length }} Comments</p>
         </div>
         <div class="comment-creation mt-6">
             <img class="user-profile-img" src="@/assets/img/Django.png" alt="">
@@ -181,7 +202,7 @@ const toggleReplyCommentButtons = (commentId) => toggleCommentState(commentId, '
         </div>
     </div>
     <div class="comment-container">
-        <div v-for="comment in testComments" :key="comment.id" class="comment">
+        <div v-for="comment in comments" :key="comment.id" class="comment">
             <div class="author-thumbnail">
                 <img src="@/assets/img/Django.png" alt="">
             </div>
@@ -220,7 +241,7 @@ const toggleReplyCommentButtons = (commentId) => toggleCommentState(commentId, '
                         class="reply-count">&nbsp;&nbsp;63&nbsp;</span>replies
                 </div>
                 <div v-if="commentStates[comment.id]?.replyContainerVisible" class="replies-container">
-                    <div class="reply">
+                    <div v-for="(reply, index) in comment.replies" :key="index" class="reply">
                         <div class="reply-author-img">
                             <img src="@/assets/img/Django.png" alt="">
                         </div>
@@ -230,7 +251,7 @@ const toggleReplyCommentButtons = (commentId) => toggleCommentState(commentId, '
                                 <p>Nikolat27</p>
                                 <span>1 years </span>ago
                             </div>
-                            <p class="reply-value">Hello World</p>
+                            <p class="reply-value">{{ reply.text }} / {{ reply.parent_id }}</p>
                             <div class="reply-toolbar">
                                 <button class="reply-like-button" style="outline: none;">
                                     <img src="@/assets/icons/svg-icons/like-empty.svg">
@@ -238,11 +259,11 @@ const toggleReplyCommentButtons = (commentId) => toggleCommentState(commentId, '
                                 <button class="reply-dislike-button" style="outline: none;">
                                     <img src="@/assets/icons/svg-icons/dislike-empty.svg" alt="">
                                 </button>
-                                <button @click="toggleReplyCommentButtons(comment.id)" class="reply-comment-button"
+                                <button @click="toggleReplyCommentButtons(reply.id)" class="reply-comment-button"
                                     style="outline: none;" data-target="reply-input-1">
                                     Reply
                                 </button>
-                                <div v-if="commentStates[comment.id]?.replyCommentButtonVisible" class="reply-division"
+                                <div v-if="commentStates[reply.id]?.replyCommentButtonVisible" class="reply-division"
                                     id="reply-input-1">
                                     <div class="reply-creation mt-3">
                                         <img class="user-profile-img" src="@/assets/img/Django.png" alt="">
@@ -250,7 +271,7 @@ const toggleReplyCommentButtons = (commentId) => toggleCommentState(commentId, '
                                             placeholder="Add a Reply...">
                                     </div>
                                     <div class="reply-btns">
-                                        <button @click="toggleReplyCommentButtons(comment.id)" class="cancel-reply-btn"
+                                        <button @click="toggleReplyCommentButtons(reply.id)" class="cancel-reply-btn"
                                             data-target="reply-input-1">Cancel</button>
                                         <button class="submit-reply-btn" data-target="reply-input-1">Reply</button>
                                     </div>
@@ -264,9 +285,8 @@ const toggleReplyCommentButtons = (commentId) => toggleCommentState(commentId, '
     </div>
 
     <div class="right-side-container flex flex-col">
-        <div id="right-side-container2-close"
-            class="w-[400px] h-[66px] bg-[#e4dfec] hover:bg-[#d1c2e9] 
-                    flex flex-col justify-center absolute right-[110px] top-[66px] rounded-xl pl-3 transition-all duration-300 ease-in-out">
+        <div class="w-[400px] h-[66px] bg-[#e4dfec] hover:bg-[#d1c2e9] flex flex-col justify-center
+         absolute right-[110px] top-[66px] rounded-xl pl-3 transition-all duration-300 ease-in-out">
             <div class="flex flex-row items-center text-base">
                 <p class="font-semibold">Next:&nbsp;</p>
                 <p class="font-normal">Video title</p>
@@ -275,21 +295,21 @@ const toggleReplyCommentButtons = (commentId) => toggleCommentState(commentId, '
                 <a href="#">Playlist name -&nbsp;</a>
                 <p>1&nbsp;/&nbsp;367</p>
             </div>
-            <button id="openButton" class="absolute right-0 top-1/2 transform -translate-y-1/2 w-10 h-10 rounded-full bg-inherit hover:bg-[#cdc8d4]
+            <button @click="playListExpandingToggle" class="absolute right-0 top-1/2 transform -translate-y-1/2 w-10 h-10 rounded-full bg-inherit hover:bg-[#cdc8d4]
                      flex justify-center items-center">
                 <img class="w-3 h-3" src="@/assets/icons/svg-icons/thin-chevron-arrow-bottom-icon.svg" alt="">
             </button>
         </div>
 
-        <div id="right-side-container2-open" class="flex-col w-[400px] h-[500px] border-[#ededed] border-[1px]
-                mb-10 absolute right-[110px] top-[66px] rounded-xl hidden transition-all duration-300 ease-in-out">
+        <div v-if="playlistExpanded" class="bg-white z-20 flex flex-col w-[400px] h-[500px] border-[#ededed] border-[1px]
+                mb-10 absolute right-[110px] top-[66px] rounded-xl transition-all duration-300 ease-in-out">
             <div class="pl-3 pt-2">
                 <a href="#" class="font-bold text-xl pt-2 mb-2">Playlist title</a>
                 <div class="flex flex-row text-xs font-normal">
                     <a href="#" class="text-[#304354]">Playlist title -&nbsp;</a>
                     <span class="text-[#858c9c]">1/312</span>
                 </div>
-                <button id="closeButton"
+                <button @click="playListExpandingToggle"
                     class="absolute right-1 top-3 w-10 h-10 rounded-full hover:bg-[#e5e5e5] flex justify-center items-center">
                     <img class="w-4 h-4" src="@/assets/icons/svg-icons/x-mark-icon.svg" alt="">
                 </button>
@@ -341,7 +361,7 @@ const toggleReplyCommentButtons = (commentId) => toggleCommentState(commentId, '
             </div>
         </div>
 
-        <div id="related-videos" class="related-videos mt-3 ease-in-out right-[191px] top-[150px]">
+        <div id="related-videos" class="related-videos" :style="relatedVideosStyle">
             <div class="related-video">
                 <div class="related-video-thumbnail">
                     <img src="@/assets/img/Django.png" alt="">
