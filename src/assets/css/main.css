@@ -420,7 +420,6 @@ a {
 }
 
 .short-video-title {
-    margin-left: 50px;
     margin-top: 5px;
     font-family: Roboto, Arial;
     font-size: 17px;
@@ -645,7 +644,7 @@ h1.video-title {
 }
 
 #readMoreButton {
-    display: none;
+    display: flex;
     /* Hide the button initially */
     background-color: #f2f2f2;
     border: none;
@@ -714,13 +713,7 @@ h1.video-title {
 .add-comment-btn {
     background-color: #065fd4;
     color: #ffffff;
-    display: none;
-}
-
-.cancel-comment-btn {
-    background-color: white;
-    color: black;
-    display: none;
+    display: block;
 }
 
 .add-comment-btn:hover {
@@ -854,7 +847,7 @@ h1.video-title {
 
 
 .replies-container {
-    display: none;
+    display: flex;
     flex-direction: column;
     margin-left: 10px;
 }
@@ -986,18 +979,12 @@ h1.video-title {
 }
 
 .reply-division {
-    display: none;
+    display: flex;
     position: relative;
     top: 35px;
     right: 115px;
     width: 100%;
     margin-bottom: 25px;
-}
-
-.reply-x {
-    display: none;
-    position: relative;
-    width: 100%;
 }
 
 .reply-creation input {
@@ -1021,7 +1008,6 @@ h1.video-title {
 .reply-btns {
     display: flex;
     flex-direction: row;
-    margin-top: 10px;
     margin-left: 40px;
 }
 
