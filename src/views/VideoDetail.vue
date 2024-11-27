@@ -1,6 +1,9 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
 
+const route = useRoute()
+const videoId = route.params.id
 
 // Description Toggling
 const showFullDescription = ref(false);

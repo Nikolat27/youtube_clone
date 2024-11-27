@@ -11,7 +11,7 @@ button {
 }
 
 body {
-    height: 3000px;
+    height: auto;
 }
 
 .header {
@@ -1260,8 +1260,8 @@ a {
 }
 
 .notification-channel-img {
-    width: 48px;
-    height: 48px;
+    width: 32px;
+    height: 32px;
 }
 
 .notification-channel-img img {
@@ -1272,7 +1272,7 @@ a {
 
 
 .notification-video-img {
-    width: 85px;
+    width: 115px;
     height: 62.5px;
 }
 
