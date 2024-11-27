@@ -151,7 +151,7 @@ body {
     position: relative;
 }
 
-.icon-button__badge {
+.icon-button--badge {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -1138,10 +1138,10 @@ a {
 
 .related-short-video {
     cursor: pointer;
-    width: 100px;
-    margin: 0 10px;
+    width: auto;
     display: flex;
     flex-direction: column;
+    flex: 0 0 auto;
 }
 
 .related-short-video-thumbnail {
@@ -1197,7 +1197,10 @@ a {
 .short-video-groups {
     display: flex;
     flex-direction: row;
-    column-gap: 10px;
+    max-width: 400px;
+    overflow-x: scroll;
+    padding-bottom: 6px;
+    scrollbar-width: thin;
 }
 
 .short-video-groups::-webkit-scrollbar {
@@ -1205,15 +1208,15 @@ a {
 }
 
 .notification-container {
-    display: none;
+    display: flex;
     position: absolute;
     flex-direction: column;
-    top: 40px;
-    right: 105px;
+    top: 55px;
+    right: 135px;
     border-radius: 16px;
     z-index: 100;
     background-color: white;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1), 0 2px 1px rgba(0, 0, 0, 0.01);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25), 0 2px 1px rgba(0, 0, 0, 0.01);
 }
 
 .notification-title {
@@ -1223,7 +1226,6 @@ a {
 
 .notification-title p {
     margin-left: 15px;
-    margin-bottom: -5px;
     margin-top: 10px;
     font-size: 18px;
     font-family: Roboto, Arial;
@@ -1292,6 +1294,7 @@ a {
     height: 24px;
     border: none;
     background-color: transparent;
+    position: relative;
 }
 
 .kebab-menu-btn:hover {
@@ -1304,13 +1307,13 @@ a {
 }
 
 .notification-options {
-    display: none;
+    display: flex;
     align-items: center;
     justify-content: center;
     flex-direction: column;
     position: absolute;
-    top: 140px;
-    right: 8px;
+    top: 40px;
+    right: -3px;
     background-color: white;
     width: 230px;
     height: 100px;

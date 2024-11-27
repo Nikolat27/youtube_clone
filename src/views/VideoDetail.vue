@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 
 
 // Description Toggling
@@ -60,13 +60,35 @@ const playListExpandingToggle = () => {
     playlistExpanded.value = !playlistExpanded.value;
 }
 
+
+// Styles for related-video div
 const relatedVideosStyle = computed(() => ({
     position: 'absolute',
-    right: '191px',
+    right: '107px',
     top: playlistExpanded.value ? '580px' : '150px',
     transition: 'top 0.1s ease-in-out'
 }));
+
+
+// Sliding for related short videos
+const scrollLeft = () => {
+    const shortDivContainer = document.querySelector(".short-video-groups");
+    shortDivContainer.scrollLeft -= 131;
+}
+
+const scrollRight = () => {
+    const shortDivContainer = document.querySelector(".short-video-groups");
+    shortDivContainer.scrollLeft += 131;
+}
+
+
+// Playlist divison toggling
+let isPlaylistDivisonOpen = ref(false)
+const togglePlaylistDivision = () => {
+    isPlaylistDivisonOpen.value = !isPlaylistDivisonOpen.value
+}
 </script>
+
 
 <template>
     <div class="video-container paused" data-volume-level="high">
@@ -237,8 +259,8 @@ const relatedVideosStyle = computed(() => ({
                 </div>
                 <div @click="toggleReplyContainer(comment.id)" class="comment-reply-button" data-target="comment-id-1">
                     <i
-                        :class="['arrow', commentStates[comment.id]?.replyContainerVisible ? 'button-reversed' : 'button']"></i><span
-                        class="reply-count">&nbsp;&nbsp;63&nbsp;</span>replies
+                        :class="['arrow', commentStates[comment.id]?.replyContainerVisible ? 'button-reversed' : 'button']">
+                    </i><span class="reply-count">&nbsp;&nbsp;63&nbsp;</span>replies
                 </div>
                 <div v-if="commentStates[comment.id]?.replyContainerVisible" class="replies-container">
                     <div v-for="(reply, index) in comment.replies" :key="index" class="reply">
@@ -316,14 +338,14 @@ const relatedVideosStyle = computed(() => ({
                 <button class="w-10 h-10 rounded-full hover:bg-[#e5e5e5] flex justify-center items-center">
                     <img class="w-5 h-5" src="@/assets/icons/svg-icons/shuffle-icon.svg" alt="">
                 </button>
-                <button
-                    class="playlist-div-toggle flex justify-center items-center absolute top-[60px] right-0 w-10 h-10 rounded-full hover:bg-[#e5e5e5]">
+                <button @click="togglePlaylistDivision" class="playlist-div-toggle flex justify-center items-center absolute top-[60px] right-[3px] w-10 h-10
+                 rounded-full hover:bg-[#e5e5e5]">
                     <img class="w-4 h-4" src="@/assets/icons/svg-icons/kebab-menu.svg" alt="">
                 </button>
-                <a href="#" class="bg-white playlist-division my-shadow w-[200px] h-[52px] rounded-xl hidden items-center justify-center absolute
+                <a v-if="isPlaylistDivisonOpen" href="#" class="bg-white my-shadow w-[200px] h-[52px] rounded-xl flex items-center justify-center absolute
                     right-0 top-[100px]">
-                    <div
-                        class="flex flex-row justify-center items-center cursor-pointer hover:bg-[#e5e5e5] w-[200px] h-9">
+                    <div class="flex flex-row justify-center items-center cursor-pointer hover:bg-[#e5e5e5]
+                     w-[200px] h-9">
                         <img class="w-6 h-6 pr-1" src="@/assets/icons/svg-icons/save-btn.svg" alt="">
                         <span class="font-normal text-sm">Save playlist to Library</span>
                     </div>
@@ -361,7 +383,7 @@ const relatedVideosStyle = computed(() => ({
             </div>
         </div>
 
-        <div id="related-videos" class="related-videos" :style="relatedVideosStyle">
+        <div class="related-videos" :style="relatedVideosStyle">
             <div class="related-video">
                 <div class="related-video-thumbnail">
                     <img src="@/assets/img/Django.png" alt="">
@@ -381,7 +403,70 @@ const relatedVideosStyle = computed(() => ({
                     <img class="youtube-short-icon" src="@/assets/icons/svg-icons/shorts-icon.svg" alt="">
                     <p style="font-weight: bold; font-size: 16px;">Shorts</p>
                 </div>
-                <div class="short-video-groups">
+                <div class="short-video-groups gap-x-1">
+                    <div class="related-short-video">
+                        <div class="related-short-video-thumbnail">
+                            <img src="@/assets/img/Django.png" alt="">
+                        </div>
+                        <div class="related-short-video-title">
+                            <p class="video-title" style="margin-bottom: 3px;"><a href="">Django tutorial</a></p>
+                            <p class="video-info"><span>5M</span> Views</p>
+                        </div>
+                    </div>
+                    <div class="related-short-video">
+                        <div class="related-short-video-thumbnail">
+                            <img src="@/assets/img/Django.png" alt="">
+                        </div>
+                        <div class="related-short-video-title">
+                            <p class="video-title" style="margin-bottom: 3px;"><a href="">Django tutorial</a></p>
+                            <p class="video-info"><span>5M</span> Views</p>
+                        </div>
+                    </div>
+                    <div class="related-short-video">
+                        <div class="related-short-video-thumbnail">
+                            <img src="@/assets/img/Django.png" alt="">
+                        </div>
+                        <div class="related-short-video-title">
+                            <p class="video-title" style="margin-bottom: 3px;"><a href="">Django tutorial</a></p>
+                            <p class="video-info"><span>5M</span> Views</p>
+                        </div>
+                    </div>
+                    <div class="related-short-video">
+                        <div class="related-short-video-thumbnail">
+                            <img src="@/assets/img/Django.png" alt="">
+                        </div>
+                        <div class="related-short-video-title">
+                            <p class="video-title" style="margin-bottom: 3px;"><a href="">Django tutorial</a></p>
+                            <p class="video-info"><span>5M</span> Views</p>
+                        </div>
+                    </div>
+                    <div class="related-short-video">
+                        <div class="related-short-video-thumbnail">
+                            <img src="@/assets/img/Django.png" alt="">
+                        </div>
+                        <div class="related-short-video-title">
+                            <p class="video-title" style="margin-bottom: 3px;"><a href="">Django tutorial</a></p>
+                            <p class="video-info"><span>5M</span> Views</p>
+                        </div>
+                    </div>
+                    <div class="related-short-video">
+                        <div class="related-short-video-thumbnail">
+                            <img src="@/assets/img/Django.png" alt="">
+                        </div>
+                        <div class="related-short-video-title">
+                            <p class="video-title" style="margin-bottom: 3px;"><a href="">Django tutorial</a></p>
+                            <p class="video-info"><span>5M</span> Views</p>
+                        </div>
+                    </div>
+                    <div class="related-short-video">
+                        <div class="related-short-video-thumbnail">
+                            <img src="@/assets/img/Django.png" alt="">
+                        </div>
+                        <div class="related-short-video-title">
+                            <p class="video-title" style="margin-bottom: 3px;"><a href="">Django tutorial</a></p>
+                            <p class="video-info"><span>5M</span> Views</p>
+                        </div>
+                    </div>
                     <div class="related-short-video">
                         <div class="related-short-video-thumbnail">
                             <img src="@/assets/img/Django.png" alt="">
@@ -401,8 +486,8 @@ const relatedVideosStyle = computed(() => ({
                         </div>
                     </div>
                 </div>
-                <button class="prev">❮</button>
-                <button class="next">❯</button>
+                <button class="prev" @click="scrollLeft">❮</button>
+                <button class="next" @click="scrollRight">❯</button>
             </div>
 
             <div class="related-video">
