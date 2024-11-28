@@ -14,15 +14,15 @@ const toggleSubscriptionChannels = () => {
 <template>
     <aside class="side-bar-div">
         <div class="side-bar-links">
-            <img src="@/assets/icons/side-bar/youtube-home.png" alt="">
+            <img src="@/assets/icons/svg-icons/home-icon.svg" alt="">
             <p>Home</p>
         </div>
         <div class="side-bar-links">
-            <img src="@/assets/icons/side-bar/youtube-shorts.jpg" alt="">
+            <img src="@/assets/icons/svg-icons/youtube-shorts-icon.svg" alt="">
             <p>Shorts</p>
         </div>
         <div class="side-bar-links">
-            <img src="@/assets/icons/side-bar/subscription.png" alt="">
+            <img src="@/assets/icons/svg-icons/video-playlist-icon.svg" alt="">
             <p>Subscriptions</p>
         </div>
 
@@ -30,17 +30,17 @@ const toggleSubscriptionChannels = () => {
             <p><span style="font-family: Roboto, Arial; font-size: 16px; font-weight: bold;">You ></span></p>
         </div>
         <div class="side-bar-links">
-            <img src="@/assets/icons/side-bar/history-utube.png" alt="">
+            <img src="@/assets/icons/svg-icons/clockwise-icon.svg" alt="">
             <p>History</p>
         </div>
         <div class="side-bar-links">
             <a class="side-bar-links-link">
-                <img src="@/assets/icons/side-bar/youtube_playlist_icon.png" alt="">
+                <img src="@/assets/icons/svg-icons/playlist-videos-icon.svg" alt="">
                 <p>Playlists</p>
             </a>
         </div>
         <div class="side-bar-links">
-            <img src="@/assets/icons/side-bar/your-videos.png" alt="">
+            <img src="@/assets/icons/svg-icons/youtube-color-icon.svg" alt="">
             <p>Your videos</p>
         </div>
         <div class="side-bar-links">
@@ -65,7 +65,8 @@ const toggleSubscriptionChannels = () => {
         </transition-group>
 
         <div class="side-bar-links">
-            <p style="font-size: 26px;">></p>
+            <img :class="[isCollapsed ? 'rotate-180' : '']" src="@/assets/icons/svg-icons/line-angle-up-icon.svg"
+                alt="">
             <button @click="toggleSubscriptionChannels" id="show-more-btn">{{ isCollapsed ? 'Show more' : 'Show less'
                 }}</button>
         </div>
