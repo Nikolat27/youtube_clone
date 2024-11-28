@@ -10,15 +10,15 @@ let page = 1;
 const loading = ref(false);
 
 const loadMoreVideos = async () => {
-    if (loading.value) return; 
-    loading.value = true; 
+    if (loading.value) return;
+    loading.value = true;
 
     const loadingDiv = document.createElement('div');
     loadingDiv.innerText = "Loading...";
-    loadingDiv.className = "loading"; 
+    loadingDiv.className = "loading";
 
-    const videoContainer = document.querySelector('.videoContainer'); 
-    videoContainer.appendChild(loadingDiv); 
+    const videoContainer = document.querySelector('.videoContainer');
+    videoContainer.appendChild(loadingDiv);
 
     try {
         data.value.push({ id: 31, title: "More Hello World" })
@@ -32,10 +32,12 @@ const loadMoreVideos = async () => {
     }
 };
 
-// Check scroll position
+
 const checkScroll = () => {
-    const endOfPage = window.innerHeight + window.scrollY >= document.body.offsetHeight - 100;
+    // Check if we've scrolled to the bottom (we only render more contents if we reach to the End)
+    const endOfPage = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 300;
     if (endOfPage) {
+        console.log("Load more Contents")
         loadMoreVideos();
     }
 };
