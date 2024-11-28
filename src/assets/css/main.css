@@ -462,12 +462,6 @@ a {
     background-color: #ddd;
 }
 
-
-.video-tag {
-    width: 800px;
-    height: 200px;
-}
-
 h1.video-title {
     font-family: Roboto, Arial;
     font-size: 23px;
@@ -1381,10 +1375,6 @@ a {
     display: flex;
     opacity: 1;
     transform: scale(1);
-}
-
-.subscription-video {
-    cursor: pointer;
 }
 
 .video-duration {
