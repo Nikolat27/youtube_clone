@@ -931,19 +931,6 @@ h1.video-title {
     display: flex;
 }
 
-.reply-creation-container {
-    z-index: 50;
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.3s ease, padding 0.3s ease;
-    padding: 0 5px;
-}
-
-.reply-creation-container.open {
-    max-height: 100px;
-    padding: 10px 5px;
-}
-
 .reply-creation img {
     width: 24px;
     height: 24px;
@@ -967,13 +954,6 @@ h1.video-title {
     outline: none;
     font-size: 15px;
     font-family: Roboto, Arial;
-}
-
-.reply-creation-container .reply-btns {
-    display: flex;
-    flex-direction: row;
-    margin-top: 10px;
-    margin-left: -200px;
 }
 
 .reply-btns {

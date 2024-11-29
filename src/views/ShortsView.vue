@@ -28,11 +28,12 @@ const toggleUserOptions = () => isUserOptionsOpen.value = !isUserOptionsOpen.val
 const openComments = reactive({})
 const toggleUserComment = (commentId, state) => {
     if (!openComments[commentId]) {
-        openComments[commentId] = { replyContainerVisible: false, replyOptionsVisible: false };
+        openComments[commentId] = { replyContainerVisible: false, userReplyOptionsVisible: false, replyOptionsVisible: false };
     }
     openComments[commentId][state] = !openComments[commentId][state];
 }
 const toggleReplyContainer = (comment_id) => toggleUserComment(comment_id, 'replyContainerVisible')
+const toggleUserReplyOptionsVisible = (comment_id) => toggleUserComment(comment_id, 'userReplyOptionsVisible')
 const toggleReplyOptions = (comment_id) => toggleUserComment(comment_id, 'replyOptionsVisible')
 
 
@@ -43,15 +44,41 @@ const toggleSharingTab = () => {
     const sharingTab = document.querySelector(".short-video-sharing-tab");
     sharingTab.classList.toggle("visible");
 }
+
+
+// Handle video controls
+const toggleVideoPlay = () => {
+    const video = document.getElementById("main-video")
+    if (video.paused) {
+        video.play()
+    }
+    else {
+        video.pause()
+    }
+}
+
+
+const toggleVideoMute = () => {
+    const video = document.getElementById("main-video")
+    video.muted = !video.muted
+}
 </script>
 
 <template>
     <div class="flex flex-col justify-center items-center mt-16 gap-y-7">
         <div class="short-video-wrapper">
             <div class="short-video w-[350px] h-[600px] relative">
-                <video oncontextmenu="return false;" class="w-[100%] h-[100%] object-cover rounded-2xl"
-                    src="@/assets/video/test-vid.mp4">
+                <video id="main-video" oncontextmenu="return false;" class="w-[100%] h-[100%] object-cover rounded-2xl"
+                    src="@/assets/video/test-vid3.mp4">
                 </video>
+                <button @click="toggleVideoPlay" class="w-[48px] h-[48px] flex justify-center items-center bg-opacity-75 rounded-full absolute top-2 left-4
+                     bg-[#b2b1b2] hover:bg-[#797879]">
+                    <img class="w-[15px] h-[17px]" src="@/assets/icons/svg-icons/play-white-icon.png" alt="">
+                </button>
+                <button @click="toggleVideoMute" class="w-[48px] h-[48px] flex justify-center items-center bg-opacity-75 rounded-full absolute top-2 left-20
+                     bg-[#b2b1b2] hover:bg-[#797879]">
+                    <img class="w-[22px] h-[22px]" src="@/assets/icons/svg-icons/volume-white-icon.svg" alt="">
+                </button>
                 <div class="short-video-info flex flex-col absolute bottom-7 left-4 text-white">
                     <div class="flex flex-row justify-center items-center gap-x-3">
                         <img src="@/assets/img/Django.png" class="w-8 h-8 rounded-full border-white border" alt="">
@@ -121,23 +148,28 @@ const toggleSharingTab = () => {
                                             <img src="@/assets/icons/svg-icons/dislike-empty.svg"
                                                 class="h-[80%] w-[80%] m-auto" alt="">
                                         </button>
-                                        <button
-                                            class="flex justify-center items-center text-[12px] w-[42px] h-[27px]
-                                            font-semibold border-none m-auto bg-black rounded-2xl hover:bg-[#e5e5e5] ml-2">
+                                        <button @click="toggleUserReplyOptionsVisible(comment.id)" class="flex justify-center items-center text-[12px] w-[42px] h-[27px]
+                                            font-semibold border-none m-auto rounded-2xl hover:bg-[#e5e5e5] ml-2">
                                             Reply
                                         </button>
-                                        <div class="reply-creation-container flex absolute top-9">
-                                            <div class="reply-creation">
-                                                <img src="@/assets/img/Django.png" alt="">
-                                                <input class="w-[40%]" type="text" placeholder="Add a Reply...">
-                                            </div>
-                                            <div class="reply-btns">
-                                                <button class="cancel-comment-btn">Cancel</button>
-                                                <button class="submit-comment-btn">Reply</button>
+                                        <div v-if="openComments[comment.id]?.userReplyOptionsVisible"
+                                            class="user-reply-creation-container absolute top-10 left-0 flex flex-row justify-center items-center">
+                                            <img class="rounded-full w-6 h-6" src="@/assets/img/Django.png" alt="">
+                                            <input type="text"
+                                                class="ml-2 w-[90%] outline-none border-b hover:border-b-2 hover:border-black"
+                                                placeholder="Add a comment..."
+                                                style="transition: border-bottom 0.1s ease-in-out;">
+                                            <div
+                                                class="absolute left-[250px] flex flex-row justify-center items-center">
+                                                <button @click="toggleUserReplyOptionsVisible(comment.id)"
+                                                    class="cancel-comment-btn w-[70px] h-[32px] rounded-[18px]">Cancel</button>
+                                                <button
+                                                    class="submit-comment-btn w-[70px] h-[32px] rounded-[18px] ml-2">Reply</button>
                                             </div>
                                         </div>
                                     </div>
-                                    <div @click="toggleReplyContainer(comment.id)" class="comment-reply-button">
+                                    <div @click="toggleReplyContainer(comment.id)"
+                                        :class="['comment-reply-button', openComments[comment.id]?.userReplyOptionsVisible ? 'mt-10' : '']">
                                         <i
                                             :class="['arrow', openComments[comment.id]?.replyContainerVisible ? 'rotate-[225deg]' : 'button']"></i><span>
                                             &nbsp;&nbsp;63&nbsp;</span>replies
