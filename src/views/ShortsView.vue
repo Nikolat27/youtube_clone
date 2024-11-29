@@ -1,15 +1,21 @@
 <script setup>
-import { ref, reactive } from 'vue';
+import { ref, reactive, onMounted, watch } from 'vue';
 
 
 // Toggling Comment Container
 const isCommentContainerOpen = ref(false)
-const toggleCommentContainer = () => isCommentContainerOpen.value = !isCommentContainerOpen.value
+const toggleCommentContainer = () => {
+    const shortVideoWrapper = document.querySelector(".short-video-wrapper")
+    isCommentContainerOpen.value = !isCommentContainerOpen.value;
+    shortVideoWrapper.style.marginRight = isCommentContainerOpen.value ? "350px" : "0px";
+}
 
 
 // Fake comments
 const comments = [
     { id: 1, text: "Hello World" },
+    { id: 2, text: "Hello World" },
+    { id: 3, text: "Hello World" },
 ]
 
 
@@ -29,13 +35,23 @@ const toggleUserComment = (commentId, state) => {
 const toggleReplyContainer = (comment_id) => toggleUserComment(comment_id, 'replyContainerVisible')
 const toggleReplyOptions = (comment_id) => toggleUserComment(comment_id, 'replyOptionsVisible')
 
+
+// Toggling Sharing Tab
+const isSharingTabOpen = ref(false)
+const toggleSharingTab = () => {
+    isSharingTabOpen.value = !isSharingTabOpen.value;
+    const sharingTab = document.querySelector(".short-video-sharing-tab");
+    sharingTab.classList.toggle("visible");
+}
 </script>
 
 <template>
     <div class="flex flex-col justify-center items-center mt-16 gap-y-7">
         <div class="short-video-wrapper">
             <div class="short-video w-[350px] h-[600px] relative">
-                <video class="w-[100%] h-[100%] object-cover rounded-2xl" src="@/assets/video/test-vid.mp4"></video>
+                <video oncontextmenu="return false;" class="w-[100%] h-[100%] object-cover rounded-2xl"
+                    src="@/assets/video/test-vid.mp4">
+                </video>
                 <div class="short-video-info flex flex-col absolute bottom-7 left-4 text-white">
                     <div class="flex flex-row justify-center items-center gap-x-3">
                         <img src="@/assets/img/Django.png" class="w-8 h-8 rounded-full border-white border" alt="">
@@ -62,7 +78,7 @@ const toggleReplyOptions = (comment_id) => toggleUserComment(comment_id, 'replyO
                             alt="">
                     </button>
                     <span class="mt-[-10px]">8</span>
-                    <button id="short-video-share-btn" class="w-12 h-12 bg-[#f2f2f2] rounded-full hover:bg-[#e5e5e5]">
+                    <button @click="toggleSharingTab" class="w-12 h-12 bg-[#f2f2f2] rounded-full hover:bg-[#e5e5e5]">
                         <img src="@/assets/icons/svg-icons/share-btn.svg" class="h-[60%] w-[60%] m-auto" alt="">
                     </button>
                     <span class="mt-[-10px]">Share</span>
@@ -70,9 +86,8 @@ const toggleReplyOptions = (comment_id) => toggleUserComment(comment_id, 'replyO
                         <a href="#"><img src="@/assets/img/Django.png" class="h-[100%] w-[100%] rounded-md"></a>
                     </button>
                 </div>
-                <div v-if="isCommentContainerOpen"
-                    class="z-10 flex absolute left-[400px] bottom-[50px] flex-col w-[500px] h-[500px] 
-                    border-[1px] border-gray-400 rounded-2xl pt-2 max-w-[500px] max-h-[500px] overflow-y-auto overflow-x-auto">
+                <div v-if="isCommentContainerOpen" class="z-10 flex absolute left-[450px] bottom-[50px] flex-col w-[500px] h-[500px] 
+                    border-[1px] border-gray-400 rounded-2xl pt-2 max-w-[500px] max-h-[500px]">
                     <div class="flex flex-row justify-start items-center ml-2">
                         <p class="font-bold text-[20px] pl-2">Comments&nbsp;</p><span>414</span>
                         <button @click="toggleCommentContainer" class="w-10 h-10 border-none rounded-full bg-white hover:bg-[#e5e5e5]
@@ -81,85 +96,88 @@ const toggleReplyOptions = (comment_id) => toggleUserComment(comment_id, 'replyO
                         </button>
                     </div>
                     <hr>
-                    <div v-for="comment in comments" :key="comment.id" class="flex flex-col gap-y-10">
-                        <div class="flex flex-row gap-x-2 ml-4 mt-4">
-                            <div>
-                                <img class="w-10 h-10 rounded-full" src="@/assets/img/Django.png" alt="">
-                            </div>
-                            <div class="flex flex-col flex-1 ml-2">
-                                <div class="flex flex-row justify-start items-center">
-                                    <p class="text-[13px] font-medium">@Nikolat272</p>
-                                    <span class="text-[12px] font-normal ml-2 text-[#918b8b]">13 days ago</span>
+                    <div class="flex-grow flex flex-col overflow-y-auto max-h-[394px]" style="scrollbar-width: thin;">
+                        <div v-for="comment in comments" :key="comment.id" class="flex flex-col gap-y-8">
+                            <div class="flex flex-row gap-x-2 ml-4 mt-4">
+                                <div>
+                                    <img class="w-10 h-10 rounded-full" src="@/assets/img/Django.png" alt="">
                                 </div>
-                                <div class="flex">
-                                    <p class="text-[14px] font-normal">{{ comment.text }} / {{ comment.id }}</p>
-                                </div>
-                                <div class="flex flex-row items-center mt-2 relative">
-                                    <button
-                                        class="flex items-center justify-center w-8 h-8 rounded-full hover:bg-[#e5e5e5]">
-                                        <img src="@/assets/icons/svg-icons/like-empty.svg" class="h-[80%] w-[80%]"
-                                            alt="">
-                                    </button>
-                                    <span class="text-gray-500 text-[13px] font-normal">1.1k</span>
-                                    <button class="w-8 h-8 rounded-full hover:bg-[#e5e5e5] ml-2">
-                                        <img src="@/assets/icons/svg-icons/dislike-empty.svg"
-                                            class="h-[80%] w-[80%] m-auto" alt="">
-                                    </button>
-                                    <button class="user-comment-reply-button text-[12px] w-14 h-8
-                                     font-medium border-none m-auto bg-white rounded-2xl hover:bg-[#e5e5e5] ml-2">
-                                        Reply
-                                    </button>
-                                    <div class="reply-creation-container flex absolute top-9 bg-black">
-                                        <div class="reply-creation">
-                                            <img src="@/assets/img/Django.png" alt="">
-                                            <input class="w-[40%]" type="text" placeholder="Add a Reply...">
-                                        </div>
-                                        <div class="reply-btns">
-                                            <button class="cancel-comment-btn">Cancel</button>
-                                            <button class="submit-comment-btn">Reply</button>
+                                <div class="flex flex-col flex-1 ml-2">
+                                    <div class="flex flex-row justify-start items-center">
+                                        <p class="text-[13px] font-medium">@Nikolat272</p>
+                                        <span class="text-[12px] font-normal ml-2 text-[#918b8b]">13 days ago</span>
+                                    </div>
+                                    <div class="flex">
+                                        <p class="text-[14px] font-normal">{{ comment.text }} / {{ comment.id }}</p>
+                                    </div>
+                                    <div class="flex flex-row items-center mt-2 relative">
+                                        <button
+                                            class="flex items-center justify-center w-8 h-8 rounded-full hover:bg-[#e5e5e5]">
+                                            <img src="@/assets/icons/svg-icons/like-empty.svg" class="h-[80%] w-[80%]"
+                                                alt="">
+                                        </button>
+                                        <span class="text-gray-500 text-[13px] font-normal">1.1k</span>
+                                        <button class="w-8 h-8 rounded-full hover:bg-[#e5e5e5] ml-2">
+                                            <img src="@/assets/icons/svg-icons/dislike-empty.svg"
+                                                class="h-[80%] w-[80%] m-auto" alt="">
+                                        </button>
+                                        <button
+                                            class="flex justify-center items-center text-[12px] w-[42px] h-[27px]
+                                            font-semibold border-none m-auto bg-black rounded-2xl hover:bg-[#e5e5e5] ml-2">
+                                            Reply
+                                        </button>
+                                        <div class="reply-creation-container flex absolute top-9">
+                                            <div class="reply-creation">
+                                                <img src="@/assets/img/Django.png" alt="">
+                                                <input class="w-[40%]" type="text" placeholder="Add a Reply...">
+                                            </div>
+                                            <div class="reply-btns">
+                                                <button class="cancel-comment-btn">Cancel</button>
+                                                <button class="submit-comment-btn">Reply</button>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                <div @click="toggleReplyContainer(comment.id)" class="comment-reply-button">
-                                    <i
-                                        :class="['arrow', openComments[comment.id]?.replyContainerVisible ? 'rotate-[225deg]' : 'button']"></i><span>
-                                        &nbsp;&nbsp;63&nbsp;</span>replies
-                                </div>
-                                <div v-if="openComments[comment.id]?.replyContainerVisible"
-                                    class="replies-container mt-3">
-                                    <div class="reply">
-                                        <div class="reply-author-img">
-                                            <img src="@/assets/img/Django.png" alt="">
-                                        </div>
-                                        <div class="reply-detail">
-                                            <div class="reply-author-info">
-                                                <p>@</p>
-                                                <p>Nikolat27</p>
-                                                <span>1 years </span>ago
+                                    <div @click="toggleReplyContainer(comment.id)" class="comment-reply-button">
+                                        <i
+                                            :class="['arrow', openComments[comment.id]?.replyContainerVisible ? 'rotate-[225deg]' : 'button']"></i><span>
+                                            &nbsp;&nbsp;63&nbsp;</span>replies
+                                    </div>
+                                    <div v-if="openComments[comment.id]?.replyContainerVisible"
+                                        class="replies-container mt-3">
+                                        <div class="reply">
+                                            <div class="reply-author-img">
+                                                <img src="@/assets/img/Django.png" alt="">
                                             </div>
-                                            <p class="reply-value">Hello World</p>
-                                            <div class="reply-toolbar">
-                                                <button class="reply-like-button" style="outline: none;">
-                                                    <img src="@/assets/icons/svg-icons/like-empty.svg">
-                                                </button>
-                                                <button class="reply-dislike-button" style="outline: none;">
-                                                    <img src="@/assets/icons/svg-icons/dislike-empty.svg" alt="">
-                                                </button>
-                                                <button @click="toggleReplyOptions(comment.id)"
-                                                    class="reply-comment-button" style="outline: none;">
-                                                    Reply
-                                                </button>
-                                                <div v-if="openComments[comment.id]?.replyOptionsVisible"
-                                                    class="reply-division flex-col">
-                                                    <div class="reply-creation">
-                                                        <img src="@/assets/img/Django.png" alt="">
-                                                        <input type="text" class="w-[200px] bg-transparent"
-                                                            placeholder="Add a Reply...">
-                                                    </div>
-                                                    <div class="reply-btns mt-2">
-                                                        <button @click="toggleReplyOptions(comment.id)"
-                                                            class="cancel-reply-btn">Cancel</button>
-                                                        <button class="submit-reply-btn">Reply</button>
+                                            <div class="reply-detail">
+                                                <div class="reply-author-info">
+                                                    <p>@</p>
+                                                    <p>Nikolat27</p>
+                                                    <span>1 years </span>ago
+                                                </div>
+                                                <p class="reply-value">Hello World</p>
+                                                <div class="reply-toolbar">
+                                                    <button class="reply-like-button" style="outline: none;">
+                                                        <img src="@/assets/icons/svg-icons/like-empty.svg">
+                                                    </button>
+                                                    <button class="reply-dislike-button" style="outline: none;">
+                                                        <img src="@/assets/icons/svg-icons/dislike-empty.svg" alt="">
+                                                    </button>
+                                                    <button @click="toggleReplyOptions(comment.id)"
+                                                        class="reply-comment-button" style="outline: none;">
+                                                        Reply
+                                                    </button>
+                                                    <div v-if="openComments[comment.id]?.replyOptionsVisible"
+                                                        class="reply-division flex-col">
+                                                        <div class="reply-creation">
+                                                            <img src="@/assets/img/Django.png" alt="">
+                                                            <input type="text" class="w-[200px] bg-transparent"
+                                                                placeholder="Add a Reply...">
+                                                        </div>
+                                                        <div class="reply-btns mt-2">
+                                                            <button @click="toggleReplyOptions(comment.id)"
+                                                                class="cancel-reply-btn">Cancel</button>
+                                                            <button class="submit-reply-btn">Reply</button>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -169,7 +187,8 @@ const toggleReplyOptions = (comment_id) => toggleUserComment(comment_id, 'replyO
                             </div>
                         </div>
                     </div>
-                    <div class="flex flex-row absolute bottom-4 left-0 gap-x-4 w-full border-t pt-2 pl-2">
+                    <div class="max-h-[56.8px] flex flex-row mt-10 absolute bottom-0 left-0 gap-x-4 w-full
+                     border-t pt-2 pl-2 pb-2">
                         <div class="w-10 h-10">
                             <img class="w-[100%] h-[100%] rounded-full cursor-pointer" src="@/assets/img/Django.png"
                                 alt="">
@@ -189,18 +208,18 @@ const toggleReplyOptions = (comment_id) => toggleUserComment(comment_id, 'replyO
         </div>
     </div>
 
-    <div class="short-video-sharing-tab hidden flex-col absolute top-[35%] left-[35%] w-[518px] h-[264px]
+    <div v-show="isSharingTabOpen" class="short-video-sharing-tab flex flex-col absolute top-[29%] left-[33.5%] w-[518px] h-[264px]
      bg-white z-auto rounded-2xl custom-shadow">
-        <div class='sharting-tab-title-bar flex flex-row relative mt-4 ml-[22.5px]'>
+        <div class='flex flex-row relative mt-4 ml-[22.5px]'>
             <p>Share</p>
-            <button class="w-6 h-6 right-2 absolute" id="close-short-video-sharing-tab">
+            <button @click="toggleSharingTab" class="w-6 h-6 right-2 absolute">
                 <img class="w-[100%] h-[100%]" src="@/assets/icons/svg-icons/x-mark-icon.svg" alt="">
             </button>
         </div>
-        <div class="contents-icons flex flex-row gap-x-4 ml-[22.5px] mt-4 flex-wrap">
+        <div class="flex flex-row justify-center items-center gap-x-4 mt-4 flex-wrap">
             <button class="w-[60px] h-[60px]">
                 <img class="w-[100%] h-[100%] rounded-full" src="@/assets/icons/svg-icons/whatsapp-icon.svg" alt="">
-                <span>Whatsapp</span>
+                <span class="mt-1 text-center">Whatsapp</span>
             </button>
             <button class="w-[60px] h-[60px]">
                 <img class="w-[100%] h-[100%] rounded-full" src="@/assets/icons/svg-icons/twitter-icon.svg" alt="">
@@ -228,11 +247,11 @@ const toggleReplyOptions = (comment_id) => toggleUserComment(comment_id, 'replyO
         </div>
     </div>
 
-    <div class="flex flex-col gap-y-4 absolute right-4 top-[47%] cursor-pointer">
-        <div class="w-[56px] h-[56px] rounded-full bg-[#f2f2f2] hover:bg-[#d9d9d9]">
+    <div class="flex flex-col gap-y-4 absolute right-4 top-[47%]">
+        <div class="w-[56px] h-[56px] rounded-full bg-[#f2f2f2] hover:bg-[#d9d9d9] cursor-pointer">
             <img class="w-[100%] h-[100%]" src="@/assets/icons/svg-icons/angle-circle-up-icon.svg" alt="">
         </div>
-        <div class="w-[56px] h-[56px] rounded-full bg-[#f2f2f2] hover:bg-[#d9d9d9]">
+        <div class="w-[56px] h-[56px] rounded-full bg-[#f2f2f2] hover:bg-[#d9d9d9] cursor-pointer">
             <img class="w-[100%] h-[100%]" src="@/assets/icons/svg-icons/angle-circle-down-icon.svg" alt="">
         </div>
     </div>

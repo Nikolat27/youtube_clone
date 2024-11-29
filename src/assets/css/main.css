@@ -782,16 +782,6 @@ h1.video-title {
     border-radius: 10px;
 }
 
-.user-comment-reply-button {
-    width: 32px;
-    height: 32px;
-}
-
-.user-comment-reply-button img {
-    width: 100%;
-    height: 100%;
-}
-
 .comment-reply-button {
     display: flex;
     flex-direction: row;
@@ -1351,16 +1341,18 @@ a {
 }
 
 .short-video-sharing-tab {
-    display: none;
     opacity: 0;
-    transform: scale(0.9);
-    transition: opacity 0.3s ease, transform 0.3s ease;
+    transition: opacity 0.3s ease;
+    pointer-events: none; /* Prevent pointer events when invisible */
+}
+
+video {
+    pointer-events: none;
 }
 
 .short-video-sharing-tab.visible {
-    display: flex;
     opacity: 1;
-    transform: scale(1);
+    pointer-events: auto; /* Enable pointer events when visible */
 }
 
 .video-duration {
