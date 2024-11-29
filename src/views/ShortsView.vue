@@ -1,38 +1,33 @@
 <script setup>
-import { comment } from 'postcss';
 import { ref, reactive } from 'vue';
-import { useRoute } from 'vue-router';
-
-// const route = useRoute()
-// const shortId = route.params.id;
 
 
 // Toggling Comment Container
 const isCommentContainerOpen = ref(false)
-const toggleCommentContainer = () => {
-    isCommentContainerOpen.value = !isCommentContainerOpen.value
-}
+const toggleCommentContainer = () => isCommentContainerOpen.value = !isCommentContainerOpen.value
 
 
 // Fake comments
 const comments = [
     { id: 1, text: "Hello World" },
-    { id: 2, text: "Hello World" },
 ]
 
+
+// Toggle User Comment Options
+const isUserOptionsOpen = ref(false)
+const toggleUserOptions = () => isUserOptionsOpen.value = !isUserOptionsOpen.value
+
+
 // Handling Comment opening
-const openComments = reactive([])
-
-const toggleUserComment = (commentId) => {
-    const isCurrentlyOpen = openComments.includes(commentId);
-    // Clear the current open comment if toggled
-    if (isCurrentlyOpen) {
-        openComments.pop();
-    } else {
-        openComments.splice(0, openComments.length, commentId); // Clear previous and add new
+const openComments = reactive({})
+const toggleUserComment = (commentId, state) => {
+    if (!openComments[commentId]) {
+        openComments[commentId] = { replyContainerVisible: false, replyOptionsVisible: false };
     }
+    openComments[commentId][state] = !openComments[commentId][state];
 }
-
+const toggleReplyContainer = (comment_id) => toggleUserComment(comment_id, 'replyContainerVisible')
+const toggleReplyOptions = (comment_id) => toggleUserComment(comment_id, 'replyOptionsVisible')
 
 </script>
 
@@ -43,8 +38,7 @@ const toggleUserComment = (commentId) => {
                 <video class="w-[100%] h-[100%] object-cover rounded-2xl" src="@/assets/video/test-vid.mp4"></video>
                 <div class="short-video-info flex flex-col absolute bottom-7 left-4 text-white">
                     <div class="flex flex-row justify-center items-center gap-x-3">
-                        <img src="@/assets/img/Django.png" class="w-8 h-8 rounded-full border-white border-[1px]"
-                            alt="">
+                        <img src="@/assets/img/Django.png" class="w-8 h-8 rounded-full border-white border" alt="">
                         <p class="text-[14px] font-medium">@channelName</p>
                         <button
                             class="bg-white text-black w-[76px] h-[32px] rounded-2xl text-[12px] font-medium">Subscribe</button>
@@ -52,7 +46,8 @@ const toggleUserComment = (commentId) => {
                     <h2 class="text-[14px] font-normal mt-4">Short video title</h2>
                 </div>
 
-                <div class="flex flex-col gap-y-4 justify-center items-center absolute right-[-65px] bottom-[30px]">
+                <div class="flex flex-col gap-y-4 justify-center items-center
+                 absolute right-[-65px] bottom-[30px]">
                     <button class="w-12 h-12 bg-[#f2f2f2] rounded-full hover:bg-[#e5e5e5]">
                         <img src="@/assets/icons/svg-icons/like-empty.svg" class="h-[80%] w-[80%] m-auto" alt="">
                     </button>
@@ -62,10 +57,9 @@ const toggleUserComment = (commentId) => {
                     </button>
                     <span class="mt-[-10px]">Dislike</span>
                     <button @click="toggleCommentContainer"
-                        class="comment-toggle-btn w-12 h-12 bg-[#f2f2f2] rounded-full hover:bg-[#e5e5e5]"
-                        data-target="comment-container-1">
-                        <img data-target="comment-container-1" src="@/assets/icons/svg-icons/comment-empty-icon.svg"
-                            class="h-[60%] w-[60%] m-auto" alt="">
+                        class="comment-toggle-btn w-12 h-12 bg-[#f2f2f2] rounded-full hover:bg-[#e5e5e5]">
+                        <img src="@/assets/icons/svg-icons/comment-empty-icon.svg" class="h-[60%] w-[60%] m-auto"
+                            alt="">
                     </button>
                     <span class="mt-[-10px]">8</span>
                     <button id="short-video-share-btn" class="w-12 h-12 bg-[#f2f2f2] rounded-full hover:bg-[#e5e5e5]">
@@ -73,12 +67,12 @@ const toggleUserComment = (commentId) => {
                     </button>
                     <span class="mt-[-10px]">Share</span>
                     <button class="w-11 h-11 bg-[#f2f2f2] hover:bg-[#e5e5e5] rounded-full">
-                        <a href="#"><img src="@/assets/img/Django.png" class="h-[100%] w-[100%] rounded-md"
-                                alt="channels-profile-picture"></a>
+                        <a href="#"><img src="@/assets/img/Django.png" class="h-[100%] w-[100%] rounded-md"></a>
                     </button>
                 </div>
-                <div v-if="isCommentContainerOpen" class="z-10 flex absolute left-[400px] bottom-[50px] flex-col w-[500px] h-[500px] 
-                    border-[1px] border-gray-400 rounded-2xl pt-2 max-h-[500px] overflow-y-auto overflow-x-auto">
+                <div v-if="isCommentContainerOpen"
+                    class="z-10 flex absolute left-[400px] bottom-[50px] flex-col w-[500px] h-[500px] 
+                    border-[1px] border-gray-400 rounded-2xl pt-2 max-w-[500px] max-h-[500px] overflow-y-auto overflow-x-auto">
                     <div class="flex flex-row justify-start items-center ml-2">
                         <p class="font-bold text-[20px] pl-2">Comments&nbsp;</p><span>414</span>
                         <button @click="toggleCommentContainer" class="w-10 h-10 border-none rounded-full bg-white hover:bg-[#e5e5e5]
@@ -115,11 +109,10 @@ const toggleUserComment = (commentId) => {
                                      font-medium border-none m-auto bg-white rounded-2xl hover:bg-[#e5e5e5] ml-2">
                                         Reply
                                     </button>
-                                    <div class="reply-creation-container flex absolute top-9">
+                                    <div class="reply-creation-container flex absolute top-9 bg-black">
                                         <div class="reply-creation">
-                                            <img class="user-profile-img" src="@/assets/img/Django.png" alt="">
-                                            <input id="reply-text" type="text"
-                                                placeholder="Add a Reply...">
+                                            <img src="@/assets/img/Django.png" alt="">
+                                            <input class="w-[40%]" type="text" placeholder="Add a Reply...">
                                         </div>
                                         <div class="reply-btns">
                                             <button class="cancel-comment-btn">Cancel</button>
@@ -127,11 +120,13 @@ const toggleUserComment = (commentId) => {
                                         </div>
                                     </div>
                                 </div>
-                                <div @click="toggleUserComment(comment.id)" class="comment-reply-button">
-                                    <i class="arrow button"></i><span>
+                                <div @click="toggleReplyContainer(comment.id)" class="comment-reply-button">
+                                    <i
+                                        :class="['arrow', openComments[comment.id]?.replyContainerVisible ? 'rotate-[225deg]' : 'button']"></i><span>
                                         &nbsp;&nbsp;63&nbsp;</span>replies
                                 </div>
-                                <div v-if="openComments.includes(comment.id)" class="replies-container mt-3">
+                                <div v-if="openComments[comment.id]?.replyContainerVisible"
+                                    class="replies-container mt-3">
                                     <div class="reply">
                                         <div class="reply-author-img">
                                             <img src="@/assets/img/Django.png" alt="">
@@ -150,18 +145,20 @@ const toggleUserComment = (commentId) => {
                                                 <button class="reply-dislike-button" style="outline: none;">
                                                     <img src="@/assets/icons/svg-icons/dislike-empty.svg" alt="">
                                                 </button>
-                                                <button class="reply-comment-button" style="outline: none;">
+                                                <button @click="toggleReplyOptions(comment.id)"
+                                                    class="reply-comment-button" style="outline: none;">
                                                     Reply
                                                 </button>
-                                                <div class="reply-division">
+                                                <div v-if="openComments[comment.id]?.replyOptionsVisible"
+                                                    class="reply-division flex-col">
                                                     <div class="reply-creation">
-                                                        <img src="@/assets/img/Django.png"
-                                                            alt="">
-                                                        <input type="text"
+                                                        <img src="@/assets/img/Django.png" alt="">
+                                                        <input type="text" class="w-[200px] bg-transparent"
                                                             placeholder="Add a Reply...">
                                                     </div>
-                                                    <div class="reply-btns">
-                                                        <button class="cancel-reply-btn">Cancel</button>
+                                                    <div class="reply-btns mt-2">
+                                                        <button @click="toggleReplyOptions(comment.id)"
+                                                            class="cancel-reply-btn">Cancel</button>
                                                         <button class="submit-reply-btn">Reply</button>
                                                     </div>
                                                 </div>
@@ -172,24 +169,19 @@ const toggleUserComment = (commentId) => {
                             </div>
                         </div>
                     </div>
-
-                    <hr class="mt-[200px]">
-                    <div class="flex flex-row absolute bottom-4 left-2 gap-x-4">
+                    <div class="flex flex-row absolute bottom-4 left-0 gap-x-4 w-full border-t pt-2 pl-2">
                         <div class="w-10 h-10">
                             <img class="w-[100%] h-[100%] rounded-full cursor-pointer" src="@/assets/img/Django.png"
                                 alt="">
                         </div>
-                        <div>
-                            <input class="border-gray-400 border-b-[0.5px] outline-none short-video-comment-creation"
-                                type="text" placeholder="Add a comment...">
+                        <div @click="toggleUserOptions"><input class="border-gray-400 bg-transparent border-b-[0.5px] outline-none
+                             short-video-comment-creation" type="text" placeholder="Add a comment...">
                         </div>
-                        <div class="comment-creation-buttons hidden flex-row gap-x-4">
-                            <button
-                                class="comment-creation-cancel-button font-medium text-sm hover:bg-[#e5e5e5] w-[74px] h-[36px] rounded-2xl"
-                                data-target="comment-id-1">Cancel</button>
-                            <button
-                                class="comment-creation-submit-button font-medium text-sm bg-[#065fd4] hover:bg-[#0556bf] text-white rounded-2xl w-[93px] h-[36px]"
-                                data-target="comment-id-1">Comment</button>
+                        <div v-if="isUserOptionsOpen" class="flex flex-row gap-x-4 font-medium text-sm">
+                            <button @click="toggleUserOptions"
+                                class="hover:bg-[#e5e5e5] w-[74px] h-[36px] rounded-2xl">Cancel</button>
+                            <button class="bg-[#065fd4] hover:bg-[#0556bf] text-white rounded-2xl w-[93px]
+                              h-[36px]">Comment</button>
                         </div>
                     </div>
                 </div>

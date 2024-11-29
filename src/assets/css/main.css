@@ -942,7 +942,6 @@ h1.video-title {
 }
 
 .reply-creation-container {
-    background-color: white;
     z-index: 50;
     max-height: 0;
     overflow: hidden;
@@ -966,12 +965,11 @@ h1.video-title {
     position: relative;
     top: 35px;
     right: 115px;
-    width: 100%;
+    width: 60%;
     margin-bottom: 25px;
 }
 
 .reply-creation input {
-    width: 300px;
     border-top: none;
     border-right: none;
     border-left: none;
@@ -991,7 +989,6 @@ h1.video-title {
 .reply-btns {
     display: flex;
     flex-direction: row;
-    margin-left: 40px;
 }
 
 .reply-btns button {
