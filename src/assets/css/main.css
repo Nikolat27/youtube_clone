@@ -726,11 +726,6 @@ h1.video-title {
     margin-left: 48px;
 }
 
-.comment {
-    display: flex;
-    flex-direction: row;
-    margin-bottom: 10px;
-}
 
 .author-thumbnail {
     width: 40px;
@@ -817,11 +812,6 @@ h1.video-title {
     border-radius: 23px;
 }
 
-.comment {
-    margin-bottom: 40px;
-}
-
-
 .arrow {
     border: solid #1260da;
     border-width: 0 2px 2px 0;
@@ -878,7 +868,6 @@ h1.video-title {
 .reply-toolbar {
     display: flex;
     flex-direction: row;
-    margin-top: 0px;
 }
 
 .reply-author-img {

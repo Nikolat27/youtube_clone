@@ -19,13 +19,14 @@ const notifications = reactive([
 
 // Handle the Notifications` options
 const expandedNotifications = ref([0])
-const togglingNotificationOptions = (notification_id) => {
-    if (!expandedNotifications.value.includes(notification_id)) {
-        expandedNotifications.value[0] = notification_id;
+const toggleNotificationOptions = (notificationId) => {
+    const index = expandedNotifications.value.indexOf(notificationId);
+    if (index === -1) {
+        expandedNotifications.value.push(notificationId);
     } else {
-        expandedNotifications.value.pop();
+        expandedNotifications.value.splice(index, 1);
     }
-}
+};
 </script>
 
 <template>
@@ -71,8 +72,8 @@ const togglingNotificationOptions = (notification_id) => {
                         <div class="notification-video-img">
                             <img src="@/assets/img/Django.png" alt="">
                         </div>
-                        <button @click="togglingNotificationOptions(notification.id)" class="kebab-menu-btn">
-                            <img src="@/assets/icons/svg-icons/kebab-menu.svg" class="kebab-menu-btn" alt="">
+                        <button @click="toggleNotificationOptions(notification.id)" class="kebab-menu-btn">
+                            <img src="@/assets/icons/svg-icons/kebab-menu.svg" alt="">
                             <div v-if="expandedNotifications.includes(notification.id)" class="notification-options">
                                 <a href="#"><img src="@/assets/icons/svg-icons/hide-notification-icon.svg"
                                      alt="">Hide this notification</a>
