@@ -1514,7 +1514,35 @@ video {
     color: black;
 }
 
-
 .volume-button:hover #volume-value {
     display: flex;
+}
+
+#main-video:fullscreen {
+    width: 100px;
+    height: 100px;
+}
+
+input[type="range"] {
+    background: transparent;
+    cursor: pointer;
+}
+
+/******** Chrome ********/
+input[type="range"]::-webkit-slider-runnable-track {
+    background: white;
+}
+  
+/******** Firefox ********/
+input[type="range"]::-moz-range-track {
+    border-radius: 20%;
+    background: black;
+}
+
+input[type="range"]::-moz-range-progress {
+    background: white;
+}
+
+input[type="range"]::-moz-range-thumb {
+    border: none;
 }

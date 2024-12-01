@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, onMounted, watch, useTemplateRef } from 'vue';
+import { ref, reactive, computed } from 'vue';
 
 
 // Toggling Comment Container
@@ -46,7 +46,8 @@ const toggleSharingTab = () => {
 }
 
 
-// Handle video controls
+// Handle video`s playing
+const isVideoPlayed = ref(true)
 const toggleVideoPlay = () => {
     const video = document.getElementById("main-video")
     if (video.paused) {
@@ -55,41 +56,70 @@ const toggleVideoPlay = () => {
     else {
         video.pause()
     }
+    isVideoPlayed.value = !isVideoPlayed.value
 }
 
 
+// Handle video`s voice 
+const isVideoMuted = ref(false)
 const toggleVideoMute = () => {
     const video = document.getElementById("main-video")
     video.muted = !video.muted
+    isVideoMuted.value = !isVideoMuted.value
 }
 
 
 // Update video volume based on input range
-const volumeValue = ref(100);
+const volumeValue = ref(100); // default volume value
 const updateVolume = (event) => {
     volumeValue.value = event.target.value;
     const video = document.getElementById("main-video");
-    video.volume = volumeValue.value / 100;
-    console.log(video.muted)
+    video.volume = volumeValue.value / 100; // we devided the value by 100 because the 'volume' method 
+    // only supports an int between 0 to 1
 }
+
+
+// Derived states for icons
+const videoPlayIcon = computed(() => isVideoPlayed.value ? '/src/assets/icons/svg-icons/play-white-icon.png' : '/src/assets/icons/svg-icons/pause-icon.png');
+const videoVolumeIcon = computed(() => {
+    if (!isVideoMuted.value && volumeValue.value >= 50) return '/src/assets/icons/svg-icons/volume-white-icon.svg';
+    if (!isVideoMuted.value) return '/src/assets/icons/svg-icons/speaker-icon-2.png';
+    return '/src/assets/icons/svg-icons/muted-icon-2.png';
+});
+
+
+
+// Handle video fullscreen
+const isVideoFullscreen = ref(false)
+const toggleVideoFullscreen = () => {
+    const video = document.getElementById("main-video");
+    video.requestFullscreen();
+    isVideoFullscreen.value = !isVideoFullscreen.value;
+}
+
 </script>
 
 <template>
     <div class="flex flex-col justify-center items-center mt-16 gap-y-7">
         <div class="short-video-wrapper">
             <div class="short-video w-[350px] h-[600px] relative">
-                <video id="main-video" oncontextmenu="return false;" class="w-[100%] h-[100%] object-cover rounded-2xl"
-                    src="@/assets/video/test-vid3.mp4">
+                <video id="main-video" oncontextmenu="return false;"
+                    class="w-[100%] h-[100%] object-cover rounded-2xl" src="@/assets/video/test-vid3.mp4">
                 </video>
                 <button @click="toggleVideoPlay" class="w-[48px] h-[48px] flex justify-center items-center bg-opacity-75 rounded-full absolute top-2 left-4
                      bg-[#b2b1b2] hover:bg-[#797879]">
-                    <img class="w-[15px] h-[17px]" src="@/assets/icons/svg-icons/play-white-icon.png" alt="">
+                    <img class="w-[15px] h-[17px]" :src="videoPlayIcon" alt="">
                 </button>
                 <button class="volume-button w-[48px] hover:w-[201px] h-[48px] flex justify-center items-center bg-opacity-75 rounded-full absolute top-2 left-20
                      bg-[#b2b1b2] hover:bg-[#797879]">
-                    <img @click="toggleVideoMute" class="w-[22px] h-[22px]" src="@/assets/icons/svg-icons/volume-white-icon.svg" alt="">
+                    <img @click="toggleVideoMute" class="w-[22px] h-[22px] cursor-pointer" :src="videoVolumeIcon"
+                        alt="">
                     <input id="volume-value" @input="updateVolume" v-model="volumeValue" type="range" min="0" max="100"
                         class="hidden ml-4 w-[132px] h-[29.3] bg-black outline-none">
+                </button>
+                <button @click="toggleVideoFullscreen" class="fullscreen-btn w-[48px] h-[48px] flex justify-center items-center bg-opacity-75 rounded-full absolute top-2 right-4
+                     bg-[#b2b1b2] hover:bg-[#797879] cursor-pointer">
+                    <img class="w-[22px] h-[22px]" src="@/assets/icons/svg-icons/fullscreen-icon.png" alt="">
                 </button>
                 <div class="short-video-info flex flex-col absolute bottom-7 left-4 text-white">
                     <div class="flex flex-row justify-center items-center gap-x-3">
