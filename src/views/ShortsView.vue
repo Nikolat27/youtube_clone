@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, onMounted, watch } from 'vue';
+import { ref, reactive, onMounted, watch, useTemplateRef } from 'vue';
 
 
 // Toggling Comment Container
@@ -62,6 +62,16 @@ const toggleVideoMute = () => {
     const video = document.getElementById("main-video")
     video.muted = !video.muted
 }
+
+
+// Update video volume based on input range
+const volumeValue = ref(100);
+const updateVolume = (event) => {
+    volumeValue.value = event.target.value;
+    const video = document.getElementById("main-video");
+    video.volume = volumeValue.value / 100;
+    console.log(video.muted)
+}
 </script>
 
 <template>
@@ -75,9 +85,11 @@ const toggleVideoMute = () => {
                      bg-[#b2b1b2] hover:bg-[#797879]">
                     <img class="w-[15px] h-[17px]" src="@/assets/icons/svg-icons/play-white-icon.png" alt="">
                 </button>
-                <button @click="toggleVideoMute" class="w-[48px] h-[48px] flex justify-center items-center bg-opacity-75 rounded-full absolute top-2 left-20
+                <button class="volume-button w-[48px] hover:w-[201px] h-[48px] flex justify-center items-center bg-opacity-75 rounded-full absolute top-2 left-20
                      bg-[#b2b1b2] hover:bg-[#797879]">
-                    <img class="w-[22px] h-[22px]" src="@/assets/icons/svg-icons/volume-white-icon.svg" alt="">
+                    <img @click="toggleVideoMute" class="w-[22px] h-[22px]" src="@/assets/icons/svg-icons/volume-white-icon.svg" alt="">
+                    <input id="volume-value" @input="updateVolume" v-model="volumeValue" type="range" min="0" max="100"
+                        class="hidden ml-4 w-[132px] h-[29.3] bg-black outline-none">
                 </button>
                 <div class="short-video-info flex flex-col absolute bottom-7 left-4 text-white">
                     <div class="flex flex-row justify-center items-center gap-x-3">

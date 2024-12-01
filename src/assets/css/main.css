@@ -1513,3 +1513,8 @@ video {
     border-bottom: 3px solid black;
     color: black;
 }
+
+
+.volume-button:hover #volume-value {
+    display: flex;
+}
