@@ -1702,12 +1702,17 @@ vue-router@^4.5.0:
   dependencies:
     "@vue/devtools-api" "^6.6.4"
 
+vue-social-sharing@^4.0.0-alpha4:
+  version "4.0.0-alpha4"
+  resolved "https://registry.npmjs.org/vue-social-sharing/-/vue-social-sharing-4.0.0-alpha4.tgz"
+  integrity sha512-hMbgpZkY5aRAiznSB/sgzdMVgdSbkmIHEaELX7pUbuUd6KS1Z/GAi7a/q0Qn+GFn0+6qMMvwyp3ZOE0+WYPQ1w==
+
 vue-spinner@^1.0.4:
   version "1.0.4"
   resolved "https://registry.npmjs.org/vue-spinner/-/vue-spinner-1.0.4.tgz"
   integrity sha512-GNG2F+8BLX201JT/jUX+84Gsi3ZteVQwt9K7mues3ts9FcQ95dGn7uu6a5ndSxdYYUEzfh1KngZiOE0u+l4itA==
 
-vue@^3.0.0, vue@^3.2.0, vue@^3.2.25, vue@^3.3.0, vue@^3.5.12, vue@^3.5.13, vue@3.5.13:
+vue@^3.0.0, vue@^3.2.0, vue@^3.2.25, vue@^3.3.0, vue@^3.3.11, vue@^3.5.12, vue@^3.5.13, vue@3.5.13:
   version "3.5.13"
   resolved "https://registry.npmjs.org/vue/-/vue-3.5.13.tgz"
   integrity sha512-wmeiSMxkZCSc+PM2w2VRsOYAZC8GdipNFRTsLSfodVqI9mbejKeXEGr8SckuLnrQPGe3oJN5c3K0vpoU9q/wCQ==
@@ -1717,6 +1722,13 @@ vue@^3.0.0, vue@^3.2.0, vue@^3.2.25, vue@^3.3.0, vue@^3.5.12, vue@^3.5.13, vue@3
     "@vue/runtime-dom" "3.5.13"
     "@vue/server-renderer" "3.5.13"
     "@vue/shared" "3.5.13"
+
+vue3-social-sharing@^1.1.2:
+  version "1.1.2"
+  resolved "https://registry.npmjs.org/vue3-social-sharing/-/vue3-social-sharing-1.1.2.tgz"
+  integrity sha512-rTt0EZopiPH17jW561WdvFEoC91zbBFwHTwGqxT9kmEKLRpIk/UH5zixm33RgYR2iI24qeufXlsCIjjQJ+BIeg==
+  dependencies:
+    vue "^3.3.11"
 
 vuetify@^3.7.4:
   version "3.7.4"

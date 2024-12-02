@@ -1546,3 +1546,9 @@ input[type="range"]::-moz-range-progress {
 input[type="range"]::-moz-range-thumb {
     border: none;
 }
+
+
+:fullscreen #main-video {
+    width: 300px !important;
+    height: 300px important;
+}

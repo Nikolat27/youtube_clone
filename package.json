@@ -13,7 +13,9 @@
     "@vueuse/core": "^12.0.0",
     "vue": "^3.5.12",
     "vue-router": "^4.5.0",
+    "vue-social-sharing": "^4.0.0-alpha4",
     "vue-spinner": "^1.0.4",
+    "vue3-social-sharing": "^1.1.2",
     "vuetify": "^3.7.4"
   },
   "devDependencies": {
