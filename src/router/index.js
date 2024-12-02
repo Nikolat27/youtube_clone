@@ -1,5 +1,4 @@
 import { createWebHistory, createRouter } from "vue-router";
-
 import HomePageView from "@/views/HomePageView.vue";
 import VideoDetail from "@/views/VideoDetail.vue";
 import SubscriptionsView from "@/views/SubscriptionsView.vue";
@@ -8,13 +7,27 @@ import ChannelPageView from "@/views/ChannelPageView.vue";
 import NotFoundView from "@/views/NotFoundView.vue";
 import TestView from "@/views/TestView.vue";
 
+// Children routes
+import Home from "@/views/channelViews/Home.vue";
+import Video from "@/views/channelViews/Videos.vue";
+import Shorts from "@/views/channelViews/Shorts.vue";
+import Playlists from "@/views/channelViews/Playlists.vue";
+import Community from "@/views/channelViews/Community.vue";
 
 const routes = [
     { path: "/", name: "home", component: HomePageView, },
     { path: "/video/:id", name: "video_detail", component: VideoDetail, },
     { path: "/subscriptions", name: "subscriptions", component: SubscriptionsView, },
     { path: "/short/:id", name: "short_detail", component: ShortsView, },
-    { path: "/channel-page", name: "channel_detail", component: ChannelPageView, },
+    {
+        path: "/channel-page", name: "channel_detail", component: ChannelPageView, children: [
+            { path: '', name:'channel-home', component: Home, },
+            { path: 'videos', name:'videos', component: Video, },
+            { path: 'shorts', name:'shorts', component: Shorts, },
+            { path: 'playlists',name:'playlists', component: Playlists, },
+            { path: 'community', name:'community', component: Community, },
+        ]
+    },
     { path: "/test", name: "test", component: TestView, },
     { path: '/:pathMatch(.*)*', name: 'NotFound', component: NotFoundView },
 ]
