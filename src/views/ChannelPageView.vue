@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive } from 'vue';
+import { ref, reactive, onMounted } from 'vue';
 
 
 const isChannelSubscribed = ref(false)
@@ -35,27 +35,46 @@ const pinnedVideo = reactive({
 
 
 const regularVideos = []
-for (let i = 0; i < 5; i++) {
+for (let i = 0; i < 15; i++) {
     regularVideos.push({ title: `Regular Videos ${i + 1}`, created_at: `${i + 1} days ago` })
 }
 
 
 const popularVideos = []
-for (let i = 0; i < 5; i++) {
+for (let i = 0; i < 15; i++) {
     popularVideos.push({ title: `Popular Videos ${i + 1}`, created_at: `${i + 1} days ago` })
 }
 
 
 const famousPlaylistVideos1 = []
-for (let i = 0; i < 5; i++) {
+for (let i = 0; i < 15; i++) {
     famousPlaylistVideos1.push({ title: `Famous Playlist Videos 1 ${i + 1}`, created_at: `${i + 1} days ago` })
 }
 
 
 const famousPlaylistVideos2 = []
-for (let i = 0; i < 5; i++) {
+for (let i = 0; i < 15; i++) {
     famousPlaylistVideos2.push({ title: `Famous Playlist Videos 2 ${i + 1}`, created_at: `${i + 1} days ago` })
 }
+
+const updateSliderButtons = (container_id) => {
+    const sliderContainer = document.getElementById(container_id)
+    const prevButton = document.querySelector(`#${container_id}-prev-btn`)
+    const nextButton = document.querySelector(`#${container_id}-next-btn`)
+    const nextSlideCondition = sliderContainer.scrollLeft >= sliderContainer.scrollWidth - sliderContainer.clientWidth - 100
+
+    prevButton.style.visibility = sliderContainer.scrollLeft <= 0 ? "hidden" : "visible";
+    nextButton.style.visibility = nextSlideCondition ? "hidden" : "visible";
+}
+
+const regularVideosSliding = (container_id, direction) => {
+    let slideAmount = 300;
+    const sliderContainer = document.getElementById(container_id)
+    sliderContainer.scrollLeft += direction === "prev" ? -slideAmount : slideAmount
+    console.log(sliderContainer.scrollLeft)
+    updateSliderButtons(container_id);
+}
+
 </script>
 <template>
     <div class="channel-container w-[1070px] h-100 absolute left-[345px] top-16">
@@ -150,12 +169,13 @@ for (let i = 0; i < 5; i++) {
                 </div>
                 <div class="flex flex-col mt-4 relative border-b-[1px]">
                     <span class="font-bold text-xl mb-4">Videos</span>
-                    <button id="prevButton1"
-                        class="w-9 h-9 absolute top-[91px] left-[-20px] z-50 shadow-lg bg-white hover:bg-[#e5e5e5] rounded-full">
+                    <button @click="regularVideosSliding('slider1', 'prev')" id="slider1-prev-btn"
+                        class="w-9 h-9 absolute top-[91px] left-[-20px] z-20 shadow-lg bg-white hover:bg-[#e5e5e5] rounded-full">
                         <img class="w-[100%] h-[100%]" src="@/assets/icons/svg-icons/thin-chevron-round-left-icon.svg"
                             alt="">
                     </button>
-                    <div id="slider1" class="flex flex-row h-[204px] max-w-[1284px] gap-x-1 overflow-hidden">
+                    <div id="slider1" class="flex flex-row h-[204px] max-w-[1284px] gap-x-1 overflow-x-auto"
+                        style="scrollbar-width: thin;">
                         <div v-for="(video, index) in regularVideos" :key="index" class="grow-0 shrink-0 basis-auto">
                             <a href="" class="flex flex-col gap-y-2">
                                 <img class="w-[210px] h-[118px] rounded-lg" src="@/assets/img/Django.png" alt="">
@@ -167,7 +187,7 @@ for (let i = 0; i < 5; i++) {
                             </a>
                         </div>
                     </div>
-                    <button id="nextButton1"
+                    <button @click="regularVideosSliding('slider1', 'next')" id="slider1-next-btn"
                         class="w-9 h-9 absolute top-[91px] right-[-18px] shadow-lg bg-white hover:bg-[#e5e5e5] rounded-full">
                         <img class="w-[100%] h-[100%]" src="@/assets/icons/svg-icons/thin-chevron-round-right-icon.svg"
                             alt="">
@@ -175,8 +195,8 @@ for (let i = 0; i < 5; i++) {
                 </div>
                 <div class="flex flex-col mt-4 relative border-b-[1px]">
                     <span class="font-bold text-xl mb-4">Popular Videos</span>
-                    <button id="prevButton2"
-                        class="w-9 h-9 absolute top-[91px] left-[-20px] z-50 shadow-lg bg-white hover:bg-[#e5e5e5] rounded-full">
+                    <button @click="regularVideosSliding('slider2', 'prev')" id="slider2-prev-btn"
+                        class="w-9 h-9 absolute top-[91px] left-[-20px] z-2 shadow-lg bg-white hover:bg-[#e5e5e5] rounded-full">
                         <img class="w-[100%] h-[100%]" src="@/assets/icons/svg-icons/thin-chevron-round-left-icon.svg"
                             alt="">
                     </button>
@@ -192,7 +212,7 @@ for (let i = 0; i < 5; i++) {
                             </a>
                         </div>
                     </div>
-                    <button id="nextButton2"
+                    <button @click="regularVideosSliding('slider2', 'next')" id="slider2-next-btn"
                         class="w-9 h-9 absolute top-[91px] right-[-18px] shadow-lg bg-white hover:bg-[#e5e5e5] rounded-full">
                         <img class="w-[100%] h-[100%]" src="@/assets/icons/svg-icons/thin-chevron-round-right-icon.svg"
                             alt="">
@@ -205,8 +225,8 @@ for (let i = 0; i < 5; i++) {
                         <img class="w-4 h-4" src="@/assets/icons/svg-icons/play-icon.svg" alt="">
                         <span class="font-medium text-sm">Play all</span>
                     </a>
-                    <button id="prevButton3"
-                        class="w-9 h-9 absolute top-[122px] left-[-20px] z-50 shadow-lg bg-white hover:bg-[#e5e5e5] rounded-full">
+                    <button @click="regularVideosSliding('slider3', 'prev')" id="slider3-prev-btn"
+                        class="w-9 h-9 absolute top-[122px] left-[-20px] z-20 shadow-lg bg-white hover:bg-[#e5e5e5] rounded-full">
                         <img class="w-[100%] h-[100%]" src="@/assets/icons/svg-icons/thin-chevron-round-left-icon.svg"
                             alt="">
                     </button>
@@ -223,7 +243,7 @@ for (let i = 0; i < 5; i++) {
                             </a>
                         </div>
                     </div>
-                    <button id="nextButton3"
+                    <button @click="regularVideosSliding('slider3', 'next')" id="slider3-next-btn"
                         class="w-9 h-9 absolute top-[122px] right-[-18px] shadow-lg bg-white hover:bg-[#e5e5e5] rounded-full">
                         <img class="w-[100%] h-[100%]" src="@/assets/icons/svg-icons/thin-chevron-round-right-icon.svg"
                             alt="">
@@ -236,7 +256,7 @@ for (let i = 0; i < 5; i++) {
                         <img class="w-4 h-4" src="@/assets/icons/svg-icons/play-icon.svg" alt="">
                         <span class="font-medium text-sm">Play all</span>
                     </a>
-                    <button id="prevButton4"
+                    <button @click="regularVideosSliding('slider4', 'prev')" id="slider4-prev-btn"
                         class="w-9 h-9 absolute top-[122px] left-[-20px] z-50 shadow-lg bg-white hover:bg-[#e5e5e5] rounded-full">
                         <img class="w-[100%] h-[100%]" src="@/assets/icons/svg-icons/thin-chevron-round-left-icon.svg"
                             alt="">
@@ -254,7 +274,7 @@ for (let i = 0; i < 5; i++) {
                             </a>
                         </div>
                     </div>
-                    <button id="nextButton4"
+                    <button @click="regularVideosSliding('slider4', 'next')" id="slider4-next-btn"
                         class="w-9 h-9 absolute top-[122px] right-[-18px] shadow-lg bg-white hover:bg-[#e5e5e5] rounded-full">
                         <img class="w-[100%] h-[100%]" src="@/assets/icons/svg-icons/thin-chevron-round-right-icon.svg"
                             alt="">

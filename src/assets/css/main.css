@@ -6,6 +6,10 @@ html {
     overflow-x: hidden;
 }
 
+p, span, a, img {
+    user-select: none;
+}
+
 button {
     outline: none !important;
 }
@@ -1323,7 +1327,8 @@ a {
 .short-video-sharing-tab {
     opacity: 0;
     transition: opacity 0.3s ease;
-    pointer-events: none; /* Prevent pointer events when invisible */
+    pointer-events: none;
+    /* Prevent pointer events when invisible */
 }
 
 video {
@@ -1332,7 +1337,8 @@ video {
 
 .short-video-sharing-tab.visible {
     opacity: 1;
-    pointer-events: auto; /* Enable pointer events when visible */
+    pointer-events: auto;
+    /* Enable pointer events when visible */
 }
 
 .video-duration {
@@ -1532,7 +1538,7 @@ input[type="range"] {
 input[type="range"]::-webkit-slider-runnable-track {
     background: white;
 }
-  
+
 /******** Firefox ********/
 input[type="range"]::-moz-range-track {
     border-radius: 20%;
@@ -1551,4 +1557,8 @@ input[type="range"]::-moz-range-thumb {
 :fullscreen #main-video {
     width: 300px !important;
     height: 300px important;
+}
+
+#slider1, #slider2, #slider3, #slider4 {
+    scroll-behavior: smooth;
 }
