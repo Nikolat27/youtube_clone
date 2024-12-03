@@ -96,7 +96,7 @@ const toggleDescription = () => isDescriptionOpen.value = !isDescriptionOpen.val
                 </div>
             </div>
         </div>
-        <div id="content-container" class="min-h-[1000px]">
+        <div id="content-container" class="mb-20">
             <router-view></router-view>
         </div>
     </div>
