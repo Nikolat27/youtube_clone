@@ -15,6 +15,7 @@ import Playlists from "@/views/channelViews/Playlists.vue";
 import Community from "@/views/channelViews/Community.vue";
 import Search from "@/views/channelViews/Search.vue";
 import AuthView from "@/views/AuthView.vue";
+import HistoryView from "@/views/HistoryView.vue";
 
 const routes = [
     { path: "/", name: "home", component: HomePageView, },
@@ -22,6 +23,7 @@ const routes = [
     { path: "/subscriptions", name: "subscriptions", component: SubscriptionsView, },
     { path: "/short/:id", name: "short_detail", component: ShortsView, },
     { path: "/auth", name: "auth", component: AuthView, },
+    { path: "/history", name: "history", component: HistoryView, },
     {
         path: "/channel-page", name: "channel_detail", component: ChannelPageView, children: [
             { path: '', name: 'channel-home', component: Home, },

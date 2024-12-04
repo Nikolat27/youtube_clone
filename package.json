@@ -9,9 +9,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@primevue/themes": "^4.2.4",
     "@vueuse/components": "^12.0.0",
     "@vueuse/core": "^12.0.0",
+    "primevue": "^4.2.4",
     "vue": "^3.5.12",
+    "vue-confirm-dialog": "^1.1.0",
     "vue-router": "^4.5.0",
     "vue-social-sharing": "^4.0.0-alpha4",
     "vue-spinner": "^1.0.4",
