@@ -13,6 +13,7 @@ import Video from "@/views/channelViews/Videos.vue";
 import Shorts from "@/views/channelViews/Shorts.vue";
 import Playlists from "@/views/channelViews/Playlists.vue";
 import Community from "@/views/channelViews/Community.vue";
+import Search from "@/views/channelViews/Search.vue";
 
 const routes = [
     { path: "/", name: "home", component: HomePageView, },
@@ -26,6 +27,7 @@ const routes = [
             { path: 'shorts', name:'shorts', component: Shorts, },
             { path: 'playlists',name:'playlists', component: Playlists, },
             { path: 'community', name:'community', component: Community, },
+            { path: 'search', name:'search', component: Search, },
         ]
     },
     { path: "/test", name: "test", component: TestView, },

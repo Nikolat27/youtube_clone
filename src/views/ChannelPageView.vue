@@ -1,11 +1,11 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 
-
-const isChannelSubscribed = ref(false)
-
+const router = useRouter()
 
 // Handle Channel`s options
+const isChannelSubscribed = ref(false)
 const isChannelOptionsOpen = ref(false)
 const toggleChannelOptions = () => isChannelOptionsOpen.value = !isChannelOptionsOpen.value
 
@@ -13,6 +13,19 @@ const toggleChannelOptions = () => isChannelOptionsOpen.value = !isChannelOption
 // Handle Search Bar
 const isSearchBarOpen = ref(false)
 const toggleSearchBar = () => isSearchBarOpen.value = !isSearchBarOpen.value
+const handleClickOutside = (event) => {
+    const searchInputBar = document.getElementById("search-input")
+    const searchButton = document.getElementById("search-button")
+    if (searchInputBar && searchButton && !searchInputBar.contains(event.target) && !searchButton.contains(event.target)) {
+        isSearchBarOpen.value = !isSearchBarOpen.value
+    }
+}
+
+const submitSearch = (event) => {
+    if (event.key !== "Enter") return;
+    const query = event.target.value;
+    router.push({ path: '/channel-page/search', query: { 'query': query } })
+}
 
 
 // Handle Channel Description
@@ -21,6 +34,12 @@ const truncateChannelDescription = (description) => {
     return isDescriptionOpen.value ? description : description.substring(0, 40) + '...'
 }
 const toggleDescription = () => isDescriptionOpen.value = !isDescriptionOpen.value;
+
+
+onMounted(() => {
+    document.addEventListener('click', handleClickOutside);
+});
+
 </script>
 <template>
     <div class="channel-container w-[1070px] h-100 absolute left-[345px] top-16">
@@ -42,7 +61,6 @@ const toggleDescription = () => isDescriptionOpen.value = !isDescriptionOpen.val
                         aliquam necessitatibus, illo modi dolore perspiciatis fugit hic excepturi?`) }}<span
                             @click="toggleDescription" class="text-black font-bold cursor-pointer ml-2">{{
                                 isDescriptionOpen ? "Show Less" : "Show More" }}</span></span>
-
                 </div>
                 <button v-if="isChannelSubscribed" @click="toggleChannelOptions" class="w-[150px] h-[36px] rounded-2xl bg-[#f2f2f2] hover:bg-[#e5e5e5]
                  flex justify-center items-center">
@@ -88,10 +106,12 @@ const toggleDescription = () => isDescriptionOpen.value = !isDescriptionOpen.val
                 <router-link to="/channel-page/community"
                     :class="[$route.name == 'community' ? 'active' : '', 'tab', 'w-[73px]']">Community</router-link>
                 <div class="flex flex-row h-[28px] gap-x-6 items-center">
-                    <button @click="toggleSearchBar" class="mr-0 w-10 h-10 flex justify-center items-center">
+                    <button id="search-button" @click="toggleSearchBar"
+                        class="mr-0 w-10 h-10 flex justify-center items-center">
                         <img class="w-5 h-5" src="@/assets/icons/svg-icons/search-line-icon.svg" alt="">
                     </button>
-                    <input v-if="isSearchBarOpen" name="query" class="flex placeholder:font-normal text-sm w-[174px] ml-[-15px]
+                    <input @keydown="submitSearch" autocomplete="off" id="search-input" v-if="isSearchBarOpen"
+                        name="query" class="flex placeholder:font-normal text-sm w-[174px] ml-[-15px]
                      border-b-2 border-b-black outline-none pb-1" type="text" placeholder="Search">
                 </div>
             </div>
