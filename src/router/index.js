@@ -14,20 +14,22 @@ import Shorts from "@/views/channelViews/Shorts.vue";
 import Playlists from "@/views/channelViews/Playlists.vue";
 import Community from "@/views/channelViews/Community.vue";
 import Search from "@/views/channelViews/Search.vue";
+import AuthView from "@/views/AuthView.vue";
 
 const routes = [
     { path: "/", name: "home", component: HomePageView, },
     { path: "/video/:id", name: "video_detail", component: VideoDetail, },
     { path: "/subscriptions", name: "subscriptions", component: SubscriptionsView, },
     { path: "/short/:id", name: "short_detail", component: ShortsView, },
+    { path: "/auth", name: "auth", component: AuthView, },
     {
         path: "/channel-page", name: "channel_detail", component: ChannelPageView, children: [
-            { path: '', name:'channel-home', component: Home, },
-            { path: 'videos', name:'videos', component: Video, },
-            { path: 'shorts', name:'shorts', component: Shorts, },
-            { path: 'playlists',name:'playlists', component: Playlists, },
-            { path: 'community', name:'community', component: Community, },
-            { path: 'search', name:'search', component: Search, },
+            { path: '', name: 'channel-home', component: Home, },
+            { path: 'videos', name: 'videos', component: Video, },
+            { path: 'shorts', name: 'shorts', component: Shorts, },
+            { path: 'playlists', name: 'playlists', component: Playlists, },
+            { path: 'community', name: 'community', component: Community, },
+            { path: 'search', name: 'search', component: Search, },
         ]
     },
     { path: "/test", name: "test", component: TestView, },

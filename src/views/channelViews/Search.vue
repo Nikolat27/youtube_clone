@@ -1,5 +1,9 @@
 <script setup>
-import { ref, reactive } from 'vue';
+import { ref, reactive, watch } from 'vue';
+import { useRoute } from 'vue-router';
+
+const router = useRoute();
+
 
 // Pinned Video
 const pinnedVideo = reactive({
@@ -26,6 +30,10 @@ const resetImage = (video) => {
     clearTimeout(hoverTimeout);
     video.currentSrc = video.thumbnail;
 };
+
+watch(() => router.query.query, () => {
+
+})
 </script>
 
 <template>
