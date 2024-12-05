@@ -1,7 +1,7 @@
 <script setup>
-import { ref, reactive, onMounted, watch } from 'vue';
+import { ref, reactive, onMounted, watch, computed } from 'vue';
+import { useRoute } from 'vue-router';
 import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
-import { useRoute, useRouter } from 'vue-router';
 
 const router = useRoute();
 
@@ -29,6 +29,31 @@ const toggleShortVideoOptions = (short_id) => {
 let page = ref(1)
 let isLoading = ref(false)
 
+// Generating Test videos for 'all, videos and shorts'
+const all_videos = reactive([])
+const generateTestAllVideos = () => {
+    for (let i = 1; i <= 20; i++) {
+        if (i % 2 == 0) {
+            all_videos.push({ id: i, title: `${i} Regular Video title` })
+        } else {
+            all_videos.push({ id: i, title: `${i} Short Video title` })
+        }
+    }
+}
+
+const videos = reactive([])
+const generateTestVideos = () => {
+    for (let i = 0; i <= 10; i++) {
+        videos.push({ id: i + 1, title: `${i + 1} Video title` })
+    }
+}
+
+// const generateTestVideos = (page_number) => {
+//     for (let i = (page_number * 10 - 10); i <= (page_number * 9); i++) {
+//         videos.push({ id: i + 1, title: `${i + 1} Video title` })
+//     }
+// }
+
 const shorts = reactive([])
 const generateTestShorts = () => {
     for (let i = 1; i <= 12; i++) {
@@ -36,13 +61,6 @@ const generateTestShorts = () => {
     }
 }
 
-
-const videos = reactive([])
-const generateTestVideos = (page_number) => {
-    for (let i = (page_number * 10 - 10); i <= (page_number * 9); i++) {
-        videos.push({ id: i + 1, title: `${i + 1} Video title` })
-    }
-}
 
 const scrollMore = () => {
     isLoading.value = true
@@ -63,13 +81,39 @@ const checkScroll = () => {
 
 // Handle filtering
 watch(() => router.query.type, () => {
-    console.log(router.query.type);
+    switch (router.query.type) {
+        case 'all':
+            generateTestAllVideos();
+            break;
+        case 'videos':
+            generateTestVideos();
+            break;
+        case 'shorts':
+            generateTestShorts();
+            break;
+        default:
+            generateTestAllVideos();
+            break;
+    }
 })
 
 onMounted(() => {
     document.addEventListener("scroll", checkScroll)
-    generateTestVideos(page.value)
-    generateTestShorts()
+
+    switch (router.query.type) {
+        case 'all':
+            generateTestAllVideos();
+            break;
+        case 'videos':
+            generateTestVideos();
+            break;
+        case 'shorts':
+            generateTestShorts();
+            break;
+        default:
+            generateTestAllVideos();
+            break;
+    }
 })
 </script>
 
@@ -101,14 +145,56 @@ onMounted(() => {
                         :class="[!$route.query.type || $route.query.type === 'all' ? 'active' : '']"
                         class="w-[40px] h-[32px] rounded-xl font-medium text-sm bg-[#f2f2f2] hover:bg-[#e5e5e5]">All</button></router-link>
                 <router-link to="/playlist?type=videos"><button
-                        :class="[!$route.query.type || $route.query.type === 'videos' ? 'active' : '']"
+                        :class="[$route.query.type === 'videos' ? 'active' : '']"
                         class="w-[67.5px] h-[32px] rounded-xl font-medium text-sm bg-[#f2f2f2] hover:bg-[#e5e5e5]">Videos</button></router-link>
                 <router-link to="/playlist?type=shorts"><button
-                        :class="[!$route.query.type || $route.query.type === 'shorts' ? 'active' : '']"
+                        :class="[$route.query.type === 'shorts' ? 'active' : '']"
                         class="w-[67.5px] h-[32px] rounded-xl font-medium text-sm bg-[#f2f2f2] hover:bg-[#e5e5e5]">Shorts</button></router-link>
             </div>
 
-            <!-- <div id="all" class="content-section">
+            <div v-if="!$route.query.type || $route.query.type === 'all'" id="all" class="content-section">
+                <div v-for="video in all_videos" :key="video.id" class="z-auto pl-4 h-[129px] w-[827px] flex flex-row items-center
+                 ml-[-36px] mt-4 gap-x-4 hover:bg-[#f2f2f2] hover:z-auto rounded-lg relative">
+                    <a href="#" class="w-full h-full flex items-center">
+                        <p class="text-[#796966] font-medium text-sm justify-self-start ml-[-5px]">{{ video.id }}</p>
+                        <img class="w-[200px] h-[113px] rounded-lg ml-4" src="@/assets/img/Django.png" alt="">
+                        <div class="flex flex-col mt-[-67px] relative ml-4">
+                            <p class="font-medium text-base mt-2 mb-2">{{ video.title }}</p>
+                            <div class="flex flex-row text-[#898f90] text-xs font-normal">
+                                <p class="hover:text-[#182c61]">Channel name .&nbsp;</p>
+                                <p class="hover:text-[#182c61]">25K views .&nbsp;</p>
+                                <p class="hover:text-[#182c61]">2 days ago</p>
+                            </div>
+                        </div>
+                    </a>
+                    <button @click="toggleVideoOptions(video.id)" class="absolute right-0 top-1/2 transform -translate-y-1/2 
+                        w-10 h-10 rounded-full bg-transparent hover:bg-[#e5e5e5] flex justify-center items-center">
+                        <img class="w-4 h-4" src="@/assets/icons/svg-icons/kebab-menu.svg" alt="">
+                    </button>
+                    <div v-if="isVideoOptionsOpen.includes(video.id)"
+                        class="z-[100] bg-white rounded-lg flex flex-col w-[256.6px] h-[190px] absolute top-[85px] right-0 text-sm font-normal shadow-xl justify-center items-start">
+                        <a href="#" class="flex flex-row h-[36px] gap-x-2 items-center hover:bg-[#e5e5e5] w-[256px]">
+                            <img class="w-6 h-6 ml-4" src="@/assets/icons/svg-icons/clock-line-icon.svg" alt="">
+                            <p>Save to watch later</p>
+                        </a>
+                        <a href="#" class="flex flex-row h-[36px] gap-x-2 items-center hover:bg-[#e5e5e5] w-[256px]">
+                            <img class="w-6 h-6 ml-4" src="@/assets/icons/svg-icons/save-btn.svg" alt="">
+                            <p>Save to playlist</p>
+                        </a>
+                        <a href="#" class="flex flex-row h-[36px] gap-x-2 items-center hover:bg-[#e5e5e5] w-[256px]">
+                            <img class="w-6 h-6 ml-4" src="@/assets/icons/svg-icons/share-btn.svg" alt="">
+                            <p>Share</p>
+                        </a>
+                        <hr style="width: 100%; border: 1px solid #ededed; margin: 10px 0;">
+                        <a href="#" class="flex flex-row h-[36px] gap-x-2 items-center hover:bg-[#e5e5e5] w-[256px]">
+                            <img class="w-6 h-6 ml-4" src="@/assets/icons/svg-icons/trash-can-icon.svg" alt="">
+                            <p>Remove from Liked videos</p>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div v-if="$route.query.type === 'videos'" id="videos">
                 <div v-for="video in videos" :key="video.id" class="z-auto pl-4 h-[129px] w-[827px] flex flex-row items-center
                  ml-[-36px] mt-4 gap-x-4 hover:bg-[#f2f2f2] hover:z-auto rounded-lg relative">
                     <a href="#" class="w-full h-full flex items-center">
@@ -148,11 +234,10 @@ onMounted(() => {
                         </a>
                     </div>
                 </div>
-            </div> -->
+            </div>
 
-            <div id="shorts" class="mt-6">
-                <div id="shorts-container" class="flex flex-row flex-wrap gap-x-2 gap-y-8 min-h-[410px]"
-                    style="scrollbar-width: thin;">
+            <div v-if="$route.query.type === 'shorts'" id="shorts" class="mt-6">
+                <div id="shorts-container" class="flex flex-row flex-wrap gap-x-2 gap-y-8 min-h-[410px]">
                     <div v-for="short in shorts" :key="short.id"
                         class="short-video flex flex-col relative max-w-[200px] h-[400px] flex-grow-0 flex-shrink-0 basis-auto">
                         <a href="#" class="w-full">
@@ -188,51 +273,10 @@ onMounted(() => {
                     </div>
                 </div>
             </div>
+
             <div v-if="isLoading" class="my-20 mx-auto flex justify-center items-center">
                 <PulseLoader color="red"></PulseLoader>
             </div>
-
-            <!-- <div id="videos" class="content-section flex">
-                <div class="pl-4 h-[129px] w-[827px] flex flex-row items-center ml-[-36px] mt-4 gap-x-4
-                 hover:bg-[#f2f2f2] rounded-lg relative">
-                    <a href="https://www.google.com" class="w-full h-full flex items-center">
-                        <p class="text-[#796966] font-medium text-sm justify-self-start ml-[-5px]">1</p>
-                        <img class="w-[200px] h-[113px] rounded-lg ml-4" src="@/assets/img/Django.png" alt="">
-                        <div class="flex flex-col mt-[-67px] relative ml-4">
-                            <p class="font-medium text-base mt-2 mb-2">Video title</p>
-                            <div class="flex flex-row text-[#898f90] text-xs font-normal">
-                                <p class="hover:text-[#182c61]">Channel name .&nbsp;</p>
-                                <p class="hover:text-[#182c61]">25K views .&nbsp;</p>
-                                <p class="hover:text-[#182c61]">2 days ago</p>
-                            </div>
-                        </div>
-                    </a>
-                    <button data-target="listbox-1"
-                        class="liked-videos-listbox-toggle absolute right-0 top-1/2 transform -translate-y-1/2 w-10 h-10 rounded-full bg-transparent hover:bg-[#e5e5e5] flex justify-center items-center">
-                        <img class="w-4 h-4" src="@/assets/icons/svg-icons/kebab-menu.svg" alt="">
-                    </button>
-                    <div id="listbox-1"
-                        class="z-30 bg-white rounded-lg liked-videos-listbox hidden flex-col w-[256.6px] h-[190px] absolute top-[85px] right-0 text-sm font-normal shadow-xl justify-center items-start">
-                        <a href="#" class="flex flex-row h-[36px] gap-x-2 items-center hover:bg-[#e5e5e5] w-[256px]">
-                            <img class="w-6 h-6 ml-4" src="@/assets/icons/svg-icons/clock-line-icon.svg" alt="">
-                            <p>Save to watch later</p>
-                        </a>
-                        <a href="#" class="flex flex-row h-[36px] gap-x-2 items-center hover:bg-[#e5e5e5] w-[256px]">
-                            <img class="w-6 h-6 ml-4" src="@/assets/icons/svg-icons/save-btn.svg" alt="">
-                            <p>Save to playlist</p>
-                        </a>
-                        <a href="#" class="flex flex-row h-[36px] gap-x-2 items-center hover:bg-[#e5e5e5] w-[256px]">
-                            <img class="w-6 h-6 ml-4" src="@/assets/icons/svg-icons/share-btn.svg" alt="">
-                            <p>Share</p>
-                        </a>
-                        <hr style="width: 100%; border: 1px solid #ededed; margin: 10px 0;">
-                        <a href="#" class="flex flex-row h-[36px] gap-x-2 items-center hover:bg-[#e5e5e5] w-[256px]">
-                            <img class="w-6 h-6 ml-4" src="@/assets/icons/svg-icons/trash-can-icon.svg" alt="">
-                            <p>Remove from Liked videos</p>
-                        </a>
-                    </div>
-                </div>
-            </div> -->
         </div>
     </div>
 </template>
