@@ -4,6 +4,8 @@ import VideoDetail from "@/views/VideoDetail.vue";
 import SubscriptionsView from "@/views/SubscriptionsView.vue";
 import ShortsView from "@/views/ShortsView.vue";
 import ChannelPageView from "@/views/ChannelPageView.vue";
+import AuthView from "@/views/AuthView.vue";
+import HistoryView from "@/views/HistoryView.vue";
 import NotFoundView from "@/views/NotFoundView.vue";
 import TestView from "@/views/TestView.vue";
 
@@ -14,8 +16,7 @@ import Shorts from "@/views/channelViews/Shorts.vue";
 import Playlists from "@/views/channelViews/Playlists.vue";
 import Community from "@/views/channelViews/Community.vue";
 import Search from "@/views/channelViews/Search.vue";
-import AuthView from "@/views/AuthView.vue";
-import HistoryView from "@/views/HistoryView.vue";
+import PlaylistVideosView from "@/views/PlaylistVideosView.vue";
 
 const routes = [
     { path: "/", name: "home", component: HomePageView, },
@@ -24,6 +25,7 @@ const routes = [
     { path: "/short/:id", name: "short_detail", component: ShortsView, },
     { path: "/auth", name: "auth", component: AuthView, },
     { path: "/history", name: "history", component: HistoryView, },
+    { path: "/playlist", name: "playlist-videos", component: PlaylistVideosView, },
     {
         path: "/channel-page", name: "channel_detail", component: ChannelPageView, children: [
             { path: '', name: 'channel-home', component: Home, },

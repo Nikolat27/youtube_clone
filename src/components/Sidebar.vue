@@ -27,17 +27,16 @@ const toggleSubscriptionChannels = () => {
         </div>
 
         <div class="side-bar-links">
-            <p><span style="font-family: Roboto, Arial; font-size: 16px; font-weight: bold;">You ></span></p>
+            <p class="text-[16px] font-medium" style="margin-left: 0;">You</p>
+            <img class="rotate-90" style="width: 14px; height: 14px; margin-left: 8px;" src="@/assets/icons/svg-icons/line-angle-up-icon.svg" alt="">
         </div>
         <div class="side-bar-links">
             <img src="@/assets/icons/svg-icons/clockwise-icon.svg" alt="">
             <p>History</p>
         </div>
         <div class="side-bar-links">
-            <a class="side-bar-links-link">
-                <img src="@/assets/icons/svg-icons/playlist-videos-icon.svg" alt="">
-                <p>Playlists</p>
-            </a>
+            <img src="@/assets/icons/svg-icons/playlist-videos-icon.svg" alt="">
+            <p>Playlists</p>
         </div>
         <div class="side-bar-links">
             <img src="@/assets/icons/svg-icons/youtube-color-icon.svg" alt="">

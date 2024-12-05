@@ -189,8 +189,7 @@ body {
     justify-content: center;
     background-color: white;
     left: 10px;
-    bottom: 0;
-    top: 60px;
+    top: 74px;
     position: fixed;
     width: 216px;
     flex-direction: column;
@@ -203,7 +202,9 @@ body {
 }
 
 .side-bar-div p {
-    user-select: none !important;
+    font-family: "Roboto";
+    user-select: none;
+    margin-left: 28px;
 }
 
 .side-bar-div:hover {
@@ -233,15 +234,9 @@ body {
     display: none;
 }
 
-.side-bar-links-link {
-    display: flex;
-    align-items: center;
-    text-decoration: none;
-    color: black;
-}
-
 .side-bar-links {
     display: flex;
+    flex-direction: row;
     align-items: center;
     justify-content: flex-start;
     width: 204px;
@@ -250,23 +245,11 @@ body {
     font-family: Roboto, Arial;
     font-size: 14px;
     padding-left: 10px;
+    cursor: pointer;
 }
 
 .side-bar-links:hover {
     background-color: #f2f2f2;
-    cursor: pointer;
-    border-radius: 10px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1)
-}
-
-.side-bar-links:hover img {
-    width: 28px;
-    height: 28px;
-}
-
-.side-bar-links button:hover {
-    background-color: #f2f2f2;
-    cursor: pointer;
     border-radius: 10px;
 }
 
@@ -277,9 +260,8 @@ body {
 }
 
 .side-bar-div img {
-    width: 21px;
-    height: 21px;
-    margin-right: 10px;
+    width: 24px;
+    height: 24px;
 }
 
 #show-more-btn {
