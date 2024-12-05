@@ -10,6 +10,10 @@ p, span, a, img {
     user-select: none;
 }
 
+p, button, span, a {
+    font-family: 'Roboto' !important;
+}
+
 button {
     outline: none !important;
 }

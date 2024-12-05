@@ -52,7 +52,7 @@ const toggleSubscriptionChannels = () => {
         </div>
 
         <div class="side-bar-links">
-            <p>Subscriptions</p>
+            <p style="margin-left: 0;">Subscriptions</p>
         </div>
 
         <transition-group name="slide-down">
@@ -64,7 +64,7 @@ const toggleSubscriptionChannels = () => {
         </transition-group>
 
         <div class="side-bar-links">
-            <img :class="[isCollapsed ? 'rotate-180' : '']" src="@/assets/icons/svg-icons/line-angle-up-icon.svg"
+            <img style="width: 18px; height: 18px;" :class="[isCollapsed ? 'rotate-180' : '']" src="@/assets/icons/svg-icons/line-angle-up-icon.svg"
                 alt="">
             <button @click="toggleSubscriptionChannels" id="show-more-btn">{{ isCollapsed ? 'Show more' : 'Show less'
                 }}</button>
