@@ -1,9 +1,10 @@
 <script setup>
 import { ref, reactive, onMounted, watch, computed } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
 
 const router = useRoute();
+const router2 = useRouter();
 
 const isVideoOptionsOpen = ref([])
 const toggleVideoOptions = (video_id) => {
@@ -31,8 +32,13 @@ let isLoading = ref(false)
 
 // Generating Test videos for 'all, videos and shorts'
 const all_videos = reactive([])
-const generateTestAllVideos = () => {
-    for (let i = 1; i <= 20; i++) {
+const generateTestAllVideos = (page_number) => {
+    let totalItemShown = 20
+    // Minus 1 for starting from the index 1
+    let startIndex = page_number * totalItemShown - (totalItemShown - 1)
+    let lastIndex = page_number * totalItemShown
+
+    for (let i = startIndex; i <= lastIndex; i++) {
         if (i % 2 == 0) {
             all_videos.push({ id: i, title: `${i} Regular Video title` })
         } else {
@@ -42,31 +48,45 @@ const generateTestAllVideos = () => {
 }
 
 const videos = reactive([])
-const generateTestVideos = () => {
-    for (let i = 0; i <= 10; i++) {
-        videos.push({ id: i + 1, title: `${i + 1} Video title` })
+const generateTestVideos = (page_number) => {
+    let totalItemShown = 20
+    // Minus 1 for starting from the index 1
+    let startIndex = page_number * totalItemShown - (totalItemShown - 1)
+    let lastIndex = page_number * totalItemShown
+    for (let i = startIndex; i <= lastIndex; i++) {
+        videos.push({ id: i, title: `${i} Video title` })
     }
 }
 
-// const generateTestVideos = (page_number) => {
-//     for (let i = (page_number * 10 - 10); i <= (page_number * 9); i++) {
-//         videos.push({ id: i + 1, title: `${i + 1} Video title` })
-//     }
-// }
-
 const shorts = reactive([])
-const generateTestShorts = () => {
-    for (let i = 1; i <= 12; i++) {
+const generateTestShorts = (page_number) => {
+    let totalItemShown = 12
+    // Minus 1 for starting from the index 1
+    let startIndex = page_number * totalItemShown - (totalItemShown - 1)
+    let lastIndex = page_number * totalItemShown
+    for (let i = startIndex; i <= lastIndex; i++) {
         shorts.push({ id: i, title: `${i} Short Video title` })
     }
 }
 
-
-const scrollMore = () => {
+// Handle infinite scrolling
+const scrollMore = (type) => {
     isLoading.value = true
+
+    let exeFunc;
+    if (!type || type === 'all') {
+        exeFunc = generateTestAllVideos
+    } else if (type === 'videos') {
+        exeFunc = generateTestVideos
+    } else if (type === 'shorts') {
+        exeFunc = generateTestShorts
+    } else {
+        alert("Error 404 Not found!")
+    }
+
     setTimeout(() => {
         page.value += 1
-        generateTestVideos(page.value)
+        exeFunc(page.value)
         isLoading.value = false
     }, 1500)
 }
@@ -74,44 +94,46 @@ const scrollMore = () => {
 const checkScroll = () => {
     const endOfPage = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 200
     if (endOfPage && !isLoading.value) {
-        scrollMore()
+        scrollMore(router.query.type)
     }
 }
 
 
 // Handle filtering
 watch(() => router.query.type, () => {
+    page.value = 1
     switch (router.query.type) {
         case 'all':
-            generateTestAllVideos();
+            generateTestAllVideos(page.value);
             break;
         case 'videos':
-            generateTestVideos();
+            generateTestVideos(page.value);
             break;
         case 'shorts':
-            generateTestShorts();
+            generateTestShorts(page.value);
             break;
         default:
-            generateTestAllVideos();
+            generateTestAllVideos(page.value);
             break;
     }
 })
 
 onMounted(() => {
     document.addEventListener("scroll", checkScroll)
-
+    page.value = 1
+    // Default 'type' handling
     switch (router.query.type) {
-        case 'all':
-            generateTestAllVideos();
+        case !router.query.type || 'all':
+            generateTestAllVideos(page.value);
             break;
         case 'videos':
-            generateTestVideos();
+            generateTestVideos(page.value);
             break;
         case 'shorts':
-            generateTestShorts();
+            generateTestShorts(page.value);
             break;
         default:
-            generateTestAllVideos();
+            router2.push({ name: 'NotFound' }) // If user search anything else
             break;
     }
 })
