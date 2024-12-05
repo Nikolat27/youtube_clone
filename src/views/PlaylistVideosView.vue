@@ -1,7 +1,7 @@
 <script setup>
 import { ref, reactive, onMounted, watch, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
+import ScaleLoader from 'vue-spinner/src/ScaleLoader.vue';
 
 const router = useRoute();
 const router2 = useRouter();
@@ -29,64 +29,75 @@ const toggleShortVideoOptions = (short_id) => {
 
 let page = ref(1)
 let isLoading = ref(false)
+const totalItemsShown = { all: 20, videos: 20, shorts: 12 }
+const videosData = reactive({
+    all: [],
+    videos: [],
+    shorts: [],
+})
+
+const generateTestData = (type, page_number) => {
+    const totalItem = totalItemsShown[type]
+    let startIndex = page_number * totalItem - (totalItem - 1)
+    let lastIndex = page_number * totalItem
+    for (let i = startIndex; i <= lastIndex; i++) {
+        if (type === 'all') {
+            videosData.all.push({ id: i, title: `All Video title` })
+        } else if (type === 'videos') {
+            videosData.videos.push({ id: i, title: `Regular Video title` })
+        } else if (type === 'shorts') {
+            videosData.shorts.push({ id: i, title: `Short Video title` })
+        }
+
+    }
+}
+
 
 // Generating Test videos for 'all, videos and shorts'
-const all_videos = reactive([])
-const generateTestAllVideos = (page_number) => {
-    let totalItemShown = 20
-    // Minus 1 for starting from the index 1
-    let startIndex = page_number * totalItemShown - (totalItemShown - 1)
-    let lastIndex = page_number * totalItemShown
+// const all_videos = reactive([])
+// const generateTestAllVideos = (page_number) => {
+//     let totalItemShown = 20
+//     // Minus 1 for starting from the index 1
+//     let startIndex = page_number * totalItemShown - (totalItemShown - 1)
+//     let lastIndex = page_number * totalItemShown
 
-    for (let i = startIndex; i <= lastIndex; i++) {
-        if (i % 2 == 0) {
-            all_videos.push({ id: i, title: `${i} Regular Video title` })
-        } else {
-            all_videos.push({ id: i, title: `${i} Short Video title` })
-        }
-    }
-}
+//     for (let i = startIndex; i <= lastIndex; i++) {
+//         if (i % 2 == 0) {
+//             all_videos.push({ id: i, title: `${i} Regular Video title` })
+//         } else {
+//             all_videos.push({ id: i, title: `${i} Short Video title` })
+//         }
+//     }
+// }
 
-const videos = reactive([])
-const generateTestVideos = (page_number) => {
-    let totalItemShown = 20
-    // Minus 1 for starting from the index 1
-    let startIndex = page_number * totalItemShown - (totalItemShown - 1)
-    let lastIndex = page_number * totalItemShown
-    for (let i = startIndex; i <= lastIndex; i++) {
-        videos.push({ id: i, title: `${i} Video title` })
-    }
-}
+// const videos = reactive([])
+// const generateTestVideos = (page_number) => {
+//     let totalItemShown = 20
+//     // Minus 1 for starting from the index 1
+//     let startIndex = page_number * totalItemShown - (totalItemShown - 1)
+//     let lastIndex = page_number * totalItemShown
+//     for (let i = startIndex; i <= lastIndex; i++) {
+//         videos.push({ id: i, title: `${i} Video title` })
+//     }
+// }
 
-const shorts = reactive([])
-const generateTestShorts = (page_number) => {
-    let totalItemShown = 12
-    // Minus 1 for starting from the index 1
-    let startIndex = page_number * totalItemShown - (totalItemShown - 1)
-    let lastIndex = page_number * totalItemShown
-    for (let i = startIndex; i <= lastIndex; i++) {
-        shorts.push({ id: i, title: `${i} Short Video title` })
-    }
-}
+// const shorts = reactive([])
+// const generateTestShorts = (page_number) => {
+//     let totalItemShown = 12
+//     // Minus 1 for starting from the index 1
+//     let startIndex = page_number * totalItemShown - (totalItemShown - 1)
+//     let lastIndex = page_number * totalItemShown
+//     for (let i = startIndex; i <= lastIndex; i++) {
+//         shorts.push({ id: i, title: `${i} Short Video title` })
+//     }
+// }
 
 // Handle infinite scrolling
 const scrollMore = (type) => {
     isLoading.value = true
-
-    let exeFunc;
-    if (!type || type === 'all') {
-        exeFunc = generateTestAllVideos
-    } else if (type === 'videos') {
-        exeFunc = generateTestVideos
-    } else if (type === 'shorts') {
-        exeFunc = generateTestShorts
-    } else {
-        alert("Error 404 Not found!")
-    }
-
     setTimeout(() => {
         page.value += 1
-        exeFunc(page.value)
+        generateTestData(type, page.value)
         isLoading.value = false
     }, 1500)
 }
@@ -94,7 +105,7 @@ const scrollMore = (type) => {
 const checkScroll = () => {
     const endOfPage = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 200
     if (endOfPage && !isLoading.value) {
-        scrollMore(router.query.type)
+        scrollMore(router.query.type || 'all')
     }
 }
 
@@ -102,40 +113,15 @@ const checkScroll = () => {
 // Handle filtering
 watch(() => router.query.type, () => {
     page.value = 1
-    switch (router.query.type) {
-        case 'all':
-            generateTestAllVideos(page.value);
-            break;
-        case 'videos':
-            generateTestVideos(page.value);
-            break;
-        case 'shorts':
-            generateTestShorts(page.value);
-            break;
-        default:
-            generateTestAllVideos(page.value);
-            break;
-    }
+    videosData.all = [] // Reset data on type change
+    videosData.videos = []
+    videosData.shorts = []
+    generateTestData(router.query.type || 'all', page.value)
 })
 
 onMounted(() => {
     document.addEventListener("scroll", checkScroll)
-    page.value = 1
-    // Default 'type' handling
-    switch (router.query.type) {
-        case !router.query.type || 'all':
-            generateTestAllVideos(page.value);
-            break;
-        case 'videos':
-            generateTestVideos(page.value);
-            break;
-        case 'shorts':
-            generateTestShorts(page.value);
-            break;
-        default:
-            router2.push({ name: 'NotFound' }) // If user search anything else
-            break;
-    }
+    generateTestData(router.query.type || 'all', page.value) // Default 'type' handling
 })
 </script>
 
@@ -175,7 +161,7 @@ onMounted(() => {
             </div>
 
             <div v-if="!$route.query.type || $route.query.type === 'all'" id="all" class="content-section">
-                <div v-for="video in all_videos" :key="video.id" class="z-auto pl-4 h-[129px] w-[827px] flex flex-row items-center
+                <div v-for="video in videosData.all" :key="video.id" class="z-auto pl-4 h-[129px] w-[827px] flex flex-row items-center
                  ml-[-36px] mt-4 gap-x-4 hover:bg-[#f2f2f2] hover:z-auto rounded-lg relative">
                     <a href="#" class="w-full h-full flex items-center">
                         <p class="text-[#796966] font-medium text-sm justify-self-start ml-[-5px]">{{ video.id }}</p>
@@ -217,7 +203,7 @@ onMounted(() => {
             </div>
 
             <div v-if="$route.query.type === 'videos'" id="videos">
-                <div v-for="video in videos" :key="video.id" class="z-auto pl-4 h-[129px] w-[827px] flex flex-row items-center
+                <div v-for="video in videosData.videos" :key="video.id" class="z-auto pl-4 h-[129px] w-[827px] flex flex-row items-center
                  ml-[-36px] mt-4 gap-x-4 hover:bg-[#f2f2f2] hover:z-auto rounded-lg relative">
                     <a href="#" class="w-full h-full flex items-center">
                         <p class="text-[#796966] font-medium text-sm justify-self-start ml-[-5px]">{{ video.id }}</p>
@@ -260,7 +246,7 @@ onMounted(() => {
 
             <div v-if="$route.query.type === 'shorts'" id="shorts" class="mt-6">
                 <div id="shorts-container" class="flex flex-row flex-wrap gap-x-2 gap-y-8 min-h-[410px]">
-                    <div v-for="short in shorts" :key="short.id"
+                    <div v-for="short in videosData.shorts" :key="short.id"
                         class="short-video flex flex-col relative max-w-[200px] h-[400px] flex-grow-0 flex-shrink-0 basis-auto">
                         <a href="#" class="w-full">
                             <img class="w-[200px] h-[356px] rounded-lg" src="@/assets/img/Django.png" alt="">
@@ -297,7 +283,7 @@ onMounted(() => {
             </div>
 
             <div v-if="isLoading" class="my-20 mx-auto flex justify-center items-center">
-                <PulseLoader color="red"></PulseLoader>
+                <ScaleLoader color="red"></ScaleLoader>
             </div>
         </div>
     </div>
