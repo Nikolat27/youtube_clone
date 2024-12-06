@@ -1,6 +1,6 @@
 <script setup>
 import { ref, reactive } from 'vue';
-
+import kebabMenuIcon from '@/assets/icons/svg-icons/kebab-menu.svg'
 
 // Handle Notification Container Expanding 
 let isNotificationExpanded = ref(false)
@@ -36,7 +36,7 @@ const toggleNotificationOptions = (notificationId) => {
             <img class="youtube-logo-img" src="@/assets/icons/header/youtube-logo.svg" alt="">
         </div>
         <div class="search-div">
-            <input type="text" name="q" class="search-bar" placeholder="Search">
+            <input autocomplete="off" type="text" name="q" class="search-bar" placeholder="Search">
             <button class="search-btn">
                 <img src="@/assets/icons/header/search.svg" alt="">
             </button>
@@ -73,7 +73,7 @@ const toggleNotificationOptions = (notificationId) => {
                             <img src="@/assets/img/Django.png" alt="">
                         </div>
                         <button @click="toggleNotificationOptions(notification.id)" class="kebab-menu-btn">
-                            <img src="@/assets/icons/svg-icons/kebab-menu.svg" alt="">
+                            <img :src="kebabMenuIcon" loading="lazy" alt="">
                             <div v-if="expandedNotifications.includes(notification.id)" class="notification-options">
                                 <a href="#"><img src="@/assets/icons/svg-icons/hide-notification-icon.svg"
                                      alt="">Hide this notification</a>

@@ -1,6 +1,15 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, nextTick } from 'vue';
 import { useRoute } from 'vue-router';
+
+// Icons
+import playIcon from '@/assets/icons/video-player/play-icon.png'
+import pauseIcon from '@/assets/icons/video-player/pause-icon.png'
+import onSubtitleIcon from '@/assets/icons/video-player/subtitle-on-icon.png'
+import offSubtitleIcon from '@/assets/icons/video-player/subtitle-off-icon.png'
+import fullSpeakerIcon from '@/assets/icons/video-player/full-speaker-icon.png'
+import halfSpeakerIcon from '@/assets/icons/video-player/half-speaker-icon.png'
+import muteSpeakerIcon from '@/assets/icons/video-player/mute-speaker-icon.png'
 
 const route = useRoute()
 const videoId = route.params.id
@@ -68,7 +77,7 @@ const playListExpandingToggle = () => {
 const relatedVideosStyle = computed(() => ({
     position: 'absolute',
     right: '107px',
-    top: playlistExpanded.value ? '650px' : '130px',
+    top: playlistExpanded.value ? '575px' : '130px',
     transition: 'top 0.1s ease-in-out'
 }));
 
@@ -93,68 +102,128 @@ const togglePlaylistDivision = () => {
 
 
 // Handling Main video
+const playVideoIcon = ref(playIcon)
+const isVideoPlayed = ref(false)
+const toggleVideoPlay = async () => {
+    const video = document.querySelector(".main-video")
+    isVideoPlayed.value = !isVideoPlayed.value
+    if (!isVideoPlayed.value) {
+        video.pause()
+        playVideoIcon.value = `${playIcon}`
+    } else {
+        video.play()
+        playVideoIcon.value = `${pauseIcon}`
+    }
+
+    // Ensure the DOM has updated
+    await nextTick();
+}
+
+const subtitleIconSrc = ref(offSubtitleIcon)
+const isSubtitleOn = ref(false)
+const toggleSubtitle = () => {
+    isSubtitleOn.value = !isSubtitleOn.value
+    subtitleIconSrc.value = isSubtitleOn.value ? `${onSubtitleIcon}` : `${offSubtitleIcon}`
+}
+
+const isVideoOptionsOpen = ref(false)
+const toggleVideoOptions = () => isVideoOptionsOpen.value = !isVideoOptionsOpen.value
+
 const toggleFullScreenMode = () => {
     document.querySelector(".main-video").requestFullscreen();
 }
 
-const volumeChanging = () => {
-    const volume = document.getElementById("progress-bar")
-    console.log(volume.value)
+const speakerIconSrc = ref(fullSpeakerIcon)
+const videoVolumeChanging = (event) => {
+    const video = document.querySelector(".main-video")
+    video.muted = false
+    video.volume = event.target.value / 100
+    speakerIconSrc.value = video.volume >= 0.5 ? `${fullSpeakerIcon}` : (video.volume > 0 ? `${halfSpeakerIcon}` : `${muteSpeakerIcon}`);
 }
 
 const muteVideo = () => {
     const video = document.querySelector(".main-video")
+    const speakerBtn = document.querySelector(".speaker-btn")
     video.muted = !video.muted
+    speakerBtn.src = video.muted ? `${muteSpeakerIcon}` : `${fullSpeakerIcon}`
 }
 
 //Handling playback speed for Main video
 const isPlaybackSpeedOpen = ref(false)
 const togglePlaybackSpeed = () => isPlaybackSpeedOpen.value = !isPlaybackSpeedOpen.value
+
+
+const videoRef = ref(null)
+const videoProgress = ref(0)
+const updateProgress = () => {
+    if (videoRef.value) {
+        videoProgress.value = (videoRef.value.currentTime / videoRef.value.duration) * 100
+    }
+}
+
+const seekVideo = (event) => {
+    if (videoRef.value) {
+        const newTime = (event.target.value / 100) * videoRef.value.duration;
+        videoRef.value.currentTime = newTime;
+    }
+}
+
+const openControlBar = () => {
+    document.querySelector(".control-bar").style.opacity = 1
+}
+
+const closeControlBar = () => {
+    document.querySelector(".control-bar").style.opacity = 0
+}
+
+onMounted(() => {
+    videoRef.value.addEventListener('timeupdate', updateProgress);
+});
 </script>
 
 
 <template>
-    <div class="video-container top-12 relative bg-black overflow-hidden mx-auto flex justify-center
+    <div @mouseover="openControlBar" @mouseleave="closeControlBar" class="video-container top-12 relative overflow-hidden mx-auto flex justify-center
      items-center rounded-2xl">
-        <video autoplay class="main-video w-full h-full object-fill">
+        <video ref="videoRef" volume="0.5" class="main-video cursor-pointer w-full h-full object-fill">
             <source src="@/assets/video/test-vid2.mp4">
         </video>
-        <div class="video-progress-bar w-[906px] h-9 absolute bottom-10">
-            <input @input="volumeChanging" min="0" max="100" id="progress-bar" class="h-full w-full" type="range">
-        </div>
-        <div class="bg-transparent control-bar w-full h-[48px] max-h-[48px] absolute bottom-0 flex justify-center
+
+        <div class="bg-transparent z-50 control-bar flex opacity-0 w-full h-[48px] max-h-[48px] absolute bottom-0 justify-center
          items-center flex-row">
+            <div class="video-progress-bar w-[906px] h-[8px] absolute bottom-14">
+                <input min="0" max="100" :value="videoProgress" id="progress-bar" class="h-full w-full" type="range"
+                    @input="seekVideo">
+            </div>
             <div class="w-[618px] h-full left-controls flex flex-row justify-start
              items-center gap-x-6 pl-2">
-                <button>
-                    <img class="w-5 h-5" src="@/assets/icons/video-player/play-icon.png" alt="">
+                <button @click="toggleVideoPlay">
+                    <img class="play-video-button" style="width: 20px; height: 20px;" :src="playVideoIcon" alt="">
                 </button>
                 <button>
                     <img src="@/assets/icons/video-player/next-icon.png" alt="">
                 </button>
                 <button class="flex flex-row justify-center items-center">
-                    <img @click="muteVideo" class="speaker-btn" src="@/assets/icons/video-player/full-speaker-icon.png" alt="">
-                    <input id="volume-bar" class="w-[52px] h-[48px] ml-2 hidden" type="range">
+                    <img @click="muteVideo" class="speaker-btn" :src="speakerIconSrc" alt="">
+                    <input @input="videoVolumeChanging" value="50" id="volume-bar" class="w-[52px] h-[48px] ml-2 hidden"
+                        type="range">
                 </button>
                 <p class="text-[13px] text-white -ml-2">
-                    <span>0:00</span>
+                    <span class="current-video-time">0:00</span>
                     <span>/</span>
-                    <span>6:48</span>
+                    <span class="end-video-time">6:48</span>
                 </p>
             </div>
             <div class="w-[288px] h-full right-controls flex flex-row justify-end
              items-center gap-x-4 pr-2">
                 <button>
-                    <img class="h-[34px] w-[30px]" src="@/assets/icons/video-player/subtitle-off-icon.png" alt="">
+                    <img @click="toggleSubtitle" style="width: 30px; height: 30px;" :src="subtitleIconSrc" alt="">
                 </button>
-                <button>
-                    <img class="h-[34px] w-[30px]" src="@/assets/icons/video-player/subtitle-on-icon.png" alt="">
-                </button>
-                <button class="setting-btn">
+                <button @click="toggleVideoOptions" class="setting-btn">
                     <img src="@/assets/icons/video-player/settings-icon.png" alt="">
                 </button>
-                <div v-if="!isPlaybackSpeedOpen" class="select-none video-settings flex flex-col text-white items-start justify-center w-[250px] h-auto pb-4 pt-4
-                 rounded-xl text-sm font-medium absolute bottom-16 right-2 bg-[#22191d] bg-opacity-90">
+                <div v-if="!isPlaybackSpeedOpen && isVideoOptionsOpen" class="video-options select-none video-settings flex flex-col text-white items-start justify-center w-[250px] h-auto pb-4 pt-4
+                 rounded-xl text-sm font-medium absolute bottom-16 right-2 bg-[#22191d] bg-opacity-80">
                     <div class="cursor-pointer flex flex-row justify-start items-center w-full h-[35px]
                      gap-x-3 pl-2 hover:bg-[#383838]">
                         <img class="w-[26px] h-[26px]" src="@/assets/icons/video-player/double-qoutes-icon.png" alt="">
@@ -168,7 +237,7 @@ const togglePlaybackSpeed = () => isPlaybackSpeedOpen.value = !isPlaybackSpeedOp
                         <img class="w-3 h-3 mr-2 rotate-180" src="@/assets/icons/video-player/arrow-icon.png" alt="">
                     </div>
                 </div>
-                <div v-if="isPlaybackSpeedOpen" class="select-none flex flex-col text-white items-start justify-center w-[250px] h-auto pb-4 pt-4
+                <div v-if="isPlaybackSpeedOpen" class="video-backspeed select-none flex flex-col text-white items-start justify-center w-[250px] h-auto pb-4 pt-4
                  rounded-xl absolute bottom-16 right-2 text-sm font-medium bg-[#22191d] bg-opacity-90">
                     <div @click="togglePlaybackSpeed"
                         class="cursor-pointer  flex flex-row justify-start items-center w-full h-[35px] gap-x-3 pl-[20px] hover:bg-[#383838]">
@@ -215,7 +284,9 @@ const togglePlaybackSpeed = () => isPlaybackSpeedOpen.value = !isPlaybackSpeedOp
         </div>
     </div>
 
-    <h1 class="video-title">Video title</h1>
+    <div class="mt-14">
+        <h1 class="video-title">Video title</h1>
+    </div>
 
     <div class="video-detail-info">
         <img class="video-detail-channel-logo" src="@/assets/img/Django.png" alt="">
@@ -451,7 +522,7 @@ const togglePlaybackSpeed = () => isPlaybackSpeedOpen.value = !isPlaybackSpeedOp
                         <div class="related-short-video-thumbnail">
                             <img src="@/assets/img/Django.png" alt="">
                         </div>
-                        <div class="related-short-video-title">
+                        <div class="related-short-video-title h-auto">
                             <p class="video-title" style="margin-bottom: 3px;"><a href="">Django tutorial</a></p>
                             <p class="video-info"><span>5M</span> Views</p>
                         </div>
@@ -556,6 +627,10 @@ const togglePlaybackSpeed = () => isPlaybackSpeedOpen.value = !isPlaybackSpeedOp
     height: 24px;
 }
 
+.control-bar {
+    transition: opacity 0.125s ease-in-out;
+}
+
 .fullscreen-btn:hover {
     animation: scale-back 0.4s;
 }
@@ -588,12 +663,6 @@ const togglePlaybackSpeed = () => isPlaybackSpeedOpen.value = !isPlaybackSpeedOp
     }
 }
 
-
-input[type="range"] {
-    background: transparent;
-    cursor: pointer;
-}
-
 /******** Chrome ********/
 #volume-bar::-webkit-slider-runnable-track {
     background: white;
@@ -624,6 +693,10 @@ button:hover #volume-bar {
 
 #progress-bar:hover::-moz-range-thumb {
     visibility: visible;
+}
+
+#progress-bar:hover {
+    transform: scaleY(1.2);
 }
 
 #progress-bar::-moz-range-thumb {

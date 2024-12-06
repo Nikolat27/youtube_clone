@@ -69,7 +69,7 @@ body {
 
 .search-btn {
     width: 80px;
-    height: 39px;
+    height: 40px;
     border-top-right-radius: 20px;
     border-bottom-right-radius: 20px;
     border: 0.5px solid gray;
@@ -89,6 +89,10 @@ body {
     font-family: Roboto, Arial, Helvetica, sans-serif;
     font-size: 16px;
     box-shadow: 1px 1px 1px rgba(0, 0, 0, 0.15) inset;
+}
+
+.search-bar:focus {
+    border-color: #2d6ebe;
 }
 
 .search-bar::placeholder {
@@ -336,7 +340,6 @@ body {
 }
 
 .video-title {
-    margin-top: 60px !important;
     vertical-align: top;
     font-weight: bold;
     font-size: 18px;
