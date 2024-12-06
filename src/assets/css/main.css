@@ -336,6 +336,7 @@ body {
 }
 
 .video-title {
+    margin-top: 60px !important;
     vertical-align: top;
     font-weight: bold;
     font-size: 18px;
@@ -463,7 +464,7 @@ h1.video-title {
     display: flex;
     column-gap: 10px;
     margin-left: 48px;
-    margin-top: 20px;
+    margin-top: 10px;
     height: 40px;
 }
 
@@ -1048,7 +1049,7 @@ a {
     justify-content: start;
     align-items: start;
     padding-top: 20px;
-    padding-bottom: 50px;
+    padding-bottom: 20px;
     margin-top: 10px;
     margin-bottom: 15px;
 }
@@ -1317,9 +1318,9 @@ a {
     /* Prevent pointer events when invisible */
 }
 
-video {
+/* video {
     pointer-events: none;
-}
+} */
 
 .short-video-sharing-tab.visible {
     opacity: 1;

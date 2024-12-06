@@ -68,7 +68,7 @@ const playListExpandingToggle = () => {
 const relatedVideosStyle = computed(() => ({
     position: 'absolute',
     right: '107px',
-    top: playlistExpanded.value ? '580px' : '150px',
+    top: playlistExpanded.value ? '650px' : '130px',
     transition: 'top 0.1s ease-in-out'
 }));
 
@@ -90,90 +90,129 @@ let isPlaylistDivisonOpen = ref(false)
 const togglePlaylistDivision = () => {
     isPlaylistDivisonOpen.value = !isPlaylistDivisonOpen.value
 }
+
+
+// Handling Main video
+const toggleFullScreenMode = () => {
+    document.querySelector(".main-video").requestFullscreen();
+}
+
+const volumeChanging = () => {
+    const volume = document.getElementById("progress-bar")
+    console.log(volume.value)
+}
+
+const muteVideo = () => {
+    const video = document.querySelector(".main-video")
+    video.muted = !video.muted
+}
+
+//Handling playback speed for Main video
+const isPlaybackSpeedOpen = ref(false)
+const togglePlaybackSpeed = () => isPlaybackSpeedOpen.value = !isPlaybackSpeedOpen.value
 </script>
 
 
 <template>
-    <div class="video-container paused" data-volume-level="high">
-        <img class="thumbnail-img">
-        <div class="video-controls-container">
-            <div class="timeline-container">
-                <div class="timeline">
-                    <img class="preview-img">
-                    <div class="thumb-indicator"></div>
-                </div>
+    <div class="video-container top-12 relative bg-black overflow-hidden mx-auto flex justify-center
+     items-center rounded-2xl">
+        <video autoplay class="main-video w-full h-full object-fill">
+            <source src="@/assets/video/test-vid2.mp4">
+        </video>
+        <div class="video-progress-bar w-[906px] h-9 absolute bottom-10">
+            <input @input="volumeChanging" min="0" max="100" id="progress-bar" class="h-full w-full" type="range">
+        </div>
+        <div class="bg-transparent control-bar w-full h-[48px] max-h-[48px] absolute bottom-0 flex justify-center
+         items-center flex-row">
+            <div class="w-[618px] h-full left-controls flex flex-row justify-start
+             items-center gap-x-6 pl-2">
+                <button>
+                    <img class="w-5 h-5" src="@/assets/icons/video-player/play-icon.png" alt="">
+                </button>
+                <button>
+                    <img src="@/assets/icons/video-player/next-icon.png" alt="">
+                </button>
+                <button class="flex flex-row justify-center items-center">
+                    <img @click="muteVideo" class="speaker-btn" src="@/assets/icons/video-player/full-speaker-icon.png" alt="">
+                    <input id="volume-bar" class="w-[52px] h-[48px] ml-2 hidden" type="range">
+                </button>
+                <p class="text-[13px] text-white -ml-2">
+                    <span>0:00</span>
+                    <span>/</span>
+                    <span>6:48</span>
+                </p>
             </div>
-            <div class="controls">
-                <button class="play-pause-btn">
-                    <svg class="play-icon" viewBox="0 0 24 24">
-                        <path fill="currentColor" d="M8,5.14V19.14L19,12.14L8,5.14Z" />
-                    </svg>
-                    <svg class="pause-icon" viewBox="0 0 24 24">
-                        <path fill="currentColor" d="M14,19H18V5H14M6,19H10V5H6V19Z" />
-                    </svg>
+            <div class="w-[288px] h-full right-controls flex flex-row justify-end
+             items-center gap-x-4 pr-2">
+                <button>
+                    <img class="h-[34px] w-[30px]" src="@/assets/icons/video-player/subtitle-off-icon.png" alt="">
                 </button>
-                <div class="volume-container">
-                    <button class="mute-btn">
-                        <svg class="volume-high-icon" viewBox="0 0 24 24">
-                            <path fill="currentColor"
-                                d="M14,3.23V5.29C16.89,6.15 19,8.83 19,12C19,15.17 16.89,17.84 14,18.7V20.77C18,19.86 21,16.28 21,12C21,7.72 18,4.14 14,3.23M16.5,12C16.5,10.23 15.5,8.71 14,7.97V16C15.5,15.29 16.5,13.76 16.5,12M3,9V15H7L12,20V4L7,9H3Z" />
-                        </svg>
-                        <svg class="volume-low-icon" viewBox="0 0 24 24">
-                            <path fill="currentColor"
-                                d="M5,9V15H9L14,20V4L9,9M18.5,12C18.5,10.23 17.5,8.71 16,7.97V16C17.5,15.29 18.5,13.76 18.5,12Z" />
-                        </svg>
-                        <svg class="volume-muted-icon" viewBox="0 0 24 24">
-                            <path fill="currentColor"
-                                d="M12,4L9.91,6.09L12,8.18M4.27,3L3,4.27L7.73,9H3V15H7L12,20V13.27L16.25,17.53C15.58,18.04 14.83,18.46 14,18.7V20.77C15.38,20.45 16.63,19.82 17.68,18.96L19.73,21L21,19.73L12,10.73M19,12C19,12.94 18.8,13.82 18.46,14.64L19.97,16.15C20.62,14.91 21,13.5 21,12C21,7.72 18,4.14 14,3.23V5.29C16.89,6.15 19,8.83 19,12M16.5,12C16.5,10.23 15.5,8.71 14,7.97V10.18L16.45,12.63C16.5,12.43 16.5,12.21 16.5,12Z" />
-                        </svg>
-                    </button>
-                    <input class="volume-slider" type="range" min="0" max="1" step="any" value="1">
+                <button>
+                    <img class="h-[34px] w-[30px]" src="@/assets/icons/video-player/subtitle-on-icon.png" alt="">
+                </button>
+                <button class="setting-btn">
+                    <img src="@/assets/icons/video-player/settings-icon.png" alt="">
+                </button>
+                <div v-if="!isPlaybackSpeedOpen" class="select-none video-settings flex flex-col text-white items-start justify-center w-[250px] h-auto pb-4 pt-4
+                 rounded-xl text-sm font-medium absolute bottom-16 right-2 bg-[#22191d] bg-opacity-90">
+                    <div class="cursor-pointer flex flex-row justify-start items-center w-full h-[35px]
+                     gap-x-3 pl-2 hover:bg-[#383838]">
+                        <img class="w-[26px] h-[26px]" src="@/assets/icons/video-player/double-qoutes-icon.png" alt="">
+                        <p class="text-center">Annotations</p>
+                    </div>
+                    <div @click="togglePlaybackSpeed" class="cursor-pointer flex flex-row justify-start items-center w-full h-[35px]
+                     gap-x-3 pl-2 hover:bg-[#383838]">
+                        <img class="w-[26px] h-[26px]" src="@/assets/icons/video-player/speed-icon.png" alt="">
+                        <p class="text-center text-sm font-medium">Playback speed</p>
+                        <p class="text-left ml-auto">0.75</p>
+                        <img class="w-3 h-3 mr-2 rotate-180" src="@/assets/icons/video-player/arrow-icon.png" alt="">
+                    </div>
                 </div>
-                <div class="duration-container">
-                    <div class="current-time">0:00</div>
-                    /
-                    <div class="total-time"></div>
+                <div v-if="isPlaybackSpeedOpen" class="select-none flex flex-col text-white items-start justify-center w-[250px] h-auto pb-4 pt-4
+                 rounded-xl absolute bottom-16 right-2 text-sm font-medium bg-[#22191d] bg-opacity-90">
+                    <div @click="togglePlaybackSpeed"
+                        class="cursor-pointer  flex flex-row justify-start items-center w-full h-[35px] gap-x-3 pl-[20px] hover:bg-[#383838]">
+                        <img class="w-3 h-3" src="@/assets/icons/video-player/arrow-icon.png" alt="">
+                        <p class="text-center ">Playback speed</p>
+                    </div>
+                    <div
+                        class="cursor-pointer flex flex-row justify-start items-center w-full h-[35px] gap-x-3 pl-5 hover:bg-[#383838]">
+                        <p class="text-center">0.25</p>
+                    </div>
+                    <div
+                        class="cursor-pointer flex flex-row justify-start items-center w-full h-[35px] gap-x-3 pl-5 hover:bg-[#383838]">
+                        <p class="text-center">0.5</p>
+                    </div>
+                    <div
+                        class="cursor-pointer flex flex-row justify-start items-center w-full h-[35px] gap-x-3 pl-5 hover:bg-[#383838]">
+                        <p class="text-center">0.75</p>
+                    </div>
+                    <div
+                        class="cursor-pointer flex flex-row justify-start items-center w-full h-[35px] gap-x-3 pl-5 hover:bg-[#383838]">
+                        <p class="text-center">Normal</p>
+                    </div>
+                    <div
+                        class="cursor-pointer flex flex-row justify-start items-center w-full h-[35px] gap-x-3 pl-5 hover:bg-[#383838]">
+                        <p class="text-center">1.25</p>
+                    </div>
+                    <div
+                        class="cursor-pointer flex flex-row justify-start items-center w-full h-[35px] gap-x-3 pl-5 hover:bg-[#383838]">
+                        <p class="text-center">1.5</p>
+                    </div>
+                    <div
+                        class="cursor-pointer flex flex-row justify-start items-center w-full h-[35px] gap-x-3 pl-5 hover:bg-[#383838]">
+                        <p class="text-center">1.75</p>
+                    </div>
+                    <div
+                        class="cursor-pointer flex flex-row justify-start items-center w-full h-[35px] gap-x-3 pl-5 hover:bg-[#383838]">
+                        <p class="text-center">2</p>
+                    </div>
                 </div>
-                <button class="captions-btn">
-                    <svg viewBox="0 0 24 24">
-                        <path fill="currentColor"
-                            d="M18,11H16.5V10.5H14.5V13.5H16.5V13H18V14A1,1 0 0,1 17,15H14A1,1 0 0,1 13,14V10A1,1 0 0,1 14,9H17A1,1 0 0,1 18,10M11,11H9.5V10.5H7.5V13.5H9.5V13H11V14A1,1 0 0,1 10,15H7A1,1 0 0,1 6,14V10A1,1 0 0,1 7,9H10A1,1 0 0,1 11,10M19,4H5C3.89,4 3,4.89 3,6V18A2,2 0 0,0 5,20H19A2,2 0 0,0 21,18V6C21,4.89 20.1,4 19,4Z" />
-                    </svg>
-                </button>
-                <button class="speed-btn wide-btn">
-                    1x
-                </button>
-                <button class="mini-player-btn">
-                    <svg viewBox="0 0 24 24">
-                        <path fill="currentColor"
-                            d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14zm-10-7h9v6h-9z" />
-                    </svg>
-                </button>
-                <button class="theater-btn">
-                    <svg class="tall" viewBox="0 0 24 24">
-                        <path fill="currentColor"
-                            d="M19 6H5c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 10H5V8h14v8z" />
-                    </svg>
-                    <svg class="wide" viewBox="0 0 24 24">
-                        <path fill="currentColor"
-                            d="M19 7H5c-1.1 0-2 .9-2 2v6c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zm0 8H5V9h14v6z" />
-                    </svg>
-                </button>
-                <button class="full-screen-btn">
-                    <svg class="open" viewBox="0 0 24 24">
-                        <path fill="currentColor"
-                            d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" />
-                    </svg>
-                    <svg class="close" viewBox="0 0 24 24">
-                        <path fill="currentColor"
-                            d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z" />
-                    </svg>
+                <button @click="toggleFullScreenMode" class="fullscreen-btn">
+                    <img src="@/assets/icons/video-player/fullscree-icon.png" alt="">
                 </button>
             </div>
         </div>
-        <video src="@/assets/video/test-vid2.mp4">
-            <track kind="captions" srclang="en" src="@/assets/subtitles.vtt">
-        </video>
     </div>
 
     <h1 class="video-title">Video title</h1>
@@ -201,6 +240,7 @@ const togglePlaylistDivision = () => {
             </button>
         </div>
     </div>
+
     <div class="video-description">
         <p class="video-detail-stats"><span class="view-amount">6.1M </span>views
             <span class="upload-date">2 years </span>ago
@@ -226,8 +266,9 @@ const togglePlaylistDivision = () => {
             <button @click="submitVideoComment" class="add-comment-btn">Comment</button>
         </div>
     </div>
+
     <div class="comment-container">
-        <div v-for="comment in comments" :key="comment.id" class="comment">
+        <div v-for="comment in comments" :key="comment.id" class="comment flex flex-row">
             <div class="author-thumbnail">
                 <img src="@/assets/img/Django.png" alt="">
             </div>
@@ -242,13 +283,12 @@ const togglePlaylistDivision = () => {
                         <img src="@/assets/icons/svg-icons/dislike-empty.svg">
                     </button>
                     <button @click="toggleUserCommentReplyButtons(comment.id)" class="user-comment-reply-button"
-                        data-target="comment-id-1" style="outline: none;">
-                        <img class="image-y-z" src="@/assets/icons/svg-icons/reply-icon.svg" data-target="comment-id-1"
-                            alt="">
+                        style="outline: none;">
+                        <img class="image-y-z w-8 h-8" src="@/assets/icons/svg-icons/reply-icon.svg" alt="">
                     </button>
                 </div>
                 <div v-if="commentStates[comment.id]?.repliesVisible"
-                    class="w-auto flex justify-center items-center relative" id="comment-id-1">
+                    class="w-auto flex justify-start items-center relative">
                     <div class="reply-creation">
                         <img class="user-profile-img" src="@/assets/img/Django.png" alt="">
                         <input class="add-reply-input" id="reply-text" type="text" placeholder="Add a Reply...">
@@ -310,8 +350,8 @@ const togglePlaylistDivision = () => {
     </div>
 
     <div class="right-side-container flex flex-col">
-        <div class="w-[400px] h-[66px] bg-[#e4dfec] hover:bg-[#d1c2e9] flex flex-col justify-center
-         absolute right-[110px] top-[66px] rounded-xl pl-3 transition-all duration-300 ease-in-out">
+        <div class="top-12 w-[400px] h-[66px] bg-[#e4dfec] hover:bg-[#d1c2e9] flex flex-col justify-center
+         absolute right-[110px] rounded-xl pl-3 transition-all duration-300 ease-in-out">
             <div class="flex flex-row items-center text-base">
                 <p class="font-semibold">Next:&nbsp;</p>
                 <p class="font-normal">Video title</p>
@@ -327,7 +367,7 @@ const togglePlaylistDivision = () => {
         </div>
 
         <div v-if="playlistExpanded" class="bg-white z-20 flex flex-col w-[400px] h-[500px] border-[#ededed] border-[1px]
-                mb-10 absolute right-[110px] top-[66px] rounded-xl transition-all duration-300 ease-in-out">
+                mb-10 absolute right-[110px] top-12 rounded-xl transition-all duration-300 ease-in-out">
             <div class="pl-3 pt-2">
                 <a href="#" class="font-bold text-xl pt-2 mb-2">Playlist title</a>
                 <div class="flex flex-row text-xs font-normal">
@@ -406,7 +446,7 @@ const togglePlaylistDivision = () => {
                     <img class="youtube-short-icon" src="@/assets/icons/svg-icons/shorts-icon.svg" alt="">
                     <p style="font-weight: bold; font-size: 16px;">Shorts</p>
                 </div>
-                <div class="short-video-groups gap-x-1">
+                <div class="short-video-groups gap-x-1 scroll-smooth">
                     <div class="related-short-video">
                         <div class="related-short-video-thumbnail">
                             <img src="@/assets/img/Django.png" alt="">
@@ -509,3 +549,92 @@ const togglePlaylistDivision = () => {
         </div>
     </div>
 </template>
+
+<style scoped>
+.video-container button img {
+    width: 24px;
+    height: 24px;
+}
+
+.fullscreen-btn:hover {
+    animation: scale-back 0.4s;
+}
+
+@keyframes scale-back {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.15);
+    }
+}
+
+.setting-btn:hover {
+    animation: rotate-back 0.7s;
+}
+
+@keyframes rotate-back {
+
+    0%,
+    100% {
+        transform: rotate(0);
+    }
+
+    50% {
+        transform: rotate(45deg);
+    }
+}
+
+
+input[type="range"] {
+    background: transparent;
+    cursor: pointer;
+}
+
+/******** Chrome ********/
+#volume-bar::-webkit-slider-runnable-track {
+    background: white;
+}
+
+/******** Firefox ********/
+#volume-bar::-moz-range-track {
+    background: black;
+}
+
+#volume-bar::-moz-range-progress {
+    background: white;
+}
+
+#volume-bar::-moz-range-thumb {
+    border: none;
+    width: 12px;
+    height: 12px;
+}
+
+button:hover #volume-bar {
+    display: flex;
+}
+
+#progress-bar::-moz-range-progress {
+    background: #ff0033;
+}
+
+#progress-bar:hover::-moz-range-thumb {
+    visibility: visible;
+}
+
+#progress-bar::-moz-range-thumb {
+    visibility: hidden;
+    background: red;
+    border: none;
+    width: 13px;
+    height: 13px;
+}
+
+#progress-bar::-moz-range-track {
+    background: rgb(150, 148, 148);
+}
+</style>
