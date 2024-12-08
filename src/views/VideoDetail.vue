@@ -152,7 +152,6 @@ const muteVideo = () => {
 const isPlaybackSpeedOpen = ref(false)
 const togglePlaybackSpeed = () => isPlaybackSpeedOpen.value = !isPlaybackSpeedOpen.value
 
-
 const videoRef = ref(null)
 const videoProgress = ref(0)
 const updateProgress = () => {
@@ -176,6 +175,37 @@ const closeControlBar = () => {
     document.querySelector(".control-bar").style.opacity = 0
 }
 
+let mouseValue = ref(null)
+let position = ref(null)
+const getVideoFrame = (event) => {
+    const input = event.target
+    const { left, width } = input.getBoundingClientRect();
+    const positionX = event.clientX - left;
+    if (positionX - 100 >= 0) {
+        position.value = positionX - left
+    } else {
+        position.value = 0
+    }
+    const percentage = Math.round(positionX / (width / 100))
+    const video = videoRef.value;
+    mouseValue.value = (video.duration / 100) * percentage
+    const canvas = document.getElementById("myCanvas");
+    const context = canvas.getContext('2d');
+
+    const hiddenVideo = document.createElement('video');
+    hiddenVideo.src = video.src;
+
+    hiddenVideo.addEventListener('loadeddata', () => {
+        hiddenVideo.currentTime = mouseValue.value;
+    });
+
+    hiddenVideo.addEventListener('seeked', () => {
+        context.drawImage(hiddenVideo, 0, 0, canvas.width, canvas.height);
+    });
+
+    hiddenVideo.load();
+}
+
 onMounted(() => {
     videoRef.value.addEventListener('timeupdate', updateProgress);
 });
@@ -185,15 +215,20 @@ onMounted(() => {
 <template>
     <div @mouseover="openControlBar" @mouseleave="closeControlBar" class="video-container top-12 relative overflow-hidden mx-auto flex justify-center
      items-center rounded-2xl">
-        <video ref="videoRef" volume="0.5" class="main-video cursor-pointer w-full h-full object-fill">
-            <source src="@/assets/video/test-vid2.mp4">
+        <video ref="videoRef" src="/src/assets/video/test-vid2.mp4" volume="0.5"
+            class="main-video source-video cursor-pointer w-full h-full object-fill">
+            <!-- <source class="source-video" src="@/assets/video/test-vid2.mp4"> -->
         </video>
 
         <div class="bg-transparent z-50 control-bar flex opacity-0 w-full h-[48px] max-h-[48px] absolute bottom-0 justify-center
          items-center flex-row">
             <div class="video-progress-bar w-[906px] h-[8px] absolute bottom-14">
-                <input min="0" max="100" :value="videoProgress" id="progress-bar" class="h-full w-full" type="range"
-                    @input="seekVideo">
+                <div class="z-10 video-img-tracker overflow-hidden w-[225px] h-[130px] rounded-lg border-[3px] border-white
+                  absolute bottom-12" :class="[`left-[${position}px]`]">
+                    <canvas id="myCanvas" class="z-0 w-full h-full object-fill"></canvas>
+                </div>
+                <input @mousemove="getVideoFrame" @mouseleave="mouseValue = null" min="0" max="100"
+                    :value="videoProgress" id="progress-bar" class="h-full w-full" type="range" @input="seekVideo">
             </div>
             <div class="w-[618px] h-full left-controls flex flex-row justify-start
              items-center gap-x-6 pl-2">
@@ -285,7 +320,7 @@ onMounted(() => {
     </div>
 
     <div class="mt-14">
-        <h1 class="video-title">Video title</h1>
+        <h1 class="video-title cursor-pointer">Video title</h1>
     </div>
 
     <div class="video-detail-info">
@@ -696,7 +731,7 @@ button:hover #volume-bar {
 }
 
 #progress-bar:hover {
-    transform: scaleY(1.2);
+    transform: scaleY(1.3);
 }
 
 #progress-bar::-moz-range-thumb {
