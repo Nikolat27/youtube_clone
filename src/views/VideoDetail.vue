@@ -176,19 +176,27 @@ const closeControlBar = () => {
 }
 
 let mouseValue = ref(null)
-let position = ref(null)
+let position = ref(0)
 const getVideoFrame = (event) => {
-    const input = event.target
+    const input = event.target;
     const { left, width } = input.getBoundingClientRect();
     const positionX = event.clientX - left;
-    if (positionX - 100 >= 0) {
-        position.value = positionX - left
-    } else {
-        position.value = 0
-    }
-    const percentage = Math.round(positionX / (width / 100))
+
+    // Half Width of the canvas(because we want to Locate the Center of the Canvas on the Top of Our mouse cursor)
+    const canvasWidth = 225;
+    const halfCanvasWidth = canvasWidth / 2;
+
+    // Calculate the desired left position
+    let leftPosition = positionX - halfCanvasWidth;
+
+    // Ensure the canvas stays within the bounds of the video tracker (with Min and Max)
+    leftPosition = Math.max(0, Math.min(leftPosition, width - canvasWidth));
+    position.value = leftPosition;
+
+    const percentage = Math.round(positionX / (width / 100));
     const video = videoRef.value;
-    mouseValue.value = (video.duration / 100) * percentage
+    mouseValue.value = (video.duration / 100) * percentage;
+
     const canvas = document.getElementById("myCanvas");
     const context = canvas.getContext('2d');
 
@@ -224,7 +232,7 @@ onMounted(() => {
          items-center flex-row">
             <div class="video-progress-bar w-[906px] h-[8px] absolute bottom-14">
                 <div class="z-10 video-img-tracker overflow-hidden w-[225px] h-[130px] rounded-lg border-[3px] border-white
-                  absolute bottom-12" :class="[`left-[${position}px]`]">
+                  absolute bottom-12" :style="{ left: `${position}px` }">
                     <canvas id="myCanvas" class="z-0 w-full h-full object-fill"></canvas>
                 </div>
                 <input @mousemove="getVideoFrame" @mouseleave="mouseValue = null" min="0" max="100"
