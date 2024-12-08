@@ -72,25 +72,18 @@ const playListExpandingToggle = () => {
     playlistExpanded.value = !playlistExpanded.value;
 }
 
-
 // Styles for related-video div
 const relatedVideosStyle = computed(() => ({
     position: 'absolute',
     right: '107px',
-    top: playlistExpanded.value ? '575px' : '130px',
+    top: playlistExpanded.value ? '575px' : '130px', // Collapsing and Uncollapsing the playlist (Expanding also)
     transition: 'top 0.1s ease-in-out'
 }));
 
-
-// Sliding for related short videos
-const scrollLeft = () => {
+// Slider for short related videos (Right side container)
+const scrollHorizontally = (direction) => {
     const shortDivContainer = document.querySelector(".short-video-groups");
-    shortDivContainer.scrollLeft -= 131;
-}
-
-const scrollRight = () => {
-    const shortDivContainer = document.querySelector(".short-video-groups");
-    shortDivContainer.scrollLeft += 131;
+    shortDivContainer.scrollLeft += direction === 'next' ? 131 : -131;
 }
 
 
@@ -104,21 +97,13 @@ const togglePlaylistDivision = () => {
 // Handling Main video
 const playVideoIcon = ref(playIcon)
 const isVideoPlayed = ref(false)
-const toggleVideoPlay = async () => {
-    const video = document.querySelector(".main-video")
+const toggleVideoPlay = () => {
+    const video = videoRef.value
     isVideoPlayed.value = !isVideoPlayed.value
-    if (!isVideoPlayed.value) {
-        video.pause()
-        playVideoIcon.value = `${playIcon}`
-    } else {
-        video.play()
-        playVideoIcon.value = `${pauseIcon}`
-    }
-
-    // Ensure the DOM has updated
-    await nextTick();
+    isVideoPlayed.value ? video.play() : video.pause();
 }
 
+// Handling the video`s subtitle
 const subtitleIconSrc = ref(offSubtitleIcon)
 const isSubtitleOn = ref(false)
 const toggleSubtitle = () => {
@@ -126,40 +111,54 @@ const toggleSubtitle = () => {
     subtitleIconSrc.value = isSubtitleOn.value ? `${onSubtitleIcon}` : `${offSubtitleIcon}`
 }
 
+
+// Handling the Video options (To see the annotations and playback speed)
 const isVideoOptionsOpen = ref(false)
 const toggleVideoOptions = () => isVideoOptionsOpen.value = !isVideoOptionsOpen.value
 
+
+// Fullscreening the video
 const toggleFullScreenMode = () => {
     document.querySelector(".main-video").requestFullscreen();
 }
 
+
+// Mute and Unmuting the video
+const videoMuted = ref(false)
 const speakerIconSrc = ref(fullSpeakerIcon)
-const videoVolumeChanging = (event) => {
-    const video = document.querySelector(".main-video")
-    video.muted = false
-    video.volume = event.target.value / 100
-    speakerIconSrc.value = video.volume >= 0.5 ? `${fullSpeakerIcon}` : (video.volume > 0 ? `${halfSpeakerIcon}` : `${muteSpeakerIcon}`);
-}
-
 const muteVideo = () => {
-    const video = document.querySelector(".main-video")
-    const speakerBtn = document.querySelector(".speaker-btn")
-    video.muted = !video.muted
-    speakerBtn.src = video.muted ? `${muteSpeakerIcon}` : `${fullSpeakerIcon}`
+    videoMuted.value = !videoMuted.value
+    speakerIconSrc.value = videoMuted.value ? muteSpeakerIcon : fullSpeakerIcon
 }
 
-//Handling playback speed for Main video
+// Handling the volume of the video (Audio) Notice: When you mute a video and change its volume, it will be unmuted
+const videoVolumeChanging = (event) => {
+    const video = videoRef.value
+    videoMuted.value = false
+    video.volume = event.target.value / 100
+    speakerIconSrc.value = video.volume >= 0.5 && !video.muted ? `${fullSpeakerIcon}` : (video.volume > 0 && !video.muted ? `${halfSpeakerIcon}` : `${muteSpeakerIcon}`);
+}
+
+
+// Handling playback speed for Main video (0.25x speed up to 2x)
 const isPlaybackSpeedOpen = ref(false)
 const togglePlaybackSpeed = () => isPlaybackSpeedOpen.value = !isPlaybackSpeedOpen.value
 
-const videoRef = ref(null)
-const videoProgress = ref(0)
+
+// Handling Video progress track, specific time showing and the rest...
+const videoRef = ref(null) // videoRef is the video tag itself
+const videoProgress = ref(0) // videoProgress is the time that we currently at (video must be played)
+
+// This func is to know what percentage of the video are we at (When video is played) e.g sec5 of 10sec duration is 50% of it
+// So what`s the usage? to update the range input field (for see the progress of the video)
 const updateProgress = () => {
     if (videoRef.value) {
         videoProgress.value = (videoRef.value.currentTime / videoRef.value.duration) * 100
     }
 }
 
+
+// This func is for when you CLICK on a specific time of the video and go there
 const seekVideo = (event) => {
     if (videoRef.value) {
         const newTime = (event.target.value / 100) * videoRef.value.duration;
@@ -167,15 +166,16 @@ const seekVideo = (event) => {
     }
 }
 
-const openControlBar = () => {
-    document.querySelector(".control-bar").style.opacity = 1
+
+// handling some opacity transititions
+const handleControlBar = (type) => {
+    document.querySelector(".control-bar").style.opacity = type === 'open' ? 1 : 0 // Just open or close
 }
 
-const closeControlBar = () => {
-    document.querySelector(".control-bar").style.opacity = 0
-}
 
+// The actual handling for the canvas and specific time showing
 let mouseValue = ref(null)
+let canvasDisplay = ref('none')
 let position = ref(0)
 const getVideoFrame = (event) => {
     const input = event.target;
@@ -189,7 +189,7 @@ const getVideoFrame = (event) => {
     // Calculate the desired left position
     let leftPosition = positionX - halfCanvasWidth;
 
-    // Ensure the canvas stays within the bounds of the video tracker (with Min and Max)
+    // We ensure the canvas stays within the frames of the video tracker (with Min and Max modules)
     leftPosition = Math.max(0, Math.min(leftPosition, width - canvasWidth));
     position.value = leftPosition;
 
@@ -197,9 +197,11 @@ const getVideoFrame = (event) => {
     const video = videoRef.value;
     mouseValue.value = (video.duration / 100) * percentage;
 
+    // Creating the canvas
     const canvas = document.getElementById("myCanvas");
     const context = canvas.getContext('2d');
 
+    // Creating the hidden video for getting the screenshot of the specific time with canvas
     const hiddenVideo = document.createElement('video');
     hiddenVideo.src = video.src;
 
@@ -212,36 +214,40 @@ const getVideoFrame = (event) => {
     });
 
     hiddenVideo.load();
+
+    // handling display for appearing and disappearing the canvas
+    canvasDisplay.value = 'flex'
 }
 
 onMounted(() => {
+    // This 'timeupdate' invokes whenever timeCurrent of the video changes
     videoRef.value.addEventListener('timeupdate', updateProgress);
 });
 </script>
 
 
 <template>
-    <div @mouseover="openControlBar" @mouseleave="closeControlBar" class="video-container top-12 relative overflow-hidden mx-auto flex justify-center
-     items-center rounded-2xl">
-        <video ref="videoRef" src="/src/assets/video/test-vid2.mp4" volume="0.5"
+    <div @mouseover="handleControlBar('open')" @mouseleave="handleControlBar('close')" class="video-container top-12 relative overflow-hidden
+     mx-auto flex justify-center items-center rounded-2xl">
+        <video ref="videoRef" src="/src/assets/video/test-vid2.mp4" volume="0.5" :muted="videoMuted"
             class="main-video source-video cursor-pointer w-full h-full object-fill">
-            <!-- <source class="source-video" src="@/assets/video/test-vid2.mp4"> -->
         </video>
-
         <div class="bg-transparent z-50 control-bar flex opacity-0 w-full h-[48px] max-h-[48px] absolute bottom-0 justify-center
          items-center flex-row">
             <div class="video-progress-bar w-[906px] h-[8px] absolute bottom-14">
                 <div class="z-10 video-img-tracker overflow-hidden w-[225px] h-[130px] rounded-lg border-[3px] border-white
-                  absolute bottom-12" :style="{ left: `${position}px` }">
+                  absolute bottom-12" :style="{ left: `${position}px`, display: `${canvasDisplay}`, }">
                     <canvas id="myCanvas" class="z-0 w-full h-full object-fill"></canvas>
                 </div>
-                <input @mousemove="getVideoFrame" @mouseleave="mouseValue = null" min="0" max="100"
-                    :value="videoProgress" id="progress-bar" class="h-full w-full" type="range" @input="seekVideo">
+                <input @mousemove="getVideoFrame" @mouseleave="mouseValue = null, canvasDisplay = 'none'" min="0"
+                    max="100" :value="videoProgress" id="progress-bar" class="h-full w-full" type="range"
+                    @input="seekVideo">
             </div>
             <div class="w-[618px] h-full left-controls flex flex-row justify-start
              items-center gap-x-6 pl-2">
                 <button @click="toggleVideoPlay">
-                    <img class="play-video-button" style="width: 20px; height: 20px;" :src="playVideoIcon" alt="">
+                    <img class="play-video-button" style="width: 20px; height: 20px;"
+                        :src="isVideoPlayed ? pauseIcon : playIcon" alt="">
                 </button>
                 <button>
                     <img src="@/assets/icons/video-player/next-icon.png" alt="">
@@ -280,7 +286,7 @@ onMounted(() => {
                         <img class="w-3 h-3 mr-2 rotate-180" src="@/assets/icons/video-player/arrow-icon.png" alt="">
                     </div>
                 </div>
-                <div v-if="isPlaybackSpeedOpen" class="video-backspeed select-none flex flex-col text-white items-start justify-center w-[250px] h-auto pb-4 pt-4
+                <div v-if="isPlaybackSpeedOpen && isVideoOptionsOpen" class="video-backspeed select-none flex flex-col text-white items-start justify-center w-[250px] h-auto pb-4 pt-4
                  rounded-xl absolute bottom-16 right-2 text-sm font-medium bg-[#22191d] bg-opacity-90">
                     <div @click="togglePlaybackSpeed"
                         class="cursor-pointer  flex flex-row justify-start items-center w-full h-[35px] gap-x-3 pl-[20px] hover:bg-[#383838]">
@@ -643,8 +649,8 @@ onMounted(() => {
                         </div>
                     </div>
                 </div>
-                <button class="prev" @click="scrollLeft">❮</button>
-                <button class="next" @click="scrollRight">❯</button>
+                <button class="prev" @click="scrollHorizontally('prev')">❮</button>
+                <button class="next" @click="scrollHorizontally('next')">❯</button>
             </div>
 
             <div class="related-video">
