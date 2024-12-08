@@ -3,13 +3,13 @@ import { ref, computed, onMounted, nextTick } from 'vue';
 import { useRoute } from 'vue-router';
 
 // Icons
-import playIcon from '@/assets/icons/video-player/play-icon.png'
-import pauseIcon from '@/assets/icons/video-player/pause-icon.png'
-import onSubtitleIcon from '@/assets/icons/video-player/subtitle-on-icon.png'
-import offSubtitleIcon from '@/assets/icons/video-player/subtitle-off-icon.png'
-import fullSpeakerIcon from '@/assets/icons/video-player/full-speaker-icon.png'
-import halfSpeakerIcon from '@/assets/icons/video-player/half-speaker-icon.png'
-import muteSpeakerIcon from '@/assets/icons/video-player/mute-speaker-icon.png'
+import playIcon from '/src/assets/icons/video-player/play-icon.png'
+import pauseIcon from '/src/assets/icons/video-player/pause-icon.png'
+import onSubtitleIcon from '/src/assets/icons/video-player/subtitle-on-icon.png'
+import offSubtitleIcon from '/src/assets/icons/video-player/subtitle-off-icon.png'
+import fullSpeakerIcon from '/src/assets/icons/video-player/full-speaker-icon.png'
+import halfSpeakerIcon from '/src/assets/icons/video-player/half-speaker-icon.png'
+import muteSpeakerIcon from '/src/assets/icons/video-player/mute-speaker-icon.png'
 
 const route = useRoute()
 const videoId = route.params.id
@@ -93,9 +93,9 @@ const togglePlaylistDivision = () => {
     isPlaylistDivisonOpen.value = !isPlaylistDivisonOpen.value
 }
 
+let isVideoAd = ref(true)
 
 // Handling Main video
-const playVideoIcon = ref(playIcon)
 const isVideoPlayed = ref(false)
 const toggleVideoPlay = () => {
     const video = videoRef.value
@@ -148,12 +148,15 @@ const togglePlaybackSpeed = () => isPlaybackSpeedOpen.value = !isPlaybackSpeedOp
 // Handling Video progress track, specific time showing and the rest...
 const videoRef = ref(null) // videoRef is the video tag itself
 const videoProgress = ref(0) // videoProgress is the time that we currently at (video must be played)
-
+const currentVideoTime = ref('0:00')
+const videoDuration = ref(null)
 // This func is to know what percentage of the video are we at (When video is played) e.g sec5 of 10sec duration is 50% of it
 // So what`s the usage? to update the range input field (for see the progress of the video)
 const updateProgress = () => {
     if (videoRef.value) {
         videoProgress.value = (videoRef.value.currentTime / videoRef.value.duration) * 100
+        currentVideoTime.value = calculateTime(videoRef.value.currentTime)
+        videoDuration.value = calculateTime(videoRef.value.duration)
     }
 }
 
@@ -177,6 +180,11 @@ const handleControlBar = (type) => {
 let mouseValue = ref(null)
 let canvasDisplay = ref('none')
 let position = ref(0)
+
+let videoTimeDisplay = ref('none')
+let videoTimeText = ref(null)
+let videoTimeValue = ref(null)
+let videoTimePosition = ref(null)
 const getVideoFrame = (event) => {
     const input = event.target;
     const { left, width } = input.getBoundingClientRect();
@@ -196,6 +204,10 @@ const getVideoFrame = (event) => {
     const percentage = Math.round(positionX / (width / 100));
     const video = videoRef.value;
     mouseValue.value = (video.duration / 100) * percentage;
+
+    // Time tracker (under the canvas)
+    videoTimePosition.value = positionX - 15
+    videoTimeValue.value = calculateTime(mouseValue.value);
 
     // Creating the canvas
     const canvas = document.getElementById("myCanvas");
@@ -217,7 +229,26 @@ const getVideoFrame = (event) => {
 
     // handling display for appearing and disappearing the canvas
     canvasDisplay.value = 'flex'
+    videoTimeDisplay.value = 'flex'
 }
+
+
+// Using divmod to convert the total seconds to hours and minutes
+function divmod(a, b) {
+    return [Math.floor(a / b), a % b]; // Directly return the quotient and remainder as an array
+}
+
+// This function is used to put a zero (0) in the left of a digit it was less than 10 e.g: 5, 13, 9  ==> 05, 13, 09
+const formatTime = (unit) => (unit < 10 ? `0${unit}` : unit);
+const calculateTime = (duration) => {
+    const [hours, remainingSeconds] = divmod(duration, 3600);
+    const [minutes, seconds] = divmod(remainingSeconds, 60);
+    if (hours) {
+        return `${Math.round(hours)}:${Math.round(minutes)}:${formatTime(Math.round(seconds))}`; // output ==> 33:66:99
+    } else {
+        return `${Math.round(minutes)}:${formatTime(Math.round(seconds))}`; // output ==> 66:99 (We dont show the hour)
+    }
+};
 
 onMounted(() => {
     // This 'timeupdate' invokes whenever timeCurrent of the video changes
@@ -229,8 +260,8 @@ onMounted(() => {
 <template>
     <div @mouseover="handleControlBar('open')" @mouseleave="handleControlBar('close')" class="video-container top-12 relative overflow-hidden
      mx-auto flex justify-center items-center rounded-2xl">
-        <video ref="videoRef" src="/src/assets/video/test-vid2.mp4" volume="0.5" :muted="videoMuted"
-            class="main-video source-video cursor-pointer w-full h-full object-fill">
+        <video ref="videoRef" src="/src/assets/video/test-vid2.mp4" :muted="videoMuted" volume="0.5"
+            class="main-video cursor-pointer w-full h-full object-fill overflow-hidden">
         </video>
         <div class="bg-transparent z-50 control-bar flex opacity-0 w-full h-[48px] max-h-[48px] absolute bottom-0 justify-center
          items-center flex-row">
@@ -239,9 +270,13 @@ onMounted(() => {
                   absolute bottom-12" :style="{ left: `${position}px`, display: `${canvasDisplay}`, }">
                     <canvas id="myCanvas" class="z-0 w-full h-full object-fill"></canvas>
                 </div>
-                <input @mousemove="getVideoFrame" @mouseleave="mouseValue = null, canvasDisplay = 'none'" min="0"
-                    max="100" :value="videoProgress" id="progress-bar" class="h-full w-full" type="range"
-                    @input="seekVideo">
+                <p ref="videoTimeText" class="text-[13px] text-white absolute bottom-4 font-medium"
+                    :style="{ left: `${videoTimePosition}px`, display: `${videoTimeDisplay}` }">
+                    {{ videoTimeValue }}
+                </p>
+                <input :disabled="isVideoAd" @mousemove="getVideoFrame"
+                    @mouseleave="mouseValue = null, canvasDisplay = 'none', videoTimeDisplay = 'none'" min="0" max="100" :value="videoProgress"
+                    id="progress-bar" class="h-full w-full" type="range" @input="seekVideo">
             </div>
             <div class="w-[618px] h-full left-controls flex flex-row justify-start
              items-center gap-x-6 pl-2">
@@ -258,9 +293,9 @@ onMounted(() => {
                         type="range">
                 </button>
                 <p class="text-[13px] text-white -ml-2">
-                    <span class="current-video-time">0:00</span>
+                    <span class="current-video-time">{{ currentVideoTime }}</span>
                     <span>/</span>
-                    <span class="end-video-time">6:48</span>
+                    <span class="end-video-time">{{ videoDuration }}</span>
                 </p>
             </div>
             <div class="w-[288px] h-full right-controls flex flex-row justify-end
@@ -268,7 +303,7 @@ onMounted(() => {
                 <button>
                     <img @click="toggleSubtitle" style="width: 30px; height: 30px;" :src="subtitleIconSrc" alt="">
                 </button>
-                <button @click="toggleVideoOptions" class="setting-btn">
+                <button :disabled="isVideoAd" @click="toggleVideoOptions" class="setting-btn">
                     <img src="@/assets/icons/video-player/settings-icon.png" alt="">
                 </button>
                 <div v-if="!isPlaybackSpeedOpen && isVideoOptionsOpen" class="video-options select-none video-settings flex flex-col text-white items-start justify-center w-[250px] h-auto pb-4 pt-4
@@ -671,6 +706,10 @@ onMounted(() => {
 </template>
 
 <style scoped>
+.main-video {
+    pointer-events: none;
+}
+
 .video-container button img {
     width: 24px;
     height: 24px;
@@ -736,10 +775,6 @@ button:hover #volume-bar {
     display: flex;
 }
 
-#progress-bar::-moz-range-progress {
-    background: #ff0033;
-}
-
 #progress-bar:hover::-moz-range-thumb {
     visibility: visible;
 }
@@ -748,9 +783,25 @@ button:hover #volume-bar {
     transform: scaleY(1.3);
 }
 
-#progress-bar::-moz-range-thumb {
+/* #progress-bar::-moz-range-progress {
+    background: #ff0033;
+} */
+
+/* #progress-bar::-moz-range-thumb {
     visibility: hidden;
     background: red;
+    border: none;
+    width: 13px;
+    height: 13px;
+} */
+
+#progress-bar::-moz-range-progress {
+    background: yellow;
+}
+
+#progress-bar::-moz-range-thumb {
+    visibility: hidden;
+    background: yellow;
     border: none;
     width: 13px;
     height: 13px;
