@@ -102,9 +102,8 @@ let durationInternal = null; // Interval for advertisement
 
 
 const startAdCountdown = () => {
-    durationInternal = setInterval(() => { // Start the ad interval
-        // Start the count down by 1 each 1 second
-        if (adSkipDuration.value > 0) { // if the countdown finished! (reaching to 0)
+    durationInternal = setInterval(() => { // Start the count down by 1 each 1 second
+        if (adSkipDuration.value > 1) { // if the countdown finished! (reached to 1)
             adSkipDuration.value -= 1;
         } else { // Make the user to skip the ad
             stopAdCountdown() // Stop it
@@ -169,9 +168,12 @@ const videoVolumeChanging = (event) => {
 
 
 // Handling playback speed for Main video (0.25x speed up to 2x)
-const isPlaybackSpeedOpen = ref(false)
-const togglePlaybackSpeed = () => isPlaybackSpeedOpen.value = !isPlaybackSpeedOpen.value
-
+const isPlaybackSpeedDivOpen = ref(false)
+const togglePlaybackSpeedDiv = () => isPlaybackSpeedDivOpen.value = !isPlaybackSpeedDivOpen.value
+const changePlayBackSpeed = (speed) => { // From 0.25x to 2x
+    videoRef.value.playbackRate = speed;
+    togglePlaybackSpeedDiv();
+}
 
 // Handling Video progress track, specific time showing and the rest...
 const videoRef = ref(null) // videoRef is the video tag itself
@@ -199,7 +201,9 @@ const seekVideo = (event) => {
 
 
 // handling some opacity transititions
+const isControlBarVisible = ref(false)
 const handleControlBar = (type) => {
+    isControlBarVisible.value = type === 'open';
     document.querySelector(".control-bar").style.opacity = type === 'open' ? 1 : 0 // Just open or close
 }
 
@@ -278,7 +282,21 @@ const calculateTime = (duration) => {
     }
 };
 
-const skipVideoAd = () => console.log("hi")
+// Annotation for main video handling
+const showAnnotation = ref(true)
+const annotationTimeout = ref(null);
+const annotationIsHovered = ref(false)
+const showAnnotationButton = () => {
+    annotationIsHovered.value = true;
+    clearTimeout(annotationTimeout.value)
+};
+
+const hideAnnotationButton = () => {
+    annotationTimeout.value = setTimeout(() => {
+        annotationIsHovered.value = false;
+    }, 1000);
+};
+
 onMounted(() => {
     // This 'timeupdate' invokes whenever timeCurrent of the video changes
     videoRef.value.addEventListener('timeupdate', updateProgress);
@@ -292,12 +310,27 @@ onMounted(() => {
         <video ref="videoRef" src="/src/assets/video/test-vid2.mp4" :muted="videoMuted" volume="0.5"
             class="main-video cursor-pointer w-full h-full object-fill overflow-hidden">
         </video>
-        <button :disabled="!adFinished" @click="skipVideoAd"
-            class="skip-ad-btn text-[14px] gap-x-1 font-normal text-white cursor-pointer absolute bottom-20 right-6 w-20 h-8 rounded-2xl bg-gray-500 flex justify-center items-center p-2">
+        <button :disabled="!adFinished" @click="skipVideoAd" :style="{ backgroundColor: adFinished ? 'black' : 'gray' }"
+            class="skip-ad-btn text-[14px] gap-x-1 font-normal text-white cursor-pointer absolute bottom-36
+             right-6 w-20 h-8 rounded-2xl flex justify-center items-center p-2">
             Skip <span v-if="!adFinished" class="remaining-time">{{ adSkipDuration }}</span>
             <img style="width: 15px; height: 15px;" src="\src\assets\icons\video-player\arrow-icon.png"
                 class="rotate-180" alt="">
         </button>
+        <div v-if="showAnnotation" :style="{ bottom: isControlBarVisible ? '64px' : '8px' }" class="annotation-div absolute right-3 w-10
+         h-10 bg-transparent">
+            <img @mouseenter="showAnnotationButton" @mouseleave="hideAnnotationButton"
+                class="annotation-img w-full h-full cursor-pointer" src="@/assets/img/Ruby.png" alt="">
+            <div @mouseenter="showAnnotationButton" @mouseleave="hideAnnotationButton"
+                :style="{ opacity: annotationIsHovered ? '1' : '0', display: annotationIsHovered ? 'flex' : 'none' }"
+                class="annotation-btn bg-[#191919] bg-opacity-90 p-1 absolute right-[48px] -bottom-[2px] w-[124px] h-[75px] rounded-xl flex-col items-center
+             justify-center text-white">
+                <span class="text-[11px] font-normal text-left self-start ml-3 mb-1">channel name</span>
+                <button class="w-[94.5px] h-[36px] rounded-3xl bg-white cursor-pointer">
+                    <span class="text-[14px] font-medium text-black">Subscribe</span>
+                </button>
+            </div>
+        </div>
         <div class="bg-transparent z-50 control-bar flex opacity-0 w-full h-[48px] max-h-[48px] absolute bottom-0 justify-center
          items-center flex-row">
             <div class="video-progress-bar w-[906px] h-[8px] absolute bottom-14">
@@ -338,60 +371,65 @@ onMounted(() => {
                 <button>
                     <img @click="toggleSubtitle" style="width: 30px; height: 30px;" :src="subtitleIconSrc" alt="">
                 </button>
-                <button :disabled="isVideoAd" @click="toggleVideoOptions" class="setting-btn">
+                <button :disabled="!isVideoAd" @click="toggleVideoOptions" class="setting-btn">
                     <img src="@/assets/icons/video-player/settings-icon.png" alt="">
                 </button>
-                <div v-if="!isPlaybackSpeedOpen && isVideoOptionsOpen" class="video-options select-none video-settings flex flex-col text-white items-start justify-center w-[250px] h-auto pb-4 pt-4
+                <div v-if="!isPlaybackSpeedDivOpen && isVideoOptionsOpen" class="video-options select-none video-settings flex flex-col text-white items-start justify-center w-[250px] h-auto pb-4 pt-4
                  rounded-xl text-sm font-medium absolute bottom-16 right-2 bg-[#22191d] bg-opacity-80">
-                    <div class="cursor-pointer flex flex-row justify-start items-center w-full h-[35px]
+                    <div class="flex flex-row justify-start items-center w-full h-[35px]
                      gap-x-3 pl-2 hover:bg-[#383838]">
                         <img class="w-[26px] h-[26px]" src="@/assets/icons/video-player/double-qoutes-icon.png" alt="">
                         <p class="text-center">Annotations</p>
+                        <label class="cursor-pointer toggle-switch justify-self-end ml-auto mr-2">
+                            <input v-model="showAnnotation" type="checkbox" />
+                            <span class="slider"></span>
+                        </label>
                     </div>
-                    <div @click="togglePlaybackSpeed" class="cursor-pointer flex flex-row justify-start items-center w-full h-[35px]
+                    <div @click="togglePlaybackSpeedDiv" class="flex flex-row justify-start items-center w-full h-[35px]
                      gap-x-3 pl-2 hover:bg-[#383838]">
                         <img class="w-[26px] h-[26px]" src="@/assets/icons/video-player/speed-icon.png" alt="">
                         <p class="text-center text-sm font-medium">Playback speed</p>
-                        <p class="text-left ml-auto">0.75</p>
-                        <img class="w-3 h-3 mr-2 rotate-180" src="@/assets/icons/video-player/arrow-icon.png" alt="">
+                        <p class="text-left ml-auto">{{ videoRef.playbackRate }}</p>
+                        <img class="w-3 h-3 mr-2 rotate-180 cursor-pointer "
+                            src="@/assets/icons/video-player/arrow-icon.png" alt="">
                     </div>
                 </div>
-                <div v-if="isPlaybackSpeedOpen && isVideoOptionsOpen" class="video-backspeed select-none flex flex-col text-white items-start justify-center w-[250px] h-auto pb-4 pt-4
+                <div v-if="isPlaybackSpeedDivOpen && isVideoOptionsOpen" class="video-backspeed select-none flex flex-col text-white items-start justify-center w-[250px] h-auto pb-4 pt-4
                  rounded-xl absolute bottom-16 right-2 text-sm font-medium bg-[#22191d] bg-opacity-90">
-                    <div @click="togglePlaybackSpeed"
+                    <div @click="togglePlaybackSpeedDiv"
                         class="cursor-pointer  flex flex-row justify-start items-center w-full h-[35px] gap-x-3 pl-[20px] hover:bg-[#383838]">
                         <img class="w-3 h-3" src="@/assets/icons/video-player/arrow-icon.png" alt="">
                         <p class="text-center ">Playback speed</p>
                     </div>
-                    <div
+                    <div @click="changePlayBackSpeed(0.25)"
                         class="cursor-pointer flex flex-row justify-start items-center w-full h-[35px] gap-x-3 pl-5 hover:bg-[#383838]">
                         <p class="text-center">0.25</p>
                     </div>
-                    <div
+                    <div @click="changePlayBackSpeed(0.5)"
                         class="cursor-pointer flex flex-row justify-start items-center w-full h-[35px] gap-x-3 pl-5 hover:bg-[#383838]">
                         <p class="text-center">0.5</p>
                     </div>
-                    <div
+                    <div @click="changePlayBackSpeed(0.75)"
                         class="cursor-pointer flex flex-row justify-start items-center w-full h-[35px] gap-x-3 pl-5 hover:bg-[#383838]">
                         <p class="text-center">0.75</p>
                     </div>
-                    <div
+                    <div @click="changePlayBackSpeed(1)"
                         class="cursor-pointer flex flex-row justify-start items-center w-full h-[35px] gap-x-3 pl-5 hover:bg-[#383838]">
                         <p class="text-center">Normal</p>
                     </div>
-                    <div
+                    <div @click="changePlayBackSpeed(1.25)"
                         class="cursor-pointer flex flex-row justify-start items-center w-full h-[35px] gap-x-3 pl-5 hover:bg-[#383838]">
                         <p class="text-center">1.25</p>
                     </div>
-                    <div
+                    <div @click="changePlayBackSpeed(1.5)"
                         class="cursor-pointer flex flex-row justify-start items-center w-full h-[35px] gap-x-3 pl-5 hover:bg-[#383838]">
                         <p class="text-center">1.5</p>
                     </div>
-                    <div
+                    <div @click="changePlayBackSpeed(1.75)"
                         class="cursor-pointer flex flex-row justify-start items-center w-full h-[35px] gap-x-3 pl-5 hover:bg-[#383838]">
                         <p class="text-center">1.75</p>
                     </div>
-                    <div
+                    <div @click="changePlayBackSpeed(2)"
                         class="cursor-pointer flex flex-row justify-start items-center w-full h-[35px] gap-x-3 pl-5 hover:bg-[#383838]">
                         <p class="text-center">2</p>
                     </div>
@@ -741,8 +779,55 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.skip-ad-btn.disable {
-    pointer-events: none !important;
+.annotation-div {
+    transition: bottom 0.1s ease-in-out;
+}
+
+.annotation-btn {
+    transition: opacity 0.1s ease;
+}
+
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 24px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    background-color: #707070;
+    border-radius: 24px;
+    width: 100%;
+    height: 100%;
+    transition: background-color 0.3s;
+}
+
+.slider::before {
+    content: "";
+    position: absolute;
+    height: 20px;
+    width: 20px;
+    left: 4px;
+    bottom: 2px;
+    background-color: white;
+    border-radius: 50%;
+    transition: transform 0.3s;
+}
+
+.toggle-switch input:checked+.slider {
+    background-color: #dc002c;
+}
+
+.toggle-switch input:checked+.slider::before {
+    transform: translateX(22px);
 }
 
 .main-video {
