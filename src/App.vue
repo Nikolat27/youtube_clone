@@ -1,17 +1,27 @@
 <script setup>
-import Navbar from "@/components/Navbar.vue"
-import Sidebar from "./components/Sidebar.vue";
+import NavbarWebsite from "@/components/website/NavbarWebsite.vue"
+import SidebarWebsite from "@/components/website/SidebarWebsite.vue";
+import NavbarStudio from "./components/studio/NavbarStudio.vue";
+import SidebarStudio from "./components/studio/SidebarStudio.vue";
+
 import { RouterView } from "vue-router";
 import { useRoute } from "vue-router";
 import { computed } from "vue";
 
 const route = useRoute();
-const isVideoDetailRoute = computed(() => route.name === "video_detail")
+const isVideoDetailRoute = computed(() => route.name === "video_detail");
+const isStudioRoute = computed(() => route.name === 'studio');
 </script>
 
 
 <template>
-  <Navbar />
-  <Sidebar v-if="!isVideoDetailRoute" />
+  <!-- Studio Components-->
+  <NavbarStudio v-if="isStudioRoute" />
+  <SidebarStudio v-if="isStudioRoute" />
+
+  <!-- Regular Website Components-->
+  <NavbarWebsite v-if="!isStudioRoute" />
+  <SidebarWebsite v-if="!isStudioRoute && !isVideoDetailRoute" />
+
   <RouterView />
 </template>

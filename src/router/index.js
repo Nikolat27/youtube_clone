@@ -9,7 +9,7 @@ import HistoryView from "@/views/HistoryView.vue";
 import NotFoundView from "@/views/NotFoundView.vue";
 import TestView from "@/views/TestView.vue";
 
-// Children routes
+// Channel-page Children routes
 import Home from "@/views/channelViews/Home.vue";
 import Video from "@/views/channelViews/Videos.vue";
 import Shorts from "@/views/channelViews/Shorts.vue";
@@ -17,6 +17,10 @@ import Playlists from "@/views/channelViews/Playlists.vue";
 import Community from "@/views/channelViews/Community.vue";
 import Search from "@/views/channelViews/Search.vue";
 import PlaylistVideosView from "@/views/PlaylistVideosView.vue";
+
+// Studio Children routes
+import channelContentView from "@/views/studioViews/channelContentView.vue";
+
 
 const routes = [
     { path: "/", name: "home", component: HomePageView, },
@@ -34,6 +38,16 @@ const routes = [
             { path: 'playlists', name: 'playlists', component: Playlists, },
             { path: 'community', name: 'community', component: Community, },
             { path: 'search', name: 'search', component: Search, },
+        ]
+    },
+    {
+        path: "/studio/", name: "studio", component: null, children: [
+            { path: "channel-content", name: 'channel-content', component: channelContentView },
+            { path: "dashboard", name: 'dashboard', component: null },
+            { path: "analytics", name: 'analytics', component: null },
+            { path: "community", name: 'community', component: null },
+            { path: "earn", name: 'earn', component: null },
+            { path: "customization", name: 'customization', component: null },
         ]
     },
     { path: "/test", name: "test", component: TestView, },
