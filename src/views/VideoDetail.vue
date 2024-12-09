@@ -93,14 +93,42 @@ const togglePlaylistDivision = () => {
     isPlaylistDivisonOpen.value = !isPlaylistDivisonOpen.value
 }
 
+
+// Advertisement and such...
 let isVideoAd = ref(true)
+let adSkipDuration = ref(5) // in seconds
+let adFinished = ref(false)
+let durationInternal = null; // Interval for advertisement
+
+
+const startAdCountdown = () => {
+    durationInternal = setInterval(() => { // Start the ad interval
+        // Start the count down by 1 each 1 second
+        if (adSkipDuration.value > 0) { // if the countdown finished! (reaching to 0)
+            adSkipDuration.value -= 1;
+        } else { // Make the user to skip the ad
+            stopAdCountdown() // Stop it
+            adFinished.value = true // Enable the user to skip the ad
+        }
+    }, 1000);
+}
+const stopAdCountdown = () => {
+    clearInterval(durationInternal); // Stopping the Countdown
+}
+
 
 // Handling Main video
-const isVideoPlayed = ref(false)
+const isVideoPlayed = ref(false);
 const toggleVideoPlay = () => {
-    const video = videoRef.value
-    isVideoPlayed.value = !isVideoPlayed.value
-    isVideoPlayed.value ? video.play() : video.pause();
+    const video = videoRef.value;
+    isVideoPlayed.value = !isVideoPlayed.value;
+    if (isVideoPlayed.value) {
+        video.play();
+        startAdCountdown();
+    } else {
+        video.pause();
+        stopAdCountdown();
+    }
 }
 
 // Handling the video`s subtitle
@@ -250,6 +278,7 @@ const calculateTime = (duration) => {
     }
 };
 
+const skipVideoAd = () => console.log("hi")
 onMounted(() => {
     // This 'timeupdate' invokes whenever timeCurrent of the video changes
     videoRef.value.addEventListener('timeupdate', updateProgress);
@@ -263,6 +292,12 @@ onMounted(() => {
         <video ref="videoRef" src="/src/assets/video/test-vid2.mp4" :muted="videoMuted" volume="0.5"
             class="main-video cursor-pointer w-full h-full object-fill overflow-hidden">
         </video>
+        <button :disabled="!adFinished" @click="skipVideoAd"
+            class="skip-ad-btn text-[14px] gap-x-1 font-normal text-white cursor-pointer absolute bottom-20 right-6 w-20 h-8 rounded-2xl bg-gray-500 flex justify-center items-center p-2">
+            Skip <span v-if="!adFinished" class="remaining-time">{{ adSkipDuration }}</span>
+            <img style="width: 15px; height: 15px;" src="\src\assets\icons\video-player\arrow-icon.png"
+                class="rotate-180" alt="">
+        </button>
         <div class="bg-transparent z-50 control-bar flex opacity-0 w-full h-[48px] max-h-[48px] absolute bottom-0 justify-center
          items-center flex-row">
             <div class="video-progress-bar w-[906px] h-[8px] absolute bottom-14">
@@ -275,8 +310,8 @@ onMounted(() => {
                     {{ videoTimeValue }}
                 </p>
                 <input :disabled="isVideoAd" @mousemove="getVideoFrame"
-                    @mouseleave="mouseValue = null, canvasDisplay = 'none', videoTimeDisplay = 'none'" min="0" max="100" :value="videoProgress"
-                    id="progress-bar" class="h-full w-full" type="range" @input="seekVideo">
+                    @mouseleave="mouseValue = null, canvasDisplay = 'none', videoTimeDisplay = 'none'" min="0" max="100"
+                    :value="videoProgress" id="progress-bar" class="h-full w-full" type="range" @input="seekVideo">
             </div>
             <div class="w-[618px] h-full left-controls flex flex-row justify-start
              items-center gap-x-6 pl-2">
@@ -706,6 +741,10 @@ onMounted(() => {
 </template>
 
 <style scoped>
+.skip-ad-btn.disable {
+    pointer-events: none !important;
+}
+
 .main-video {
     pointer-events: none;
 }
