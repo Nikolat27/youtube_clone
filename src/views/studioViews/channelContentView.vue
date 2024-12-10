@@ -1,5 +1,6 @@
 <script setup>
-import { ref, reactive, onMounted, computed } from 'vue';
+import { ref, reactive, computed, watch } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 
 // Icons
 import arrowBottomIcon from '@/assets/icons/svg-icons/arrow-bottom-icon.svg'
@@ -8,6 +9,10 @@ import editIcon from '@/assets/icons/svg-icons/edit-icon.svg'
 import kebabMenuIcon from '@/assets/icons/svg-icons/kebab-menu.svg'
 import downloadIcon from '@/assets/icons/svg-icons/download-icon2.svg'
 import uninstallIcon from '@/assets/icons/svg-icons/uninstall-icon.svg'
+
+// Router
+const router1 = useRoute()
+const router2 = useRouter()
 
 // Filter options Management
 const isFilterOptionsOpen = ref(false)
@@ -27,7 +32,6 @@ const videoTitleLength = computed(() => videoTitle.value.length)
 const videoTitleEdit = (event) => {
     videoTitle.value = event.target.value;
 }
-
 const userAbleToSave = computed(() => { // User can only save the information if the title`s length is equal or greater than 0
     return (videoTitle.value.length > 0 ? true : false)
 })
@@ -55,6 +59,22 @@ const toggleOptions = (video_id, video_title = '', video_description = '', optio
 const toggleVideoOptions = (video_id, video_title, video_description) => toggleOptions(video_id, video_title, video_description, 'optionDiv')
 const toggleVideoEdit = (video_id, video_title, video_description) => toggleOptions(video_id, video_title, video_description, 'editDiv')
 
+
+// Filtering Videos Management
+const filterVideos = (filter) => {
+    router2.push({ name: 'channel-content', query: { ...router1.query, 'filter': filter } })
+}
+
+// Sorting Videos Management
+const sortState = ref('DESC')
+const sortVideos = (sortByType) => {
+    sortState.value = sortState.value === 'ASC' ? 'DESC' : 'ASC'
+    router2.push({ name: 'channel-content', query: { ...router1.query, 'sortByType': sortByType, 'sortByOrder': sortState.value } })
+}
+
+watch(() => router1.query.sortBy, () => {
+
+})
 </script>
 
 <template>
@@ -76,15 +96,19 @@ const toggleVideoEdit = (video_id, video_title, video_description) => toggleOpti
                 <img @click="toggleFilterOptions" class="w-6 h-6 cursor-pointer"
                     src="@/assets/icons/svg-icons/filter-filtering-icon.svg" alt="">
                 <input class="w-[70%] h-[48px] outline-none" type="text" placeholder="Filter">
-                <div v-if="isFilterOptionsOpen" class="filter-options flex flex-col justify-center items-center w-[145px] h-[248px] bg-white
-             rounded-lg text-[15px] font-normal font-roboto absolute top-[48px] left-[46px]">
-                    <div>Age restriction</div>
-                    <div>Copyright</div>
-                    <div>Description</div>
-                    <div>Made for kids</div>
-                    <div>Title</div>
-                    <div>Views</div>
-                    <div>Visibility</div>
+                <div v-if="isFilterOptionsOpen" class="z-20 filter-options flex flex-col justify-center items-center w-[145px] h-[160px] bg-white
+             rounded-lg text-[15px] font-normal font-roboto absolute top-[48px] left-[46px]"
+                    style="padding-left: 0px;">
+                    <div :class="[$route.query.filter == 'age-restriction' ? 'bg-gray-300 hover:bg-gray-300' : 'hover:bg-[#f9f9f9]']"
+                        @click="filterVideos('age-restriction')">
+                        Age restriction</div>
+                    <div :class="[$route.query.filter == 'made-for-kids' ? 'bg-gray-300 hover:bg-gray-300' : 'hover:bg-[#f9f9f9]']"
+                        @click="filterVideos('made-for-kids')">Made for kids</div>
+                    <div :class="[$route.query.filter == 'views' ? 'bg-gray-300 hover:bg-gray-300' : 'hover:bg-[#f9f9f9]']"
+                        @click="filterVideos('views')">
+                        Views</div>
+                    <div :class="[$route.query.filter == 'visibility' ? 'bg-gray-300' : 'hover:bg-[#f9f9f9]']"
+                        @click="filterVideos('visibility')">Visibility</div>
                 </div>
             </div>
             <div class="table-header flex flex-row items-center w-full h-[47px]
@@ -96,12 +120,22 @@ const toggleVideoEdit = (video_id, video_title, video_description) => toggleOpti
                 <div class="right-side flex flex-row justify-end items-center w-[70%] h-[47px] gap-x-6 ml-8">
                     <span>Visiblity</span>
                     <span>Restrictions</span>
-                    <button class="cursor-pointer mr-8 ml-8 text-black font-bold text-[14px] flex flex-row
-                 justify-center items-center">
+                    <button v-if="!router1.query.sortByType || $route.query.sortByType === 'date'"
+                        @click="sortVideos('date')" class="cursor-pointer mr-8 ml-8 text-black font-bold text-[14px] flex flex-row
+                            justify-center items-center">
                         <span>Date</span>
-                        <img class="w-[10px] h-[10px] ml-1" :src="arrowBottomIcon" alt="">
+                        <img :class="[(!router1.query.sortByType || $route.query.sortByType === 'date') && sortState === 'ASC' ? 'rotate-180' : '']"
+                            class="w-[10px] h-[10px] ml-1" :src="arrowBottomIcon" alt="">
                     </button>
-                    <span>Views</span>
+                    <span v-else @click="sortVideos('date')"
+                        class="mr-8 ml-8 hover:text-black cursor-pointer">Date</span>
+                    <button v-if="$route.query.sortByType === 'views'" @click="sortVideos('views')" class="cursor-pointer text-black font-bold text-[14px] flex flex-row
+                        justify-center items-center">
+                        <span>Views</span>
+                        <img :class="[$route.query.sortByType === 'views' && sortState === 'ASC' ? 'rotate-180' : '']"
+                            class="w-[10px] h-[10px] ml-1" :src="arrowBottomIcon" alt="">
+                    </button>
+                    <span v-else @click="sortVideos('views')" class="hover:text-black cursor-pointer">Views</span>
                     <span>Comments</span>
                     <span>Likes (vs. dislikes)</span>
                 </div>
@@ -205,6 +239,9 @@ const toggleVideoEdit = (video_id, video_title, video_description) => toggleOpti
     }
 }
 
+.filter-options div {
+    cursor: pointer;
+}
 .edit-title-input {
     resize: none;
 }
@@ -261,10 +298,6 @@ const toggleVideoEdit = (video_id, video_title, video_description) => toggleOpti
     font-weight: 500;
 }
 
-.right-side span {
-    cursor: pointer;
-}
-
 .filter-options {
     box-shadow: 0 0 14px rgba(0, 0, 0, 0.13);
 }
@@ -277,9 +310,5 @@ const toggleVideoEdit = (video_id, video_title, video_description) => toggleOpti
     justify-content: start;
     align-items: center;
     padding-left: 16px;
-}
-
-.filter-options div:hover {
-    background-color: #f9f9f9;
 }
 </style>

@@ -41,7 +41,7 @@ const routes = [
         ]
     },
     {
-        path: "/studio/", name: "studio", component: null, children: [
+        path: "/studio/", name: "studio", redirect: '/studio/channel-content', component: null, children: [
             { path: "channel-content", name: 'channel-content', component: channelContentView },
             { path: "dashboard", name: 'dashboard', component: null },
             { path: "analytics", name: 'analytics', component: null },
