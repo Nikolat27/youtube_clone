@@ -16,12 +16,14 @@ const isStudioRoute = computed(() => route.name === 'studio');
 
 <template>
   <!-- Studio Components-->
-  <NavbarStudio v-if="isStudioRoute" />
-  <SidebarStudio v-if="isStudioRoute" />
+  <!-- <NavbarStudio v-if="isStudioRoute" />
+  <SidebarStudio v-if="isStudioRoute" /> -->
+  <NavbarStudio />
+  <SidebarStudio />
 
   <!-- Regular Website Components-->
-  <NavbarWebsite v-if="!isStudioRoute" />
-  <SidebarWebsite v-if="!isStudioRoute && !isVideoDetailRoute" />
+  <!-- <NavbarWebsite v-if="!isStudioRoute" />
+  <SidebarWebsite v-if="!isStudioRoute && !isVideoDetailRoute" /> -->
 
   <RouterView />
 </template>
