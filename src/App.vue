@@ -20,7 +20,7 @@ const isStudioRoute = computed(() => route.name === 'studio');
   <SidebarStudio v-if="isStudioRoute" /> -->
   <NavbarStudio />
   <SidebarStudio />
-
+  
   <!-- Regular Website Components-->
   <!-- <NavbarWebsite v-if="!isStudioRoute" />
   <SidebarWebsite v-if="!isStudioRoute && !isVideoDetailRoute" /> -->

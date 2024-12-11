@@ -1,5 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
+import PlaylistCreation from './video_creation/PlaylistCreation.vue'
+import { sharedState } from '@/sharedState'; // Shared states (aka global variables)
 
 // Icons
 import hamburgerBtn from '/src/assets/icons/svg-icons/collapse-menu-icon.svg'
@@ -54,12 +56,11 @@ const videoDescriptionEdit = (event) => {
 const isPlaylistSelectionOpen = ref(false)
 const togglePlaylistSelection = () => isPlaylistSelectionOpen.value = !isPlaylistSelectionOpen.value
 
-const isPlaylistCreationOpen = ref(false)
-const togglePlaylistCreation = () => isPlaylistCreationOpen.value = !isPlaylistCreationOpen.value
 
-const isPlaylistVisibilityOpen = ref(false)
-const togglePlaylistVisibility = () => isPlaylistVisibilityOpen.value = !isPlaylistVisibilityOpen.value
-
+// Managing playlist creation tab with sharedStates
+const togglePlaylistCreation = () => {
+    sharedState.isPlaylistCreationOpen = !sharedState.isPlaylistCreationOpen
+}
 </script>
 
 <template>
@@ -223,96 +224,25 @@ const togglePlaylistVisibility = () => isPlaylistVisibilityOpen.value = !isPlayl
                             <button class="w-[12px] h-[12px] justify-self-end ml-auto mr-3">
                                 <img class="w-full h-full" :src="arrowDown" alt="">
                             </button>
-                            <div v-if="isPlaylistSelectionOpen || isPlaylistCreationOpen" class="absolute bottom-0 left-10 bg-white z-10 w-[397px] h-[389px] rounded-xl"
-                                style="box-shadow: 0 0 10px rgba(0, 0, 0, 0.135);">
-                                <div class="checkbox-group w-full h-[336px] justify-start items-center">
-                                </div>
-                                <div class="action-buttons w-full h-[52.8px] text-black flex flex-row text-[14px] font-medium
-                                 px-2 border-t items-center relative">
-                                    <button @click="togglePlaylistCreation"
-                                        class="rounded-3xl w-[120px] h-[36px] bg-[#f2f2f2] hover:bg-[#e5e5e5] flex justify-center items-center">
-                                        <span>Create playlist</span>
-                                    </button>
-                                    <div v-if="isPlaylistCreationOpen" class="z-50 playlist-creation cursor-auto bg-white absolute bottom-0 left-40 w-[576px] h-[555px] rounded-xl
-                                         flex flex-col">
-                                        <div class="header-content pl-6 w-[576px] h-[68px] flex flex-row items-center
-                                             border-b">
-                                            <p class="text-[20px] font-medium">Create a new playlist</p>
-                                            <button @click="togglePlaylistCreation" class="justify-self-end ml-auto mr-4 w-[39.2px] h-[39.2px] rounded-full hover:bg-[#dfdfdf] flex
-                                                 justify-center items-center">
-                                                <img draggable="false" class="w-[15px] h-[15px]" :src="closeIcon"
-                                                    alt="">
-                                            </button>
-                                        </div>
-                                        <div class="flex flex-col justify-start items-center mt-6">
-                                            <div class="w-[536px] h-[79px] rounded-lg border border-solid border-[#d6d6d6] hover:border-black hover:border-2
-                                                        focus:border-2 relative pl-2 pt-2 flex flex-col mb-8"
-                                                :style="{ borderColor: userAbleToSave ? 'black' : 'red', borderWidth: !userAbleToSave ? '2px' : '1px' }">
-                                                <span class="text-[12px] font-medium text-gray-600 text-left">Title
-                                                    (required)</span>
-                                                <textarea @input="videoTitleEdit" v-model="videoTitle"
-                                                    class="mt-1 edit-title-input w-[440px] h-[41px] outline-none text-[15px] font-normal overflow-hidden leading-4"
-                                                    placeholder="Add title" minlength="1" required
-                                                    maxlength="100"></textarea>
-                                                <span
-                                                    class="text-[12px] font-normal absolute right-1 bottom-1 text-gray-700"><span
-                                                        class="title-char-counter">{{
-                                                            videoTitleLength }}</span>/150</span>
-                                            </div>
-                                            <div
-                                                class="w-[536px] flex flex-col max-w-[536px] relative h-[163px] max-h-[163px] rounded-lg
-                                                        border border-[#d6d6d6] pl-2 pt-2 hover:border-black hover:border-2">
-                                                <span
-                                                    class="text-[12px] font-medium text-gray-600 text-left">Description</span>
-                                                <textarea style="scrollbar-width: thin;" @input="videoDescriptionEdit"
-                                                    v-model="videoDescription"
-                                                    class="mt-1 edit-title-input w-[440px] h-[151px] outline-none text-[15px] font-normal overflow-y-auto leading-4"
-                                                    placeholder="Add description" maxlength="5000"></textarea>
-                                                <span
-                                                    class="text-[12px] font-normal absolute right-1 bottom-1 text-gray-700"><span
-                                                        class="title-char-counter">{{
-                                                            videoDescriptionLength }}</span>/5000</span>
-                                            </div>
-                                            <div class="flex flex-col w-full gap-y-4 justify-start items-center">
-                                                <p class="text-[15px] font-medium mr-auto ml-6 mt-6">Visibility and
-                                                    sort order
-                                                </p>
-                                                <div @click="togglePlaylistVisibility" class="flex w-[256px] h-[56px] rounded-xl flex-row mr-auto ml-6 border
-                                                     justify-start pl-2 items-center relative cursor-pointer">
-                                                    <div class="flex flex-col">
-                                                        <span
-                                                            class="text-[12px] font-medium text-gray-600">Visibility</span>
-                                                        <p class="text-[15px] font-normal">Public</p>
-                                                    </div>
-                                                    <div class="justify-self-end ml-auto mr-4">
-                                                        <img class="w-[14px] h-[14px]" :src="arrowDown" alt="">
-                                                    </div>
-                                                    <div v-if="isPlaylistVisibilityOpen" class="absolute left-[265px] top-0 bg-white z-30 py-4 paper-list w-[256px] text-[15px] font-normal h-[120px] rounded-xl
-                                                     flex flex-col justify-start items-center"
-                                                        style="box-shadow: 0 0 8px rgba(0, 0, 0, 0.15);">
-                                                        <button
-                                                            class="w-full h-[32px] text-left pl-6 bg-[#f1f1f1] hover:bg-[#f9f9f9]">Public</button>
-                                                        <button
-                                                            class="w-full h-[32px] text-left pl-6 hover:bg-[#f9f9f9]">Private</button>
-                                                        <button
-                                                            class="w-full h-[32px] text-left pl-6 hover:bg-[#f9f9f9]">Unlisted</button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="playlist-footer w-full h-[68px] flex justify-end items-center pr-8
-                                             mt-4 border-t gap-x-2">
-                                                <button @click="togglePlaylistCreation" class="w-[73px] h-[36px] rounded-3xl border-black border-2 bg-white text-black text-[14px]
-                                                 font-medium">Cancel</button>
-                                                <button class="w-[73px] h-[36px] rounded-3xl bg-black text-white text-[14px]
-                                                 font-medium">Create</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <button class="rounded-3xl w-[64px] h-[36px] bg-[#f2f2f2] hover:bg-[#e5e5e5]
+                        </div>
+                        <div v-if="isPlaylistSelectionOpen || sharedState.isPlaylistCreationOpen" class="absolute bottom-0 left-60
+                             bg-white z-10 w-[397px] h-[389px] rounded-xl"
+                            style="box-shadow: 0 0 10px rgba(0, 0, 0, 0.135);">
+                            <div class="checkbox-group w-full h-[336px] justify-start items-center">
+                            </div>
+                            <div class="action-buttons w-full h-[52.8px] text-black flex flex-row text-[14px] font-medium
+                                 px-2 border-t items-center">
+                                <button @click="togglePlaylistCreation"
+                                    class="rounded-3xl w-[120px] h-[36px] bg-[#f2f2f2] hover:bg-[#e5e5e5] flex justify-center items-center">
+                                    <span>Create playlist</span>
+                                </button>
+                                <Teleport to="body">
+                                    <PlaylistCreation v-if="sharedState.isPlaylistCreationOpen"></PlaylistCreation>
+                                </Teleport>
+                                <button class="rounded-3xl w-[64px] h-[36px] bg-[#f2f2f2] hover:bg-[#e5e5e5]
                                      flex justify-center items-center justify-self-end ml-auto">
-                                        <span>Done</span>
-                                    </button>
-                                </div>
+                                    <span>Done</span>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -336,6 +266,8 @@ const togglePlaylistVisibility = () => isPlaylistVisibilityOpen.value = !isPlayl
             </div>
         </div>
     </div>
+
+    <!-- <PlaylistCreation v-if="false"></PlaylistCreation> -->
 </template>
 <style scoped>
 @media (max-width: 740px) {

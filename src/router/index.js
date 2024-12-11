@@ -20,7 +20,7 @@ import PlaylistVideosView from "@/views/PlaylistVideosView.vue";
 
 // Studio Children routes
 import channelContentView from "@/views/studioViews/channelContentView.vue";
-
+import PlaylistCreation from "@/components/studio/video_creation/PlaylistCreation.vue";
 
 const routes = [
     { path: "/", name: "home", component: HomePageView, },
@@ -43,7 +43,7 @@ const routes = [
     {
         path: "/studio/", name: "studio", redirect: '/studio/channel-content', component: null, children: [
             { path: "channel-content", name: 'channel-content', component: channelContentView },
-            { path: "dashboard", name: 'dashboard', component: null },
+            { path: "dashboard", name: 'dashboard', component: PlaylistCreation },
             { path: "analytics", name: 'analytics', component: null },
             { path: "community", name: 'community', component: null },
             { path: "earn", name: 'earn', component: null },
