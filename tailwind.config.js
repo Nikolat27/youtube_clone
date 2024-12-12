@@ -5,7 +5,10 @@ export default {
     extend: {
       fontFamily: {
         roboto: ['"Roboto"', 'sans-serif']
-      }
+      },
+      boxShadow: {
+        'outer': '0 0 12px rgba(0, 0, 0, 0.13)',
+      },
     },
   },
   plugins: [],
