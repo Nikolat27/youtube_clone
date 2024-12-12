@@ -13,7 +13,7 @@ const uploadSubtitleFile = (event) => {
 
 <template>
     <div class="w-full h-auto flex flex-col pl-[50px]">
-        <div class="flex flex-col text-[25px] font-semibold mt-4">
+        <div class="flex flex-col text-[25px] font-semibold mt-2">
             <p class="text-left">Video elements</p>
         </div>
         <div class="video-elements">
@@ -26,6 +26,7 @@ const uploadSubtitleFile = (event) => {
                     <h3 class="text-[25px] font-semibold">Add Subtitle</h3>
                     <p class="text-[13px] font-normal text-gray-500">Reach a broader audience by adding subtitles to
                         your video</p>
+                    <h1 class="font-bold text-[14px] mb-2">Subtitle source: {{ subtitleFile || 'Nothing yet' }}</h1>
                 </div>
                 <div class="justify-self-end ml-auto mr-4">
                     <button @click="subtitleFileInput.click()" class="w-[57.1px] h-[36px] rounded-3xl text-[14px] font-medium bg-[#ececec]

@@ -9,11 +9,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@primevue/themes": "^4.2.4",
+    "@coreui/coreui": "^5.2.0",
+    "@coreui/vue": "^5.4.1",
+    "@primevue/themes": "^4.2.5",
+    "@vuepic/vue-datepicker": "^10.0.0",
     "@vueuse/components": "^12.0.0",
     "@vueuse/core": "^12.0.0",
+    "boostrap": "^2.0.0",
     "portal-vue": "^3.0.0",
-    "primevue": "^4.2.4",
+    "primevue": "^4.2.5",
     "vue": "^3.5.12",
     "vue-confirm-dialog": "^1.1.0",
     "vue-router": "^4.5.0",

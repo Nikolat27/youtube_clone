@@ -15,7 +15,6 @@ import postIcon from '/src/assets/icons/svg-icons/post-icon.svg'
 import playlistIcon from '/src/assets/icons/svg-icons/playlist-icon-2.svg'
 import closeIcon from '/src/assets/icons/svg-icons/close-icon2.svg'
 
-
 const isVideoListboxOpen = ref(false)
 const toggleVideoList = () => isVideoListboxOpen.value = !isVideoListboxOpen.value
 
@@ -44,7 +43,6 @@ const nextStep = () => {
         steps[currentStep.value].completed = true;
         currentStep.value += 1;
     }
-    console.log(`Current Step after next: ${currentStep.value}`);
 }
 
 const prevStep = () => {
@@ -57,6 +55,35 @@ const prevStep = () => {
 const isStepCompleted = (index) => {
     return steps[index].completed;
 }
+
+
+const formData = reactive({
+    details: {
+        title: '',
+        description: '',
+        thumbnail: '',
+        playlists: [],
+        audience: '',
+        ageRestriction: '',
+        language: '',
+        monetized: false,
+    },
+
+    elements: {
+        subtitleFile: null,
+    },
+
+    visibility: {
+        scheduled: true,
+        scheduleTime: '',
+        publish: null,
+    }
+})
+
+const submitForm = () => {
+    console.log(formData);
+}
+
 
 </script>
 
@@ -147,17 +174,24 @@ const isStepCompleted = (index) => {
             </div>
         </div>
         <div class="stepper-div flex flex-row justify-center items-center w-full h-[80px] border-b">
-            <button
-                class="w-[128px] h-[64px] rounded-lg bg-white hover:bg-[#e5e5e5] flex justify-center items-start pt-2">
+            <button @click="currentStep = 0" :style="{
+                backgroundColor: currentStep === 0 ? '#e5e5e5' : '',
+                color: currentStep === 0 ? 'black' : '#69666a'
+            }" class="w-[128px] h-[64px] rounded-lg bg-white hover:bg-[#e5e5e5] flex justify-center items-start pt-2">
                 <span class="font-medium text-[15px]">Details</span>
             </button>
-            <button
-                class="w-[128px] h-[64px] rounded-lg bg-white hover:bg-[#e5e5e5] flex justify-center items-start pt-2">
-                <span class="font-medium text-[15px] text-[#69666a]">Video elements</span>
+            <button @click="currentStep = 1" :style="{
+                backgroundColor: currentStep === 1 ? '#e5e5e5' : '',
+                color: currentStep === 1 ? 'black' : '#69666a'
+            }" class="w-[128px] h-[64px] rounded-lg bg-white hover:bg-[#e5e5e5] flex justify-center items-start pt-2">
+                <span class="font-medium text-[15px]">Video elements</span>
             </button>
-            <button
+            <button @click="currentStep = 2" :style="{
+                backgroundColor: currentStep === 2 ? '#e5e5e5' : '',
+                color: currentStep === 2 ? 'black' : '#69666a'
+            }"
                 class="w-[128px] h-[64px] rounded-lg bg-white hover:bg-[#e5e5e5] flex justify-center items-start pt-2">
-                <span class="font-medium text-[15px] text-[#69666a]">Visibility</span>
+                <span class="font-medium text-[15px]">Visibility</span>
             </button>
         </div>
 
@@ -167,11 +201,16 @@ const isStepCompleted = (index) => {
         <Visibility v-else-if="currentStep === 2"></Visibility>
         <!-- End Components-->
 
-        <div class="flex flex-row absolute bottom-0 items-center justify-end pr-4 w-full h-[68.8px] border-t">
-            <button @click="nextStep" class="w-[61px] h-[36px] rounded-3xl text-[14px] font-medium hover:bg-opacity-80
+        <div class="flex flex-row absolute bottom-0 gap-x-2 items-center justify-end pr-4 w-full h-[68.8px] border-t">
+            <button v-if="!(currentStep === 0)" @click="prevStep" class="w-[61px] h-[36px] rounded-3xl text-[14px] font-medium hover:bg-opacity-80
+             text-black bg-[#f9f9f9] hover:bg-[#cccaca]">Back
+            </button>
+            <button v-if="currentStep < 2" @click="nextStep" class="w-[61px] h-[36px] rounded-3xl text-[14px] font-medium hover:bg-opacity-80
              text-white bg-black">Next
             </button>
-            <h1>{{ currentStep }}</h1>
+            <button v-else @click="submitForm" class="w-[61px] h-[36px] rounded-3xl text-[14px] font-medium hover:bg-opacity-80
+             text-white bg-black">Save
+            </button>
         </div>
     </div>
 </template>
