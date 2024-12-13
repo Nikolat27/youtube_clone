@@ -121,10 +121,11 @@ const submitForm = () => {
                     <img class="w-[20px] h-[20px] mr-4 ml-4" :src="uploadIcon" alt="">
                     <span>Upload videos</span>
                 </div>
-                <div class="cursor-pointer w-full h-[32px] flex justify-start items-center hover:bg-[#f9f9f9]">
+                <router-link to="/posts"
+                    class="cursor-pointer w-full h-[32px] flex justify-start items-center hover:bg-[#f9f9f9]">
                     <img class="w-[20px] h-[20px] mr-4 ml-4" :src="postIcon" alt="">
                     <span>Create post</span>
-                </div>
+                </router-link>
                 <div class="cursor-pointer w-full h-[32px] flex justify-start items-center hover:bg-[#f9f9f9]">
                     <img class="w-[20px] h-[20px] mr-4 ml-4" :src="playlistIcon" alt="">
                     <span>New playlist</span>

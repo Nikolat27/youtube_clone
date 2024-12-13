@@ -17,6 +17,7 @@ import Playlists from "@/views/channelViews/Playlists.vue";
 import Community from "@/views/channelViews/Community.vue";
 import Search from "@/views/channelViews/Search.vue";
 import PlaylistVideosView from "@/views/PlaylistVideosView.vue";
+import createPostsView from "@/views/createPostsView.vue";
 
 // Studio Children routes
 import channelContentView from "@/views/studioViews/channelContentView.vue";
@@ -38,6 +39,7 @@ const routes = [
     { path: "/auth", name: "auth", component: AuthView, },
     { path: "/history", name: "history", component: HistoryView, },
     { path: "/playlist", name: "playlist-videos", component: PlaylistVideosView, },
+    { path: "/posts", name: "create-posts", component: createPostsView, },
     {
         path: "/channel-page", name: "channel_detail", component: ChannelPageView, children: [
             { path: '', name: 'channel-home', component: Home, },

@@ -29,10 +29,10 @@ import customizationIcon from '/src/assets/icons/svg-icons/customization-icon.sv
                 <img :src="analyticsIcon" alt="">
                 <p>Analytics</p>
             </div>
-            <div class="large-menu-item">
+            <router-link to="/posts" class="large-menu-item">
                 <img :src="communityIcon" alt="">
                 <p>Community</p>
-            </div>
+            </router-link>
             <div class="large-menu-item">
                 <img :src="earnIcon" alt="">
                 <p>Earn</p>
