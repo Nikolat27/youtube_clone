@@ -20,7 +20,8 @@ import PlaylistVideosView from "@/views/PlaylistVideosView.vue";
 
 // Studio Children routes
 import channelContentView from "@/views/studioViews/channelContentView.vue";
-import PlaylistCreation from "@/components/studio/video_creation/PlaylistCreation.vue";
+import dashboardView from "@/views/studioViews/dashboardView.vue";
+import customizationView from "@/views/studioViews/customizationView.vue";
 
 // Channel Content Children routes
 import VideosView from "@/views/studioViews/channelContentViews/VideosView.vue";
@@ -58,11 +59,11 @@ const routes = [
                     { path: "playlists", name: 'playlists', component: PlaylistsView },
                 ]
             },
-            { path: "dashboard", name: 'dashboard', component: PlaylistCreation },
+            { path: "dashboard", name: 'dashboard', component: dashboardView },
             { path: "analytics", name: 'analytics', component: null },
             { path: "community", name: 'community', component: null },
             { path: "earn", name: 'earn', component: null },
-            { path: "customization", name: 'customization', component: null },
+            { path: "customization", name: 'customization', component: customizationView },
         ]
     },
     { path: "/test", name: "test", component: TestView, },
