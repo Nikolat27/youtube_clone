@@ -14,6 +14,7 @@ import uploadIcon from '/src/assets/icons/svg-icons/upload-icon.svg'
 import postIcon from '/src/assets/icons/svg-icons/post-icon.svg'
 import playlistIcon from '/src/assets/icons/svg-icons/playlist-icon-2.svg'
 import closeIcon from '/src/assets/icons/svg-icons/close-icon2.svg'
+import checkMarkIcon from '/src/assets/icons/svg-icons/check-mark-icon.svg'
 
 const isVideoListboxOpen = ref(false)
 const toggleVideoList = () => isVideoListboxOpen.value = !isVideoListboxOpen.value
@@ -32,9 +33,9 @@ const uploadFile = (event) => {
 
 
 const steps = reactive([
-    { title: 'Details', completed: false },
+    { title: 'Details', completed: true },
     { title: 'Elements', completed: false },
-    { title: 'Visibility', completed: false },
+    { title: 'Visibility', completed: true },
 ])
 
 const currentStep = ref(0);
@@ -177,21 +178,69 @@ const submitForm = () => {
             <button @click="currentStep = 0" :style="{
                 backgroundColor: currentStep === 0 ? '#e5e5e5' : '',
                 color: currentStep === 0 ? 'black' : '#69666a'
-            }" class="w-[128px] h-[64px] rounded-lg bg-white hover:bg-[#e5e5e5] flex justify-center items-start pt-2">
+            }"
+                class="-ml-[64px] w-[128px] h-[64px] rounded-lg bg-white hover:bg-[#e5e5e5] flex flex-col justify-start items-center pt-2">
                 <span class="font-medium text-[15px]">Details</span>
+                <div v-if="currentStep === 0"
+                    class="z-50 w-[24px] h-[24px] mb-2 rounded-full bg-black flex justify-center items-center">
+                    <div class="w-[12px] h-[12px] bg-white rounded-full">
+                    </div>
+                </div>
+                <div v-else-if="steps[0].completed === true"
+                    class="z-50 w-[20px] h-[20px] mt-1 rounded-full flex justify-center items-center">
+                    <img class="z-50 w-full h-full" :src="checkMarkIcon" alt="">
+                </div>
+                <div v-else class="z-50 w-[20px] h-[20px] mt-1 rounded-full bg-black flex justify-center items-center">
+                    <div class="w-[10px] h-[10px] bg-white rounded-full">
+                    </div>
+                </div>
             </button>
+            <div :class="[currentStep > 0 ? 'bg-black' : 'bg-gray-200']"
+                class="step-separator mt-6 w-[222px] h-[2px] -ml-[56px] z-10"></div>
             <button @click="currentStep = 1" :style="{
                 backgroundColor: currentStep === 1 ? '#e5e5e5' : '',
                 color: currentStep === 1 ? 'black' : '#69666a'
-            }" class="w-[128px] h-[64px] rounded-lg bg-white hover:bg-[#e5e5e5] flex justify-center items-start pt-2">
+            }"
+                class="-ml-[64px] w-[128px] h-[64px] rounded-lg bg-white hover:bg-[#e5e5e5] flex flex-col justify-start items-center pt-2">
                 <span class="font-medium text-[15px]">Video elements</span>
+                <div v-if="currentStep === 1"
+                    class="m-auto z-50 w-[24px] h-[24px] mb-2 rounded-full bg-black flex justify-center items-center">
+                    <div class="w-[12px] h-[12px] bg-white rounded-full">
+                    </div>
+                </div>
+                <div v-else-if="steps[1].completed === true"
+                    class="z-20 w-[20px] h-[20px] mt-1 rounded-full flex justify-center items-center">
+                    <img class="z-30 w-full h-full" :src="checkMarkIcon" alt="">
+                </div>
+                <div v-else class="z-50 w-[20px] h-[20px] mt-1 rounded-full bg-black flex justify-center items-center">
+                    <div class="w-[10px] h-[10px] bg-white rounded-full">
+                    </div>
+                </div>
             </button>
+            <div :class="[currentStep > 1 ? 'bg-black' : 'bg-gray-200']"
+                class="step-separator mt-6 w-[222px] h-[2px] -ml-[64px] z-10"></div>
             <button @click="currentStep = 2" :style="{
                 backgroundColor: currentStep === 2 ? '#e5e5e5' : '',
                 color: currentStep === 2 ? 'black' : '#69666a'
             }"
-                class="w-[128px] h-[64px] rounded-lg bg-white hover:bg-[#e5e5e5] flex justify-center items-start pt-2">
+                class="-ml-[64px] w-[128px] h-[64px] rounded-lg bg-white hover:bg-[#e5e5e5] flex flex-col justify-start items-center pt-2">
                 <span class="font-medium text-[15px]">Visibility</span>
+                <div v-if="currentStep === 2"
+                    class="z-20 m-auto w-[24px] h-[24px] mb-2 relative rounded-full bg-black flex justify-center items-center">
+                    <div class="w-[12px] h-[12px]
+                     bg-white rounded-full">
+                    </div>
+                </div>
+                <div v-else-if="steps[2].completed === true"
+                    class="z-20 w-[20px] h-[20px] mt-1 rounded-full flex justify-center items-center">
+                    <img class="z-30 w-full h-full" :src="checkMarkIcon" alt="">
+                </div>
+                <div v-else
+                    class="z-20 w-[20px] h-[20px] relative mt-1 rounded-full bg-black flex justify-center items-center">
+                    <div class="w-[10px] h-[10px] bg-white
+                     rounded-full">
+                    </div>
+                </div>
             </button>
         </div>
 
@@ -260,10 +309,6 @@ const submitForm = () => {
 
 textarea {
     resize: none;
-}
-
-.stepper-div button {
-    margin-right: 45px;
 }
 
 .video-listbox {
