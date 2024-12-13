@@ -22,6 +22,13 @@ import PlaylistVideosView from "@/views/PlaylistVideosView.vue";
 import channelContentView from "@/views/studioViews/channelContentView.vue";
 import PlaylistCreation from "@/components/studio/video_creation/PlaylistCreation.vue";
 
+// Channel Content Children routes
+import VideosView from "@/views/studioViews/channelContentViews/VideosView.vue";
+import channelContentShortsView from "@/views/studioViews/channelContentViews/ShortsView.vue";
+import LiveView from "@/views/studioViews/channelContentViews/LiveView.vue";
+import PostsView from "@/views/studioViews/channelContentViews/PostsView.vue";
+import PlaylistsView from "@/views/studioViews/channelContentViews/PlaylistsView.vue";
+
 const routes = [
     { path: "/", name: "home", component: HomePageView, },
     { path: "/video/:id", name: "video_detail", component: VideoDetail, },
@@ -41,8 +48,16 @@ const routes = [
         ]
     },
     {
-        path: "/studio/", name: "studio", redirect: '/studio/channel-content', component: null, children: [
-            { path: "channel-content", name: 'channel-content', component: channelContentView },
+        path: "/studio/", name: "studio", redirect: '/studio/channel-content/videos', component: null, children: [
+            {
+                path: "channel-content", name: 'channel-content', redirect: '/studio/channel-content/videos', component: channelContentView, children: [
+                    { path: "videos", name: 'videos', component: VideosView },
+                    { path: "shorts", name: 'shorts', component: channelContentShortsView },
+                    { path: "lives", name: 'lives', component: LiveView },
+                    { path: "posts", name: 'posts', component: PostsView },
+                    { path: "playlists", name: 'playlists', component: PlaylistsView },
+                ]
+            },
             { path: "dashboard", name: 'dashboard', component: PlaylistCreation },
             { path: "analytics", name: 'analytics', component: null },
             { path: "community", name: 'community', component: null },

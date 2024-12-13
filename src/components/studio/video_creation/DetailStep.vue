@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { onClickOutside } from '@vueuse/core'
 import PlaylistCreation from './PlaylistCreation.vue';
-import { sharedState } from '@/sharedState'; // Shared states (aka global variables)
+import { sharedState } from '@/sharedState.js'; // Shared states (aka global variables)
 
 // Icons
 import uploadIcon from '/src/assets/icons/svg-icons/upload-icon.svg'

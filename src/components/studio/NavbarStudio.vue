@@ -3,6 +3,7 @@ import { ref, reactive } from 'vue'
 import DetailStep from './video_creation/DetailStep.vue';
 import VideoElements from './video_creation/VideoElements.vue';
 import Visibility from './video_creation/Visibility.vue';
+import { sharedState } from '@/sharedState';
 
 // Icons
 import hamburgerBtn from '/src/assets/icons/svg-icons/collapse-menu-icon.svg'
@@ -19,6 +20,8 @@ import checkMarkIcon from '/src/assets/icons/svg-icons/check-mark-icon.svg'
 const isVideoListboxOpen = ref(false)
 const toggleVideoList = () => isVideoListboxOpen.value = !isVideoListboxOpen.value
 
+const toggleVideoCreation = () => sharedState.isVideoCreationOpen = !sharedState.isVideoCreationOpen
+
 const isFileUploadBoxOpen = ref(false)
 const toggleFileUploadBox = () => isFileUploadBoxOpen.value = !isFileUploadBoxOpen.value
 
@@ -28,10 +31,11 @@ const openFileInput = () => {
 }
 
 const uploadFile = (event) => {
-    console.log(event.target.value)
+    const videoFile = event.target.value; // I will complete this part later...
+    toggleVideoCreation()
 }
 
-
+// Multi stepper form Management
 const steps = reactive([
     { title: 'Details', completed: true },
     { title: 'Elements', completed: false },
@@ -56,7 +60,6 @@ const prevStep = () => {
 const isStepCompleted = (index) => {
     return steps[index].completed;
 }
-
 
 const formData = reactive({
     details: {
@@ -84,8 +87,6 @@ const formData = reactive({
 const submitForm = () => {
     console.log(formData);
 }
-
-
 </script>
 
 <template>
@@ -113,7 +114,7 @@ const submitForm = () => {
                 <img class="w-[20px] h-[20px]" :src="createVideo" alt="">
                 <p class="text-[14px] font-medium">Create</p>
             </button>
-            <div v-if="isVideoListboxOpen" class="video-listbox absolute gap-y-1 py-4 top-[49px] right-[74px] w-[182px] h-auto rounded-xl
+            <div v-if="isVideoListboxOpen && !isVideoCreationOpen" class="video-listbox absolute gap-y-1 py-4 top-[49px] right-[74px] w-[182px] h-auto rounded-xl
              bg-white flex flex-col justify-start items-center">
                 <div @click="toggleFileUploadBox"
                     class="cursor-pointer w-full h-[32px] flex justify-start items-center hover:bg-[#f9f9f9]">
@@ -132,7 +133,7 @@ const submitForm = () => {
             <img class="w-[32px] h-[32px] rounded-full cursor-pointer" :src="channelProfile" alt="">
         </div>
     </header>
-    <!-- <div v-if="isFileUploadBoxOpen" class="upload-div font-roboto w-[960px] h-[634px] flex flex-col absolute top-[75px] right-[250px] bg-white z-50
+    <div v-if="isFileUploadBoxOpen" class="upload-div shadow-outer font-roboto w-[960px] h-[634px] flex flex-col absolute top-[75px] right-[250px] bg-white z-50
      rounded-3xl">
         <div class="title-section flex flex-row items-center border-b w-full h-[60.8px]">
             <div class="justify-self-start mr-auto pl-8">
@@ -157,8 +158,8 @@ const submitForm = () => {
             <button @click="openFileInput" class="cursor-pointer w-[101px] h-[36px] rounded-3xl mt-6 bg-black text-white text-[14px]
              font-medium hover:bg-opacity-80">Select files</button>
         </div>
-    </div> -->
-    <div class="upload-div font-roboto w-[960px] h-auto min-h-[634px] flex flex-col absolute top-[75px] right-[250px] bg-white z-50
+    </div>
+    <div v-if="sharedState.isVideoCreationOpen" class="video-creation shadow-outer font-roboto w-[960px] h-auto min-h-[634px] flex flex-col absolute top-[75px] right-[250px] bg-white z-50
      rounded-3xl">
         <div class="title-section flex flex-row items-center border-b w-full h-[60.8px]">
             <div class="justify-self-start mr-auto pl-8">
@@ -168,7 +169,7 @@ const submitForm = () => {
                 <div class="w-[105px] h-[20px] rounded-md text-[12px] font-medium px-2 bg-[#e5e5e5] text-black mr-2">
                     <p>Saved as private</p>
                 </div>
-                <button @click="toggleFileUploadBox"
+                <button @click="toggleVideoCreation"
                     class="w-[39.2px] h-[39.2px] rounded-full hover:bg-[#dfdfdf] flex justify-center items-center">
                     <img draggable="false" class="w-[15px] h-[15px]" :src="closeIcon" alt="">
                 </button>
@@ -313,9 +314,5 @@ textarea {
 
 .video-listbox {
     box-shadow: 0 0 12px rgba(0, 0, 0, 0.13);
-}
-
-.upload-div {
-    box-shadow: 0 0 14px rgba(0, 0, 0, 0.15);
 }
 </style>

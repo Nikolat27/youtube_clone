@@ -10,20 +10,19 @@ import { computed } from "vue";
 
 const route = useRoute();
 const isVideoDetailRoute = computed(() => route.name === "video_detail");
-const isStudioRoute = computed(() => route.name === 'studio');
+// const isStudioRoute = computed(() => route.name === 'studio');
+const isStudioRoute = computed(() => route.path.startsWith("/studio/"));
 </script>
 
 
 <template>
   <!-- Studio Components-->
-  <!-- <NavbarStudio v-if="isStudioRoute" />
-  <SidebarStudio v-if="isStudioRoute" /> -->
-  <NavbarStudio />
-  <SidebarStudio />
-  
+  <NavbarStudio v-if="isStudioRoute" />
+  <SidebarStudio v-if="isStudioRoute" />
+
   <!-- Regular Website Components-->
-  <!-- <NavbarWebsite v-if="!isStudioRoute" />
-  <SidebarWebsite v-if="!isStudioRoute && !isVideoDetailRoute" /> -->
+  <NavbarWebsite v-if="!isStudioRoute" />
+  <SidebarWebsite v-if="!isStudioRoute && !isVideoDetailRoute" />
 
   <RouterView />
 </template>
