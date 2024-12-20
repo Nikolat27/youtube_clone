@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Request, Body, Query, Depends, status, Response
+from fastapi import APIRouter, Request, Body, Query, Depends, status
 from fastapi.responses import JSONResponse
-from database.models.user import User
+from database.models.user import User, UserLogInfo
 from typing import Annotated
 from passlib.context import CryptContext
 from pydantic import BaseModel
@@ -35,21 +35,23 @@ def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
 
-async def is_user_authenticated(request: Request):
-    return request.session.get("user_session_id")
+async def is_user_authenticated(user_session_id: str = Query(None)):
+    if not user_session_id:
+        return False
+
+    user = UserLogInfo.query.filter(UserLogInfo.session_id == user_session_id).first()
+    return True
 
 
 async def authenticate_user(user: UserLogin):
-    user_instance = User.query.filter(User.username == user.username).value(
-        User.password
+    user_instance = (
+        User.query.with_entities(User.id, User.password)
+        .filter_by(username=user.username)
+        .first()
     )
-    if not user_instance:
-        return False
-
-    # Verifying the password
-    plain_password = user.password
-    hashed_password = user_instance
-    return verify_password(plain_password, hashed_password)
+    if user_instance and verify_password(user.password, user_instance.password):
+        return user_instance
+    return None
 
 
 @router.get("/")
@@ -66,13 +68,13 @@ async def register_user(user: UserRegister):
             status_code=status.HTTP_400_BAD_REQUEST,
         )
 
-    if User.query.filter(User.username == user.username).value(User.email):
+    if User.query.filter_by(username=user.username):
         return JSONResponse(
             {"error": "Username Exist!"},
             status_code=status.HTTP_400_BAD_REQUEST,
         )
 
-    if User.query.filter(User.email == user.email).value(User.email):
+    if User.query.filter_by(email=user.email):
         return JSONResponse(
             {"error": "Email Exist!"},
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -93,27 +95,29 @@ async def register_user(user: UserRegister):
 
 @router.post("/login")
 async def login_user(
-    request: Request,
     is_authenticated: bool = Depends(is_user_authenticated),
-    authenticate_user: bool = Depends(authenticate_user),
+    user: UserLogin = Body(),
 ):
-    print(request.session.get('user_session_id'))
     if is_authenticated:
         return JSONResponse(
             {"error": "User is already logged in!"},
             status_code=status.HTTP_400_BAD_REQUEST,
         )
 
-    if not authenticate_user:
+    user_instance = await authenticate_user(user)
+    if not user_instance:
         return JSONResponse(
-            {"error": "Eaither username or password is wrong!"},
+            {"error": "Either username or password is incorrect!"},
             status_code=status.HTTP_400_BAD_REQUEST,
         )
 
     random_session_id = random.randint(100000, 999999)
-    request.session["user_session_id"] = random_session_id
+    user_log_info = UserLogInfo(user_id=user_instance.id, session_id=random_session_id)
+    session.add(user_log_info)
+
+    session.commit()
 
     return JSONResponse(
-        {"message": request.session['user_session_id']},
+        {"user_session_id": random_session_id},
         status_code=status.HTTP_200_OK,
     )

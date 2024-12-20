@@ -12,11 +12,19 @@ const loginUsername = ref('')
 const loginPassword = ref('')
 const submitLoginForm = (event) => {
     event.preventDefault(); // For preventing the page from refreshing
+
     axios.post("http://localhost:8000/users/login", {
         username: loginUsername.value,
-        password: loginPassword.value
+        password: loginPassword.value,
+        
+    }, {
+        params: {
+            user_session_id: sessionStorage.getItem('user_session_id')
+        }
     }).then((response) => {
-        console.log(response)
+        const userSessionId = response.data.user_session_id;
+        sessionStorage.setItem('user_session_id', userSessionId);
+        console.log("Login was successfull");
     }, (error) => {
         console.log(error)
     })
