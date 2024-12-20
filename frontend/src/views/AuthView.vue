@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
+import axios from "axios";
 
 const router = useRoute();
 const isRegisterShown = ref(router.query.mode === 'register' || !router.query.mode);
@@ -11,6 +12,14 @@ const loginUsername = ref('')
 const loginPassword = ref('')
 const submitLoginForm = (event) => {
     event.preventDefault(); // For preventing the page from refreshing
+    axios.post("http://localhost:8000/users/login", {
+        username: loginUsername.value,
+        password: loginPassword.value
+    }).then((response) => {
+        console.log(response)
+    }, (error) => {
+        console.log(error)
+    })
 }
 
 
@@ -20,10 +29,17 @@ const registerEmail = ref('')
 const registerPassword = ref('')
 const registerPassword2 = ref('')
 
-const submitRegisterForm = (event) => {
+const submitRegisterForm = async (event) => {
     event.preventDefault(); // To prevent the page from refreshing
+    await axios.post('http://localhost:8000/users/register', {
+        username: registerUsername.value,
+        email: registerEmail.value,
+        password1: registerPassword.value,
+        password2: registerPassword2.value,
+    }).then((response) => {
+        console.log(response.data)
+    }, (error) => console.log(error));
 }
-
 
 // Change the browsers title
 watch(() => isRegisterShown.value, () => {

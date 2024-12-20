@@ -2,8 +2,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from datetime import datetime
-
-Model = declarative_base()
+from .base import Model
 
 
 def get_utc_now():
@@ -19,7 +18,7 @@ class User(Model):
     full_name = Column(String(200), nullable=True)
     password = Column(String(400), nullable=False)
     created_at = Column(DateTime, default=get_utc_now, nullable=False)
-    updated_at = Column(DateTime, onupdate=get_utc_now, nullable=False)
+    updated_at = Column(DateTime, onupdate=get_utc_now, nullable=True)
     user_log_info = relationship("UserLogInfo", back_populates='user', uselist=False, passive_deletes=True)
 
     def __repr__(self):
@@ -33,7 +32,7 @@ class UserLogInfo(Model):
     user_id = Column(
         Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True
     )
-    user_log_info = relationship("User", back_populates='user_log_info')
+    user = relationship("User", back_populates='user_log_info')
     session_id = Column(String(100), unique=True, nullable=False)
     last_login = Column(DateTime, default=get_utc_now, nullable=False)
     created_at = Column(DateTime, default=get_utc_now, nullable=False)
