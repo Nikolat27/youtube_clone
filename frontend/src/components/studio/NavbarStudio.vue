@@ -27,7 +27,7 @@ import checkMarkIcon from '/src/assets/icons/svg-icons/check-mark-icon.svg'
 const isVideoListboxOpen = ref(false)
 const toggleVideoList = () => isVideoListboxOpen.value = !isVideoListboxOpen.value
 
-const toggleVideoCreation = () => sharedState.isVideoCreationOpen = !sharedState.isVideoCreationOpen
+const toggleVideoCreationVisibility = () => sharedState.isVideoCreationOpen.open = !sharedState.isVideoCreationOpen.open
 
 const isFileUploadBoxOpen = ref(false)
 const toggleFileUploadBox = () => isFileUploadBoxOpen.value = !isFileUploadBoxOpen.value
@@ -55,9 +55,11 @@ const uploadFile = async (event) => {
                 "Content-Type": "multipart/form-data" // This type is necessary for sending files
             }
         }).then((response) => {
-            formData.details.video_id = response.data.video_id;
             isFileUploadBoxOpen.value = false
-            toggleVideoCreation();
+            sharedState.isVideoCreationOpen.open = true
+            sharedState.isVideoCreationOpen.video_id = response.data.video_id
+            formData.details.video_id = response.data.video_id
+            sharedState.refreshRetrieveVideos = true
             toast.success("Your video uploaded successfully!");
         });
     } catch (error) {
@@ -87,10 +89,22 @@ const prevStep = () => {
     }
 }
 
+watch(sharedState.isVideoCreationOpen, () => {
+    axios.get("http://127.0.0.1:8000/videos/get", {
+        params: {
+            video_id: sharedState.isVideoCreationOpen.video_id
+        }
+    }).then((response) => {
+        sharedState.refreshRetrieveVideos = true // you have to complete here by send another request to backend and retrieve the formData
+    }).catch((error) => {
+        console.log(error)
+    })
+})
+
 const formData = reactive({
     user_session_id: sessionStorage.getItem('user_session_id'),
     details: {
-        video_id: '',
+        video_id: sharedState.isVideoCreationOpen.video_id,
         title: '',
         description: '',
         playlists: [],
@@ -123,7 +137,6 @@ const submitForm = async () => {
     formDataToSend.append('details', JSON.stringify(formData.details));
     formDataToSend.append('visibility', JSON.stringify(formData.visibility));
 
-    console.log(formDataToSend);
     await axios.post("http://127.0.0.1:8000/videos/update", formDataToSend, {
         headers: {
             'Content-Type': 'multipart/form-data' // Important for file uploads
@@ -216,7 +229,7 @@ axios.get("http://localhost:8000/users/is_authenticated", {
              font-medium hover:bg-opacity-80">Select files</button>
         </div>
     </div>
-    <div v-if="sharedState.isVideoCreationOpen" class="video-creation shadow-outer font-roboto w-[960px]
+    <div v-if="sharedState.isVideoCreationOpen.open" class="video-creation shadow-outer font-roboto w-[960px]
      h-auto min-h-[634px] flex flex-col absolute top-[75px] right-[250px] bg-white z-50
      rounded-3xl">
         <div class="title-section flex flex-row items-center border-b w-full h-[60.8px]">
@@ -224,11 +237,11 @@ axios.get("http://localhost:8000/users/is_authenticated", {
                 <p class="title text-[20px] font-medium">video title</p>
             </div>
             <div class="justify-self-end items-center flex flex-row justify-end ml-auto pr-4">
-                <div
-                    class="w-[105px] min-h-[20px] h-auto rounded-md text-[12px] font-medium px-2 bg-[#e5e5e5] text-black mr-2">
+                <div class="w-[105px] min-h-[20px] h-auto rounded-md text-[12px] font-medium px-2
+                 bg-[#e5e5e5] text-black mr-2">
                     <p>Saved as {{ formData.visibility.scheduled ? 'scheduled' : formData.visibility.publish }}</p>
                 </div>
-                <button @click="toggleVideoCreation"
+                <button @click="toggleVideoCreationVisibility"
                     class="w-[39.2px] h-[39.2px] rounded-full hover:bg-[#dfdfdf] flex justify-center items-center">
                     <img draggable="false" class="w-[15px] h-[15px]" :src="closeIcon" alt="">
                 </button>

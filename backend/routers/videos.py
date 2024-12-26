@@ -10,7 +10,7 @@ import shutil
 import json
 import time
 from dependencies import get_current_user_id
-import subprocess
+from datetime import datetime
 
 UPLOAD_DIR = Path("uploaded_videos")
 UPLOAD_DIR.mkdir(exist_ok=True)
@@ -24,10 +24,15 @@ router = APIRouter(prefix="/videos", tags=["videos"])
 #     fps = data.get(cv2.CAP_PROP_FPS)
 #     return frames / fps
 
+
+async def time_formatter(time):
+    parsed_datetime = datetime.strptime(str(time), "%Y-%m-%d %H:%M:%S.%f")
+    return parsed_datetime.date().isoformat()
+
+
 async def get_video_duration(file):  # Using pymediainfo (This is faster)
-    print(file)
     media_info = MediaInfo.parse(file)
-    return media_info.tracks[0].duration
+    return media_info.tracks[0].duration // 1000  # coverting ms to s
 
 
 @router.post("/upload")
@@ -68,7 +73,7 @@ def upload_file(user_id, file, type):
     thumbnail_path = UPLOAD_DIR_USER / file.filename
     with thumbnail_path.open("wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
-    return thumbnail_path
+    return thumbnail_path.resolve()
 
 
 async def update_video_details(
@@ -212,10 +217,43 @@ async def create_playlist(
 
 
 @router.get("/list")
-async def user_videos(user_session_id: str = Query()):
+async def user_videos_list(user_session_id: str = Query()):
     user_id = await get_current_user_id(user_session_id)
 
-    videos = Video.query.filter_by(user_id=user_id).all()
-    print(videos)
+    videos = (
+        Video.query.with_entities(
+            Video.id,
+            Video.title,
+            Video.description,
+            Video.thumbnail_url,
+            Video.visibility,
+            Video.file_url,
+            Video.age_restriction,
+            Video.created_at,
+        )
+        .filter_by(user_id=user_id)
+        .order_by(desc(Video.id))
+        .all()
+    )
 
-    return JSONResponse({"data": "Hello World!"}, status_code=status.HTTP_200_OK)
+    serializer = []
+    for video in videos:
+        serializer.append(
+            {
+                "id": video.id,
+                "title": video.title,
+                "description": video.description,
+                "duration": await get_video_duration(video.file_url),
+                "thumbnail_url": video.thumbnail_url,
+                "visibility": video.visibility,
+                "restriction": video.age_restriction,
+                "created_at": await time_formatter(video.created_at),
+            }
+        )
+    return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)
+
+
+@router.get("/get")
+async def get_video(video_id: str = Query()):
+    video = Video.query.filter_by(id=video_id).first()
+    print(video)
