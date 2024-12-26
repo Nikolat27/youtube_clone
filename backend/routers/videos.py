@@ -125,6 +125,34 @@ async def update_playlists(video_id: int, playlist_ids: list):
             if playlist:
                 video.playlists.append(playlist)
 
+@router.get("/get")
+async def get_video(video_id: int = Query()):
+    video = Video.query.filter_by(id=video_id).first()
+
+    playlists = [playlist.id for playlist in video.playlists if video.playlists]
+    subtitle = video.subtitle.file_name if video.subtitle else None
+    serializer = {
+        "details": {
+            "video_id": video_id,
+            "title": video.title,
+            "description": video.description,
+            "thumbnail_url": video.thumbnail_url,
+            "audience": "kids" if video.audience else "not-kids",
+            "ageRestriction": "yes" if video.age_restriction else "no",
+            "language": video.language,
+            "playlists": playlists,
+            "monetized": video.monetization,
+        },
+        "thumbnailFile": video.thumbnail_url,
+        "subtitleFile": subtitle,
+        "visibility": {
+            "scheduled": True if video.schedule_time else False,
+            "scheduledTime": video.schedule_time,
+            "publish": "public" if video.visibility else "private",
+        },
+    }
+
+    return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)
 
 @router.post("/update")
 async def update_video(
@@ -251,9 +279,3 @@ async def user_videos_list(user_session_id: str = Query()):
             }
         )
     return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)
-
-
-@router.get("/get")
-async def get_video(video_id: str = Query()):
-    video = Video.query.filter_by(id=video_id).first()
-    print(video)

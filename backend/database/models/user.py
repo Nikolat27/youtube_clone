@@ -77,7 +77,7 @@ class Playlist(Model):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     def __repr__(self):
-        return self.title
+        return self.id
 
 
 class Video(Model):

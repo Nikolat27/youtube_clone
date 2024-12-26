@@ -89,16 +89,22 @@ const prevStep = () => {
     }
 }
 
+const isLoading = ref(false)
 watch(sharedState.isVideoCreationOpen, () => {
+    isLoading.value = true
+    if (!sharedState.isVideoCreationOpen.open) return;
     axios.get("http://127.0.0.1:8000/videos/get", {
         params: {
             video_id: sharedState.isVideoCreationOpen.video_id
         }
     }).then((response) => {
-        sharedState.refreshRetrieveVideos = true // you have to complete here by send another request to backend and retrieve the formData
+        formData.details = response.data.data.details;
+        formData.thumbnailFile = response.data.data.thumbnailFile;
+        formData.subtitleFile = response.data.data.subtitleFile;
+        formData.visibility = response.data.data.visibility;
     }).catch((error) => {
         console.log(error)
-    })
+    }).finally(() => isLoading.value = false)
 })
 
 const formData = reactive({
@@ -123,9 +129,8 @@ const formData = reactive({
 })
 
 const toast = useToast()
-const isSubmitLoading = ref(false)
 const submitForm = async () => {
-    isSubmitLoading.value = true
+    isLoading.value = true
     const formDataToSend = new FormData();
     formDataToSend.append('user_session_id', formData.user_session_id);
     if (formData.thumbnailFile) {
@@ -136,16 +141,16 @@ const submitForm = async () => {
     }
     formDataToSend.append('details', JSON.stringify(formData.details));
     formDataToSend.append('visibility', JSON.stringify(formData.visibility));
-
     await axios.post("http://127.0.0.1:8000/videos/update", formDataToSend, {
         headers: {
             'Content-Type': 'multipart/form-data' // Important for file uploads
         }
     }).then((response) => {
         toast.success("Your video Updated Successfully!")
+        sharedState.refreshRetrieveVideos = true;
     }).catch((error) => {
-        toast.error(error)
-    }).finally(() => isSubmitLoading.value = false);
+        toast.error("Error!")
+    }).finally(() => isLoading.value = false);
 }
 
 // Studio page is just for authenticated Users
@@ -318,7 +323,7 @@ axios.get("http://localhost:8000/users/is_authenticated", {
         </div>
 
         <!-- Showing Step Componenets -->
-        <div v-if="!isSubmitLoading">
+        <div v-if="!isLoading">
             <DetailStep v-if="currentStep === 0" :formData="formData"></DetailStep>
             <VideoElements v-else-if="currentStep === 1" :formData="formData"></VideoElements>
             <Visibility v-else-if="currentStep === 2" :formData="formData"></Visibility>

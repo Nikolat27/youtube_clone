@@ -57,6 +57,7 @@ let videos = reactive([])
 const isVideoRetrievingLoading = ref(false)
 
 watch(() => sharedState.refreshRetrieveVideos, () => {
+    console.log(sharedState.refreshRetrieveVideos)
     retrieveAllVideos()
 })
 
@@ -67,13 +68,12 @@ const retrieveAllVideos = async () => {
             user_session_id: sessionStorage.getItem("user_session_id")
         }
     }).then((response) => {
-        console.log(response.data.data)
         videos = response.data.data;
+        sharedState.refreshRetrieveVideos = false
     }).catch((error) => {
         toast.error(`Error: ${error}`)
     }).finally(() => {
-        isVideoRetrievingLoading.value = false
-        sharedState.refreshRetrieveVideos = false
+        isVideoRetrievingLoading.value = false // Loading
     })
 }
 
@@ -99,7 +99,7 @@ onMounted(() => {
                     justify-center">
                             <img class="w-[20px] h-[20px] center" :src="youtubeIcon" alt="">
                         </button>
-                        <button @click="toggleVideoCreationVisibility(234)" class="w-[39.2px] h-[39.2px] rounded-full hover:bg-[#eaeaea] flex items-center
+                        <button @click="toggleVideoCreationVisibility(video.id)" class="w-[39.2px] h-[39.2px] rounded-full hover:bg-[#eaeaea] flex items-center
                     justify-center">
                             <img class="w-[17px] h-[17px] center" :src="editIcon" alt="">
                         </button>
