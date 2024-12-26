@@ -1,5 +1,5 @@
 <script setup>
-import { ref, defineProps } from 'vue';
+import { ref, defineProps, computed, onMounted } from 'vue';
 import VueDatePicker from '@vuepic/vue-datepicker';
 import '@vuepic/vue-datepicker/dist/main.css'
 import arrowIcon from '/src/assets/icons/svg-icons/thin-chevron-arrow-bottom-icon.svg'
@@ -11,6 +11,7 @@ const props = defineProps({
 const openVisibility = ref(true)
 const toggleOpenVisibility = () => {
     openVisibility.value = !openVisibility.value
+    props.formData.visibility.scheduled = !openVisibility.value
 }
 
 const format = (date) => {
@@ -21,6 +22,12 @@ const format = (date) => {
     const minutes = date.getMinutes()
     return `Date: ${year}/${month}/${day} ${hours}:${minutes}`
 }
+
+onMounted(() => {
+    if (props.formData.visibility.scheduledTime && props.formData.visibility.publish === 'private') {
+        openVisibility.value = false
+    };
+})
 </script>
 <template>
     <div class="flex flex-col pl-[50px] mt-2 h-[415px] max-h-[415px] overflow-y-auto" style="scrollbar-width: thin;">

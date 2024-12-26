@@ -2,6 +2,7 @@
 import { ref, reactive, computed, onMounted, watch } from 'vue';
 import axios from 'axios';
 import { sharedState } from '@/sharedState';
+import { useRoute } from 'vue-router';
 import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
 
 // Icons
@@ -53,6 +54,7 @@ const toggleVideoOptions = (video_id, video_title, video_description) => toggleO
 const toggleVideoEdit = (video_id, video_title, video_description) => toggleOptions(video_id, video_title, video_description, 'editDiv')
 
 const toast = useToast()
+const router = useRoute()
 let videos = reactive([])
 const isVideoRetrievingLoading = ref(false)
 
@@ -63,9 +65,11 @@ watch(() => sharedState.refreshRetrieveVideos, () => {
 
 const retrieveAllVideos = async () => {
     isVideoRetrievingLoading.value = true
+
     await axios.get("http://127.0.0.1:8000/videos/list", {
         params: {
-            user_session_id: sessionStorage.getItem("user_session_id")
+            user_session_id: sessionStorage.getItem("user_session_id"),
+            queries: router.query
         }
     }).then((response) => {
         videos = response.data.data;

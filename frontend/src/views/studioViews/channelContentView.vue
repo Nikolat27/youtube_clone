@@ -16,13 +16,17 @@ const toggleFilterOptions = () => isFilterOptionsOpen.value = !isFilterOptionsOp
 // Filtering Videos Management
 const filterVideos = (filter) => {
     router2.push({ name: router1.name, query: { ...router1.query, 'filter': filter } })
+    isFilterOptionsOpen.value = false
 }
 
 // Sorting Videos Management
 const sortState = ref('DESC')
 const sortVideos = (sortByType) => {
     sortState.value = sortState.value === 'ASC' ? 'DESC' : 'ASC'
-    router2.push({ name: router1.name, query: { ...router1.query, 'sortByType': sortByType, 'sortByOrder': sortState.value } })
+    router2.push({
+        name: router1.name,
+        query: { ...router1.query, 'sortByType': sortByType, 'sortByOrder': sortState.value }
+    })
 }
 </script>
 
@@ -34,11 +38,16 @@ const sortVideos = (sortByType) => {
                 <h1 class="text-[25px] font-semibold mb-7">Channel content</h1>
             </div>
             <div class="chnl-tab-content flex flex-row gap-x-6 border-b border-[#f1f1f1] w-[100%] h-[48px]">
-                <router-link :class="$route.name === 'videos' ? 'active' : ''" to="/studio/channel-content/videos">Videos</router-link>
-                <router-link :class="$route.name === 'shorts' ? 'active' : ''" to="/studio/channel-content/shorts">Shorts</router-link>
-                <router-link :class="$route.name === 'lives' ? 'active' : ''" to="/studio/channel-content/lives">Lives</router-link>
-                <router-link :class="$route.name === 'posts' ? 'active' : ''" to="/studio/channel-content/posts">Posts</router-link>
-                <router-link :class="$route.name === 'playlists' ? 'active' : ''" to="/studio/channel-content/playlists" style="width: 56px;">Playlists</router-link>
+                <router-link :class="$route.name === 'videos' ? 'active' : ''"
+                    to="/studio/channel-content/videos">Videos</router-link>
+                <router-link :class="$route.name === 'shorts' ? 'active' : ''"
+                    to="/studio/channel-content/shorts">Shorts</router-link>
+                <router-link :class="$route.name === 'lives' ? 'active' : ''"
+                    to="/studio/channel-content/lives">Lives</router-link>
+                <router-link :class="$route.name === 'posts' ? 'active' : ''"
+                    to="/studio/channel-content/posts">Posts</router-link>
+                <router-link :class="$route.name === 'playlists' ? 'active' : ''" to="/studio/channel-content/playlists"
+                    style="width: 56px;">Playlists</router-link>
             </div>
             <div class="chnl-filter-bar flex flex-row justify-start items-center gap-x-6
          border-b border-[#f1f1f1] w-[100%] h-[48px] mt-1 relative">

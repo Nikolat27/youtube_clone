@@ -141,6 +141,7 @@ const submitForm = async () => {
     }
     formDataToSend.append('details', JSON.stringify(formData.details));
     formDataToSend.append('visibility', JSON.stringify(formData.visibility));
+    console.log(formDataToSend.details);
     await axios.post("http://127.0.0.1:8000/videos/update", formDataToSend, {
         headers: {
             'Content-Type': 'multipart/form-data' // Important for file uploads

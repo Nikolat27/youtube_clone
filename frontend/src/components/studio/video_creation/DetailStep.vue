@@ -32,12 +32,7 @@ const userAbleToSave = computed(() => { // User can only save the information if
 })
 
 // Edit Video Description Management
-const videoDescription = ref('')
-const videoDescriptionLength = computed(() => videoDescription.value.length)
-const videoDescriptionEdit = (event) => {
-    videoDescription.value = event.target.value;
-    props.formData.details.description = videoDescription.value
-}
+const videoDescriptionLength = computed(() => props.formData.details.description.length)
 
 
 // Playlist visibility options
@@ -233,8 +228,7 @@ onUnmounted(() => {
                 <div class="video-description-1 w-[536px] flex flex-col max-w-[536px] relative h-[163px] max-h-[163px] rounded-lg
                         border border-[#d6d6d6] pl-2 pt-2 hover:border-black hover:border-2">
                     <span class="text-[12px] font-medium text-gray-600">Description</span>
-                    <textarea style="scrollbar-width: thin;" @input="videoDescriptionEdit" v-model="videoDescription"
-                        :value="formData.details.description"
+                    <textarea style="scrollbar-width: thin;" v-model="formData.details.description"
                         class="mt-1 edit-title-input w-[440px] h-[151px] outline-none text-[15px] font-normal overflow-y-auto leading-4"
                         placeholder="Add description" maxlength="5000"></textarea>
                     <span class="text-[12px] font-normal absolute right-1 bottom-1 text-gray-700"><span

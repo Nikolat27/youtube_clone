@@ -4,6 +4,7 @@ from database.models.user import Video, Playlist, Subtitle
 from database.models.base import session
 from sqlalchemy import desc
 from pydantic import BaseModel
+from typing import Optional
 from pathlib import Path
 from pymediainfo import MediaInfo
 import shutil
@@ -26,7 +27,14 @@ router = APIRouter(prefix="/videos", tags=["videos"])
 
 
 async def time_formatter(time):
-    parsed_datetime = datetime.strptime(str(time), "%Y-%m-%d %H:%M:%S.%f")
+    if not time:
+        return None
+
+    time_str = str(time)
+    try:
+        parsed_datetime = datetime.strptime(time_str, "%Y-%m-%d %H:%M:%S.%f")
+    except ValueError:
+        parsed_datetime = datetime.strptime(time_str, "%Y-%m-%d %H:%M:%S")
     return parsed_datetime.date().isoformat()
 
 
@@ -76,27 +84,6 @@ def upload_file(user_id, file, type):
     return thumbnail_path.resolve()
 
 
-async def update_video_details(
-    video_id: int, details: dict, visibility: dict, thumbnail_path: Path
-):
-    Video.query.filter_by(id=video_id).update(
-        {
-            "title": details["title"],
-            "description": details["description"],
-            "thumbnail_name": thumbnail_path.name if thumbnail_path else "",
-            "thumbnail_url": str(thumbnail_path) if thumbnail_path else "",
-            "audience": True if (details["audience"] == "kids") else False,
-            "age_restriction": (
-                True if (details["ageRestriction"] == "yes") else False
-            ),
-            "language": details["language"],
-            "monetization": details["monetized"],
-            "visibility": True if (visibility["publish"] == "public") else False,
-            "schedule_time": visibility["scheduledTime"] or None,
-        }
-    )
-
-
 async def update_subtitle(
     video_id: int, subtitle_file: UploadFile, subtitle_path: Path
 ):
@@ -116,15 +103,7 @@ async def update_subtitle(
         session.add(new_subtitle)
 
 
-async def update_playlists(video_id: int, playlist_ids: list):
-    video = Video.query.filter_by(id=video_id).first()
-    if video:
-        video.playlists.clear()
-        for id in playlist_ids:
-            playlist = Playlist.query.filter_by(id=int(id)).first()
-            if playlist:
-                video.playlists.append(playlist)
-
+# Video part
 @router.get("/get")
 async def get_video(video_id: int = Query()):
     video = Video.query.filter_by(id=video_id).first()
@@ -147,15 +126,16 @@ async def get_video(video_id: int = Query()):
         "subtitleFile": subtitle,
         "visibility": {
             "scheduled": True if video.schedule_time else False,
-            "scheduledTime": video.schedule_time,
+            "scheduledTime": await time_formatter(video.schedule_time) or None,
             "publish": "public" if video.visibility else "private",
         },
     }
 
     return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)
 
+
 @router.post("/update")
-async def update_video(
+async def create_video(
     user_session_id: str = Form(...),
     details: str = Form(...),
     thumbnailFile: UploadFile = File(None),
@@ -174,7 +154,7 @@ async def update_video(
     )
 
     if details_dict:
-        await update_video_details(
+        await update_video(
             int(details_dict["video_id"]), details_dict, visibility_dict, thumbnail_path
         )
 
@@ -187,13 +167,80 @@ async def update_video(
         await update_playlists(int(details_dict["video_id"]), details_dict["playlists"])
 
     session.commit()
-
-    time.sleep(1)
     return JSONResponse(
         {"message": "Your video updated successfully!"}, status_code=status.HTTP_200_OK
     )
 
 
+async def update_video(
+    video_id: int, details: dict, visibility: dict, thumbnail_path: Path
+):
+    Video.query.filter_by(id=video_id).update(
+        {
+            "title": details["title"],
+            "description": details["description"],
+            "thumbnail_name": thumbnail_path.name if thumbnail_path else "",
+            "thumbnail_url": str(thumbnail_path) if thumbnail_path else "",
+            "audience": True if (details["audience"] == "kids") else False,
+            "age_restriction": (
+                True if (details["ageRestriction"] == "yes") else False
+            ),
+            "language": details["language"],
+            "monetization": details["monetized"],
+            "visibility": True if (visibility["publish"] == "public") else False,
+            "schedule_time": visibility["scheduledTime"] or None,
+        }
+    )
+
+
+@router.get("/list")
+async def list_video(
+    user_session_id: str = Query(),
+    filter: str = Query(None, alias="queries[filter]"),
+    sort_type: str = Query(None, alias="queries[sortByType]"),
+    sort_order: str = Query(None, alias="queries[sortByOrder]"),
+):
+
+    user_id = await get_current_user_id(user_session_id)
+    
+    print("Filter: ", filter)
+    print("Type: ", sort_type)
+    print("Order: ", sort_order)
+
+    videos = (
+        Video.query.with_entities(
+            Video.id,
+            Video.title,
+            Video.description,
+            Video.thumbnail_url,
+            Video.visibility,
+            Video.file_url,
+            Video.age_restriction,
+            Video.created_at,
+        )
+        .filter_by(user_id=user_id)
+        .order_by(desc(Video.id))
+        .all()
+    )
+
+    serializer = []
+    for video in videos:
+        serializer.append(
+            {
+                "id": video.id,
+                "title": video.title,
+                "description": video.description,
+                "duration": await get_video_duration(video.file_url),
+                "thumbnail_url": video.thumbnail_url,
+                "visibility": video.visibility,
+                "restriction": video.age_restriction,
+                "created_at": await time_formatter(video.created_at),
+            }
+        )
+    return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)
+
+
+# Playlist part
 class PlaylistSerializer(BaseModel):
     user_session_id: str
     title: str
@@ -244,38 +291,11 @@ async def create_playlist(
     )
 
 
-@router.get("/list")
-async def user_videos_list(user_session_id: str = Query()):
-    user_id = await get_current_user_id(user_session_id)
-
-    videos = (
-        Video.query.with_entities(
-            Video.id,
-            Video.title,
-            Video.description,
-            Video.thumbnail_url,
-            Video.visibility,
-            Video.file_url,
-            Video.age_restriction,
-            Video.created_at,
-        )
-        .filter_by(user_id=user_id)
-        .order_by(desc(Video.id))
-        .all()
-    )
-
-    serializer = []
-    for video in videos:
-        serializer.append(
-            {
-                "id": video.id,
-                "title": video.title,
-                "description": video.description,
-                "duration": await get_video_duration(video.file_url),
-                "thumbnail_url": video.thumbnail_url,
-                "visibility": video.visibility,
-                "restriction": video.age_restriction,
-                "created_at": await time_formatter(video.created_at),
-            }
-        )
-    return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)
+async def update_playlists(video_id: int, playlist_ids: list):
+    video = Video.query.filter_by(id=video_id).first()
+    if video:
+        video.playlists.clear()
+        for id in playlist_ids:
+            playlist = Playlist.query.filter_by(id=int(id)).first()
+            if playlist:
+                video.playlists.append(playlist)
