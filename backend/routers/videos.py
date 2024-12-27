@@ -1,6 +1,6 @@
 from fastapi import APIRouter, UploadFile, File, Query, Form, status
 from fastapi.responses import JSONResponse
-from database.models.user import Video, Playlist, Subtitle
+from database.models.user import Video, Playlist, Subtitle, Community
 from database.models.base import session
 from sqlalchemy import desc, asc
 from pydantic import BaseModel
@@ -42,7 +42,7 @@ async def upload_video(
 ):
     user_id = await get_current_user_id(user_session_id)
 
-    UPLOAD_DIR_USER = Path(UPLOAD_DIR / str(user_id))
+    UPLOAD_DIR_USER = Path(UPLOAD_DIR / str(user_id) / video_type)
     UPLOAD_DIR_USER.mkdir(exist_ok=True)
 
     # Validating the File type (it must be video)
@@ -72,8 +72,8 @@ async def upload_video(
 
 
 def upload_file(user_id, file, type):
-    UPLOAD_DIR_USER = Path(UPLOAD_DIR / str(user_id) / f"{type}")
-    UPLOAD_DIR_USER.mkdir(exist_ok=True)
+    UPLOAD_DIR_USER = Path(UPLOAD_DIR / str(user_id) / type)
+    UPLOAD_DIR_USER.mkdir(parents=True,exist_ok=True)
     thumbnail_path = UPLOAD_DIR_USER / file.filename
     with thumbnail_path.open("wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
@@ -140,7 +140,6 @@ async def create_video(
     subtitleFile: UploadFile = File(None),
     visibility: str = Form(...),
 ):
-    print("Video type: ", video_type)
     user_id = await get_current_user_id(user_session_id)
     details_dict = json.loads(details)
     visibility_dict = json.loads(visibility)
@@ -210,7 +209,6 @@ async def list_video(
     sort_order: str = Query(None, alias="queries[sortByOrder]"),
 ):
     user_id = await get_current_user_id(user_session_id)
-    print(video_type)
 
     videos = Video.query.with_entities(
         Video.id,
@@ -313,3 +311,32 @@ async def update_playlists(video_id: int, playlist_ids: list):
             playlist = Playlist.query.filter_by(id=int(id)).first()
             if playlist:
                 video.playlists.append(playlist)
+
+
+@router.post("/community/create")
+async def create_community_post(
+    user_session_id: str = Form(),
+    community_text: str = Form(),
+    image_file: UploadFile = File(None),
+):
+    user_id = await get_current_user_id(user_session_id)
+    if image_file:
+        image_path = upload_file(user_id, image_file, "community_images")
+        new_community = Community(
+            user_id=user_id,
+            community_text=community_text,
+            image_name=image_file.filename,
+            image_url=str(image_path),
+        )
+    else:
+        new_community = Community(
+            user_id=user_id,
+            community_text=community_text,
+        )
+
+    session.add(new_community)
+    session.commit()
+    return JSONResponse(
+        {"data": "Your community added successfully!"},
+        status_code=status.HTTP_201_CREATED,
+    )

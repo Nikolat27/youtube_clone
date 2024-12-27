@@ -67,7 +67,7 @@ class Playlist(Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
     title = Column(String(100), nullable=False)
     description = Column(String(500), nullable=True)
-    visibility = Column(String(10), default='private')
+    visibility = Column(String(10), default="private")
     owner_id = Column(
         Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
@@ -85,8 +85,10 @@ class Video(Model):
 
     id = Column(Integer, primary_key=True, autoincrement=True, index=True)
     title = Column(String(80), nullable=False)
-    video_type = Column(String(20), default='long_video', nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete='CASCADE'), nullable=False)
+    video_type = Column(String(20), default="long_video", nullable=False)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
     description = Column(String, nullable=True)
     file_name = Column(String(40), nullable=False)
     file_url = Column(String(150), nullable=False)
@@ -127,3 +129,17 @@ class Subtitle(Model):
 
     def __repr__(self):
         return self.title
+
+
+class Community(Model):
+    __tablename__ = "communities"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    community_text = Column(String(200), nullable=False)
+    image_name = Column(String(200), nullable=True)
+    image_url = Column(String(400), nullable=True)
+
+    def __repr__(self):
+        return self.community_text
+    
