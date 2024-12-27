@@ -32,7 +32,7 @@ const userAbleToSave = computed(() => { // User can only save the information if
 
 // Edit Video Description Management
 const videoDescription = ref('')
-const videoDescriptionLength = computed(() => videoDescription.value.length)
+const videoDescriptionLength = computed(() => (videoDescription.value?.length ?? 0));
 const videoDescriptionEdit = (event) => {
     videoDescription.value = event.target.value;
 }
@@ -59,17 +59,21 @@ let videos = reactive([])
 const isVideoRetrievingLoading = ref(false)
 
 watch(() => sharedState.refreshRetrieveVideos, () => {
-    console.log(sharedState.refreshRetrieveVideos)
     retrieveAllVideos()
 })
 
+watch(() => router.query, () => {
+    retrieveAllVideos()
+})
+
+
 const retrieveAllVideos = async () => {
     isVideoRetrievingLoading.value = true
-
-    await axios.get("http://127.0.0.1:8000/videos/list", {
+    await axios.get(`http://127.0.0.1:8000/videos/list`, {
         params: {
             user_session_id: sessionStorage.getItem("user_session_id"),
-            queries: router.query
+            queries: router.query,
+            video_type: router.query.type ?? 'long_video'
         }
     }).then((response) => {
         videos = response.data.data;
@@ -112,30 +116,30 @@ onMounted(() => {
                             <img class="w-[17px] h-[17px] center" :src="kebabMenuIcon" alt="">
                         </button>
                         <div v-if="videoOptionStates[video.id]?.optionDiv" class="absolute left-40 top-0 video-edit-options w-[226px] h-auto rounded-xl bg-white flex flex-col
-                    justify-start items-center py-4">
+                        justify-start items-center py-4">
                             <div @click="toggleVideoEdit(video.id, video.title, video.description)" class="cursor-pointer w-full h-[32px] hover:bg-[#f9f9f9] flex flex-row justify-start items-center
-                    text-[15px] font-normal font-roboto">
+                        text-[15px] font-normal font-roboto">
                                 <img class="w-[17px] h-[17px] mx-4" :src="editIcon" alt="">
                                 <p>Edit title and description</p>
                             </div>
                             <div class="w-full h-[32px] hover:bg-[#f9f9f9] flex flex-row justify-start items-center
-                    text-[15px] font-normal font-roboto">
+                        text-[15px] font-normal font-roboto">
                                 <img class="w-[17px] h-[17px] mx-4" :src="downloadIcon" alt="">
                                 <p>Download</p>
                             </div>
                             <div class="w-full h-[32px] hover:bg-[#f9f9f9] flex flex-row justify-start items-center
-                    text-[15px] font-normal font-roboto">
+                        text-[15px] font-normal font-roboto">
                                 <img class="w-[17px] h-[17px] mx-4" :src="uninstallIcon" alt="">
                                 <p>Delete forever</p>
                             </div>
                         </div>
                         <div v-if="videoOptionStates[video.id]?.editDiv" class="edit-title-description bg-white z-40 w-[488px] h-[368px] rounded-lg
-                    flex flex-col justify-start pt-2 items-center gap-y-4 absolute left-2 top-6">
+                        flex flex-col justify-start pt-2 items-center gap-y-4 absolute left-2 top-6">
                             <div class="w-[464px] h-[91px] rounded-lg border border-solid box-border border-[#d6d6d6] hover:border-black hover:border-2
-                     focus:border-2 relative pl-2 pt-2"
+                        focus:border-2 relative pl-2 pt-2"
                                 :style="{ borderColor: userAbleToSave ? 'black' : 'red', borderWidth: !userAbleToSave ? '2px' : '1px' }">
                                 <span class="text-[12px] font-medium text-gray-600">Title (required)</span>
-                                <textarea @input="videoTitleEdit" v-model="videoTitle"
+                                <textarea @input="videoTitleEdit" v-model="video.title"
                                     class="mt-1 edit-title-input w-[440px] h-[41px] outline-none text-[15px] font-normal overflow-hidden leading-4"
                                     placeholder="Add title" minlength="1" required maxlength="100"></textarea>
                                 <span class="text-[12px] font-normal absolute right-1 bottom-1 text-gray-700"><span
@@ -145,7 +149,7 @@ onMounted(() => {
                                 class="w-[464px] relative max-w-[464px] h-[201px] max-h-[201px] rounded-lg border border-[#d6d6d6] pl-2 pt-2 hover:border-black hover:border-2">
                                 <span class="text-[12px] font-medium text-gray-600">Description</span>
                                 <textarea style="scrollbar-width: thin;" @input="videoDescriptionEdit"
-                                    v-model="videoDescription"
+                                    v-model="video.description"
                                     class="mt-1 edit-title-input w-[440px] h-[151px] outline-none text-[15px] font-normal overflow-y-auto leading-4"
                                     placeholder="Add description" maxlength="5000"></textarea>
                                 <span class="text-[12px] font-normal absolute right-1 bottom-1 text-gray-700"><span

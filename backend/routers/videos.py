@@ -2,14 +2,12 @@ from fastapi import APIRouter, UploadFile, File, Query, Form, status
 from fastapi.responses import JSONResponse
 from database.models.user import Video, Playlist, Subtitle
 from database.models.base import session
-from sqlalchemy import desc
+from sqlalchemy import desc, asc
 from pydantic import BaseModel
-from typing import Optional
 from pathlib import Path
 from pymediainfo import MediaInfo
 import shutil
 import json
-import time
 from dependencies import get_current_user_id
 from datetime import datetime
 
@@ -17,13 +15,6 @@ UPLOAD_DIR = Path("uploaded_videos")
 UPLOAD_DIR.mkdir(exist_ok=True)
 
 router = APIRouter(prefix="/videos", tags=["videos"])
-
-# async def get_video_duration(file): # Using openCv
-#     import cv2
-#     data = cv2.VideoCapture(file)
-#     frames = data.get(cv2.CAP_PROP_FRAME_COUNT)
-#     fps = data.get(cv2.CAP_PROP_FPS)
-#     return frames / fps
 
 
 async def time_formatter(time):
@@ -44,7 +35,11 @@ async def get_video_duration(file):  # Using pymediainfo (This is faster)
 
 
 @router.post("/upload")
-async def upload_video(file: UploadFile = File(...), user_session_id: str = Form()):
+async def upload_video(
+    file: UploadFile = File(...),
+    user_session_id: str = Form(),
+    video_type: str = Form(),
+):
     user_id = await get_current_user_id(user_session_id)
 
     UPLOAD_DIR_USER = Path(UPLOAD_DIR / str(user_id))
@@ -59,6 +54,7 @@ async def upload_video(file: UploadFile = File(...), user_session_id: str = Form
     created_video = Video(
         user_id=user_id,
         title=file.filename,
+        video_type=video_type,
         file_name=file.filename,
         file_url=str(file_path),
     )
@@ -111,6 +107,7 @@ async def get_video(video_id: int = Query()):
     playlists = [playlist.id for playlist in video.playlists if video.playlists]
     subtitle = video.subtitle.file_name if video.subtitle else None
     serializer = {
+        "video_type": video.video_type,
         "details": {
             "video_id": video_id,
             "title": video.title,
@@ -137,11 +134,13 @@ async def get_video(video_id: int = Query()):
 @router.post("/update")
 async def create_video(
     user_session_id: str = Form(...),
+    video_type: str = Form(...),
     details: str = Form(...),
     thumbnailFile: UploadFile = File(None),
     subtitleFile: UploadFile = File(None),
     visibility: str = Form(...),
 ):
+    print("Video type: ", video_type)
     user_id = await get_current_user_id(user_session_id)
     details_dict = json.loads(details)
     visibility_dict = json.loads(visibility)
@@ -155,7 +154,11 @@ async def create_video(
 
     if details_dict:
         await update_video(
-            int(details_dict["video_id"]), details_dict, visibility_dict, thumbnail_path
+            int(details_dict["video_id"]),
+            video_type,
+            details_dict,
+            visibility_dict,
+            thumbnail_path,
         )
 
     if subtitleFile:
@@ -173,11 +176,16 @@ async def create_video(
 
 
 async def update_video(
-    video_id: int, details: dict, visibility: dict, thumbnail_path: Path
+    video_id: int,
+    video_type: str,
+    details: dict,
+    visibility: dict,
+    thumbnail_path: Path,
 ):
     Video.query.filter_by(id=video_id).update(
         {
             "title": details["title"],
+            "video_type": video_type,
             "description": details["description"],
             "thumbnail_name": thumbnail_path.name if thumbnail_path else "",
             "thumbnail_url": str(thumbnail_path) if thumbnail_path else "",
@@ -196,32 +204,37 @@ async def update_video(
 @router.get("/list")
 async def list_video(
     user_session_id: str = Query(),
+    video_type: str = Query(None),
     filter: str = Query(None, alias="queries[filter]"),
     sort_type: str = Query(None, alias="queries[sortByType]"),
     sort_order: str = Query(None, alias="queries[sortByOrder]"),
 ):
-
     user_id = await get_current_user_id(user_session_id)
-    
-    print("Filter: ", filter)
-    print("Type: ", sort_type)
-    print("Order: ", sort_order)
+    print(video_type)
 
-    videos = (
-        Video.query.with_entities(
-            Video.id,
-            Video.title,
-            Video.description,
-            Video.thumbnail_url,
-            Video.visibility,
-            Video.file_url,
-            Video.age_restriction,
-            Video.created_at,
-        )
-        .filter_by(user_id=user_id)
-        .order_by(desc(Video.id))
-        .all()
-    )
+    videos = Video.query.with_entities(
+        Video.id,
+        Video.video_type,
+        Video.title,
+        Video.description,
+        Video.thumbnail_url,
+        Video.visibility,
+        Video.file_url,
+        Video.age_restriction,
+        Video.created_at,
+    ).filter_by(user_id=user_id, video_type=video_type)
+
+    if filter and filter == "age-restriction":
+        videos = videos.filter(Video.age_restriction == True)
+    elif filter and filter == "made-for-kids":
+        videos = videos.filter(Video.audience == True)
+    elif filter and filter == "visibility":
+        videos = videos.filter(Video.visibility == True)
+
+    if sort_type and sort_order and sort_type == "date" and sort_order == "DESC":
+        videos = videos.order_by(desc(Video.id)).all()
+    elif sort_type and sort_order and sort_type == "date" and sort_order == "ASC":
+        videos = videos.order_by(asc(Video.id)).all()
 
     serializer = []
     for video in videos:
@@ -229,6 +242,7 @@ async def list_video(
             {
                 "id": video.id,
                 "title": video.title,
+                "video_type": video_type,
                 "description": video.description,
                 "duration": await get_video_duration(video.file_url),
                 "thumbnail_url": video.thumbnail_url,

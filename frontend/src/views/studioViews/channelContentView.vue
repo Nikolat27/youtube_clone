@@ -4,6 +4,7 @@ import { useRouter, useRoute } from 'vue-router';
 
 // Icons
 import arrowBottomIcon from '@/assets/icons/svg-icons/arrow-bottom-icon.svg'
+import router from '@/router';
 
 // Router
 const router1 = useRoute()
@@ -38,12 +39,12 @@ const sortVideos = (sortByType) => {
                 <h1 class="text-[25px] font-semibold mb-7">Channel content</h1>
             </div>
             <div class="chnl-tab-content flex flex-row gap-x-6 border-b border-[#f1f1f1] w-[100%] h-[48px]">
-                <router-link :class="$route.name === 'videos' ? 'active' : ''"
-                    to="/studio/channel-content/videos">Videos</router-link>
-                <router-link :class="$route.name === 'shorts' ? 'active' : ''"
-                    to="/studio/channel-content/shorts">Shorts</router-link>
-                <router-link :class="$route.name === 'lives' ? 'active' : ''"
-                    to="/studio/channel-content/lives">Lives</router-link>
+                <router-link :class="$route.query.type === 'long_video' || ($route.name === 'videos' && !$route.query.type) ? 'active' : ''"
+                    to="/studio/channel-content/videos?type=long_video">Videos</router-link>
+                <router-link :class="$route.query.type === 'short_video' ? 'active' : ''"
+                    to="/studio/channel-content/videos?type=short_video">Shorts</router-link>
+                <!-- <router-link :class="$route.name === 'lives' ? 'active' : ''"
+                    to="/studio/channel-content/lives">Lives</router-link> -->
                 <router-link :class="$route.name === 'posts' ? 'active' : ''"
                     to="/studio/channel-content/posts">Posts</router-link>
                 <router-link :class="$route.name === 'playlists' ? 'active' : ''" to="/studio/channel-content/playlists"

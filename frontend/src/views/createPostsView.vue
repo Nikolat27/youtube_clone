@@ -1,6 +1,7 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import axios from 'axios';
 
 const router = useRouter();
 
@@ -18,6 +19,17 @@ const uploadPostImage = (event) => {
 const goBack = () => {
     router.go(-1);
 }
+
+onMounted(() => {
+    // post page is just for authenticated Users
+    axios.get("http://localhost:8000/users/is_authenticated", {
+        params: {
+            user_session_id: sessionStorage.getItem("user_session_id")
+        }
+    }).then((response) => {
+        if (!response.data) router.push({ name: 'auth' });
+    })
+})
 </script>
 
 <template>

@@ -128,6 +128,7 @@ async def login_user(
         return JSONResponse({"error": "Either your username or password is wrong!"})
 
     generate_new_session_id = random.randint(100000, 999999)
+    
     if user_session_id:  # If user is already logged in
         is_authenticated = await is_user_authenticated(user_session_id)
         if is_authenticated:
@@ -155,6 +156,7 @@ async def login_user(
             )
             session.add(new_user_log_instance)
 
+    print(generate_new_session_id)
     session.commit()
     return JSONResponse(
         {"user_session_id": generate_new_session_id}, status_code=status.HTTP_200_OK

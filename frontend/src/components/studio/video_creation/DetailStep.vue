@@ -32,8 +32,13 @@ const userAbleToSave = computed(() => { // User can only save the information if
 })
 
 // Edit Video Description Management
-const videoDescriptionLength = computed(() => props.formData.details.description.length)
-
+const videoDescriptionLength = computed(() => {
+    if (props.formData.details.description) {
+        return props.formData.details.description.length
+    } else {
+        return 0
+    }
+})
 
 // Playlist visibility options
 const isPlaylistSelectionOpen = ref(false)
@@ -59,14 +64,9 @@ const retrieveAllUserPlaylists = async () => {
 // Managing playlist creation tab with sharedStates
 const togglePlaylistCreation = () => sharedState.isPlaylistCreationOpen = !sharedState.isPlaylistCreationOpen
 
-// Audience Management (kids or not-kids)
-const audience = ref('not-kids')
-
-const ageRestriction = ref('no')
 const isAgeRestrictionOpen = ref(false)
 const toggleAgeRestriction = () => {
     isAgeRestrictionOpen.value = !isAgeRestrictionOpen.value
-    props.formData.details.ageRestriction = ageRestriction.value
 }
 
 // Video Management
@@ -320,20 +320,20 @@ onUnmounted(() => {
                         required to comply with the Children's Online
                         Privacy Protection Act (COPPA) and/or other laws. You're required to tell us whether your
                         videos are made for kids.</span>
-                    <div @click="audience = 'kids', formData.details.audience = 'kids'"
+
+                    <div @click="formData.details.audience = 'kids', formData.details.audience = 'kids'"
                         class="flex flex-row gap-x-2 cursor-pointer">
-                        <input v-model="audience" :value="formData.details.audience" :checked="audience === 'kids'"
-                            class="radio" name="audience-type" type="radio">
+                        <input v-model="formData.details.audience" :value="formData.details.audience"
+                            :checked="formData.details.audience === 'kids'" name="audience-type" type="radio">
                         <p class="text-[15px] font-normal">Yes, it's made for kids</p>
                     </div>
-                    <div @click="audience = 'not-kids', formData.details.audience = 'not-kids'"
+                    <div @click="formData.details.audience = 'not-kids', formData.details.audience = 'not-kids'"
                         class="flex flex-row gap-x-2 cursor-pointer">
-                        <input v-model="audience" value="not-kids" :checked="audience === 'not-kids'"
-                            name="audience-type" type="radio">
+                        <input v-model="formData.details.audience" value="not-kids"
+                            :checked="formData.details.audience === 'not-kids'" name="audience-type" type="radio">
                         <p class="text-[15px] font-normal">No, it's not made for kids </p>
                     </div>
 
-                    <!-- Some bug here -->
                     <button @click="toggleAgeRestriction"
                         class="w-[209px] h-[48px] mt-4 flex flex-row items-center justify-start">
                         <img class="w-[12px] h-[12px] mr-2" :class="isAgeRestrictionOpen ? 'rotate-180' : ''"
@@ -347,15 +347,19 @@ onUnmounted(() => {
                         <span class="text-[13px] font-normal">Age-restricted videos are not shown in certain
                             areas of YouTube. These videos may
                             have limited or no ads monetization.</span>
-                        <div v-if="audience === 'not-kids'" class="flex flex-col gap-y-2">
-                            <div @click="ageRestriction = 'yes'" class="flex flex-row gap-x-2 cursor-pointer">
-                                <input v-model="ageRestriction" value="yes" :checked="ageRestriction === 'yes'"
-                                    class="radio" name="age-restriction" type="radio">
+                        <div v-if="formData.details.audience === 'not-kids'" class="flex flex-col gap-y-2">
+                            <div @click="formData.details.ageRestriction = 'yes'"
+                                class="flex flex-row gap-x-2 cursor-pointer">
+                                <input v-model="formData.details.ageRestriction" value="yes"
+                                    :checked="formData.details.ageRestriction === 'yes'" class="radio"
+                                    name="age-restriction" type="radio">
                                 <p class="text-[15px] font-normal">Yes, restrict my video to viewers over 18 </p>
                             </div>
-                            <div @click="ageRestriction = 'no'" class="flex flex-row gap-x-2 cursor-pointer">
-                                <input v-model="ageRestriction" value="no" :checked="ageRestriction === 'no'"
-                                    name="age-restriction" type="radio">
+                            <div @click="formData.details.ageRestriction = 'no'"
+                                class="flex flex-row gap-x-2 cursor-pointer">
+                                <input v-model="formData.details.ageRestriction" value="no"
+                                    :checked="formData.details.ageRestriction === 'no'" name="age-restriction"
+                                    type="radio">
                                 <p class="text-[15px] font-normal">No, don't restrict my video to viewers over 18
                                     only
                                 </p>

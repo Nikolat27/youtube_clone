@@ -1,10 +1,11 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import axios from "axios";
 
-const router = useRoute();
-const isRegisterShown = ref(router.query.mode === 'register' || !router.query.mode);
+const router1 = useRoute();
+const router2 = useRouter();
+const isRegisterShown = ref(router1.query.mode === 'register' || !router1.query.mode);
 const toggleRegisterShowing = () => isRegisterShown.value = !isRegisterShown.value
 
 // Handle Sign in Form
@@ -12,7 +13,6 @@ const loginUsername = ref('')
 const loginPassword = ref('')
 const submitLoginForm = (event) => {
     event.preventDefault(); // For preventing the page from refreshing
-
     axios.post("http://localhost:8000/users/login", {
         username: loginUsername.value,
         password: loginPassword.value,
@@ -24,7 +24,7 @@ const submitLoginForm = (event) => {
     }).then((response) => {
         const userSessionId = response.data.user_session_id;
         sessionStorage.setItem('user_session_id', userSessionId);
-        console.log("Login was successfull");
+        router2.go(-1)
     }, (error) => {
         console.log(error)
     })

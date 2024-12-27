@@ -22,6 +22,7 @@ import postIcon from '/src/assets/icons/svg-icons/post-icon.svg'
 import playlistIcon from '/src/assets/icons/svg-icons/playlist-icon-2.svg'
 import closeIcon from '/src/assets/icons/svg-icons/close-icon2.svg'
 import checkMarkIcon from '/src/assets/icons/svg-icons/check-mark-icon.svg'
+import shortVideoIcon from '/src/assets/icons/svg-icons/shorts-icon.svg'
 
 
 const isVideoListboxOpen = ref(false)
@@ -29,8 +30,10 @@ const toggleVideoList = () => isVideoListboxOpen.value = !isVideoListboxOpen.val
 
 const toggleVideoCreationVisibility = () => sharedState.isVideoCreationOpen.open = !sharedState.isVideoCreationOpen.open
 
-const isFileUploadBoxOpen = ref(false)
-const toggleFileUploadBox = () => isFileUploadBoxOpen.value = !isFileUploadBoxOpen.value
+const toggleFileUploadBox = (video_type) => {
+    sharedState.isVideoUploadingOpen.open = !sharedState.isVideoUploadingOpen.open
+    sharedState.isVideoUploadingOpen.video_type = video_type
+}
 
 const inputField = ref(null)
 const openFileInput = () => {
@@ -40,6 +43,7 @@ const openFileInput = () => {
 const uploadFile = async (event) => {
     const videoFile = event.target.files[0]; // Get the selected file from the input
     formData.details.title = event.target.files[0].name;
+    formData.video_type = sharedState.isVideoUploadingOpen.video_type
 
     if (!videoFile) {
         console.error("No file selected.");
@@ -49,13 +53,14 @@ const uploadFile = async (event) => {
     const fileFormData = new FormData();
     fileFormData.append("file", videoFile);
     fileFormData.append("user_session_id", sessionStorage.getItem("user_session_id"));
+    fileFormData.append("video_type", formData.video_type);
     try {
         await axios.post("http://localhost:8000/videos/upload", fileFormData, {
             headers: {
                 "Content-Type": "multipart/form-data" // This type is necessary for sending files
             }
         }).then((response) => {
-            isFileUploadBoxOpen.value = false
+            sharedState.isVideoUploadingOpen.open = false
             sharedState.isVideoCreationOpen.open = true
             sharedState.isVideoCreationOpen.video_id = response.data.video_id
             formData.details.video_id = response.data.video_id
@@ -91,6 +96,7 @@ const prevStep = () => {
 
 const isLoading = ref(false)
 watch(sharedState.isVideoCreationOpen, () => {
+    currentStep.value = 0
     isLoading.value = true
     if (!sharedState.isVideoCreationOpen.open) return;
     axios.get("http://127.0.0.1:8000/videos/get", {
@@ -98,6 +104,7 @@ watch(sharedState.isVideoCreationOpen, () => {
             video_id: sharedState.isVideoCreationOpen.video_id
         }
     }).then((response) => {
+        formData.video_type = response.data.data.video_type
         formData.details = response.data.data.details;
         formData.thumbnailFile = response.data.data.thumbnailFile;
         formData.subtitleFile = response.data.data.subtitleFile;
@@ -109,6 +116,7 @@ watch(sharedState.isVideoCreationOpen, () => {
 
 const formData = reactive({
     user_session_id: sessionStorage.getItem('user_session_id'),
+    video_type: sharedState.isVideoUploadingOpen.video_type, // we have long_video (or regular) and short_video
     details: {
         video_id: sharedState.isVideoCreationOpen.video_id,
         title: '',
@@ -132,6 +140,7 @@ const toast = useToast()
 const submitForm = async () => {
     isLoading.value = true
     const formDataToSend = new FormData();
+    formDataToSend.append('video_type', formData.video_type);
     formDataToSend.append('user_session_id', formData.user_session_id);
     if (formData.thumbnailFile) {
         formDataToSend.append('thumbnailFile', formData.thumbnailFile);
@@ -141,7 +150,6 @@ const submitForm = async () => {
     }
     formDataToSend.append('details', JSON.stringify(formData.details));
     formDataToSend.append('visibility', JSON.stringify(formData.visibility));
-    console.log(formDataToSend.details);
     await axios.post("http://127.0.0.1:8000/videos/update", formDataToSend, {
         headers: {
             'Content-Type': 'multipart/form-data' // Important for file uploads
@@ -149,6 +157,7 @@ const submitForm = async () => {
     }).then((response) => {
         toast.success("Your video Updated Successfully!")
         sharedState.refreshRetrieveVideos = true;
+        sharedState.isVideoCreationOpen.open = false;
     }).catch((error) => {
         toast.error("Error!")
     }).finally(() => isLoading.value = false);
@@ -191,10 +200,15 @@ axios.get("http://localhost:8000/users/is_authenticated", {
             </button>
             <div v-if="isVideoListboxOpen && !isVideoCreationOpen" class="video-listbox absolute gap-y-1 py-4 top-[49px] right-[74px] w-[182px] h-auto rounded-xl
              bg-white flex flex-col justify-start items-center">
-                <div @click="toggleFileUploadBox"
+                <div @click="toggleFileUploadBox('long_video')"
                     class="cursor-pointer w-full h-[32px] flex justify-start items-center hover:bg-[#f9f9f9]">
                     <img class="w-[20px] h-[20px] mr-4 ml-4" :src="uploadIcon" alt="">
                     <span>Upload videos</span>
+                </div>
+                <div @click="toggleFileUploadBox('short_video')"
+                    class="cursor-pointer w-full h-[32px] flex justify-start items-center hover:bg-[#f9f9f9]">
+                    <img class="w-[20px] h-[20px] mr-4 ml-4" :src="shortVideoIcon" alt="">
+                    <span>Create shorts</span>
                 </div>
                 <router-link to="/posts"
                     class="cursor-pointer w-full h-[32px] flex justify-start items-center hover:bg-[#f9f9f9]">
@@ -209,20 +223,22 @@ axios.get("http://localhost:8000/users/is_authenticated", {
             <img class="w-[32px] h-[32px] rounded-full cursor-pointer" :src="channelProfile" alt="">
         </div>
     </header>
-    <div v-if="isFileUploadBoxOpen" class="upload-div shadow-outer font-roboto w-[960px] h-[634px] flex flex-col absolute top-[75px] right-[250px] bg-white z-50
+    <div v-if="sharedState.isVideoUploadingOpen.open" class="upload-div shadow-outer font-roboto w-[960px] h-[634px] flex flex-col absolute top-[75px] right-[250px] bg-white z-50
      rounded-3xl">
         <div class="title-section flex flex-row items-center border-b w-full h-[60.8px]">
             <div class="justify-self-start mr-auto pl-8">
                 <p class="title text-[20px] font-medium">Upload videos</p>
             </div>
             <div class="justify-self-end ml-auto pr-4">
-                <button @click="toggleFileUploadBox"
+                <button @click="toggleFileUploadBox(sharedState.isVideoUploadingOpen.video_type)"
                     class="w-[39.2px] h-[39.2px] rounded-full hover:bg-[#dfdfdf] flex justify-center items-center">
                     <img draggable="false" class="w-[15px] h-[15px]" :src="closeIcon" alt="">
                 </button>
             </div>
         </div>
         <div class="upload-section flex flex-col justify-center items-center w-full h-[558.4px]">
+            <h3 class="mb-6 select-none">Video Type: <span class="font-bold">{{
+                sharedState.isVideoUploadingOpen.video_type }}</span></h3>
             <button @click="openFileInput"
                 class="w-[136px] h-[136px] rounded-full flex justify-center items-center bg-[#f9f9f9]">
                 <img draggable="false" class="w-[40%] h-[40%]" :src="uploadIcon" alt="">

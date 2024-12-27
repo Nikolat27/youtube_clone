@@ -44,7 +44,6 @@ const routes = [
         path: "/channel-page", name: "channel_detail", component: ChannelPageView, children: [
             { path: '', name: 'channel-home', component: Home, },
             { path: 'videos', name: 'videos', component: Video, },
-            { path: 'shorts', name: 'shorts', component: Shorts, },
             { path: 'playlists', name: 'playlists', component: Playlists, },
             { path: 'community', name: 'community', component: Community, },
             { path: 'search', name: 'search', component: Search, },
