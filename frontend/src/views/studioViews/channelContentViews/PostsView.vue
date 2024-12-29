@@ -1,125 +1,129 @@
 <script setup>
-import { ref, reactive, computed } from 'vue';
-import { sharedState } from '@/sharedState';
+import { ref, reactive, computed, onMounted, watch } from 'vue';
+import { useRoute } from 'vue-router';
+import { useToast } from 'vue-toastification';
+import axios from 'axios';
 
 // Icons
-import youtubeIcon from '@/assets/icons/svg-icons/youtube-icon.svg'
 import editIcon from '@/assets/icons/svg-icons/edit-icon.svg'
 import kebabMenuIcon from '@/assets/icons/svg-icons/kebab-menu.svg'
-import downloadIcon from '@/assets/icons/svg-icons/download-icon2.svg'
 import uninstallIcon from '@/assets/icons/svg-icons/uninstall-icon.svg'
 
 
-// Generate some fake videos
-const posts = reactive([])
-for (let i = 1; i <= 3; i++) {
-    posts.push({ id: i, title: `${i} posts title`, description: `${i} Posts description` })
-}
-
 // Edit Video Title Management
-const videoTitle = ref('')
-const videoTitleLength = computed(() => videoTitle.value.length)
+const communityText = ref('')
+const communityTextLength = computed(() => communityText.value.length)
 
-const videoTitleEdit = (event) => {
-    videoTitle.value = event.target.value;
+const communityTextEdit = (event) => {
+    communityText.value = event.target.value;
 }
 const userAbleToSave = computed(() => { // User can only save the information if the title`s length is equal or greater than 0
-    return (videoTitle.value.length > 0 ? true : false)
+    return (communityText.value.length > 0 ? true : false)
 })
 
-// Edit Video Description Management
-const videoDescription = ref('')
-const videoDescriptionLength = computed(() => videoDescription.value.length)
-const videoDescriptionEdit = (event) => {
-    videoDescription.value = event.target.value;
-}
 
 // Opening closing video options 
-const videoOptionStates = ref({});
-const toggleOptions = (video_id, video_title = '', video_description = '', option) => {
-    if (!videoOptionStates.value[video_id]) {
-        videoOptionStates.value = {};
-        videoOptionStates.value[video_id] = { optionDiv: false, editDiv: false }
+const communityOptionStates = ref({});
+const toggleOptions = (community_id, community_text = '', option) => {
+    if (!communityOptionStates.value[community_id]) {
+        communityOptionStates.value = {};
+        communityOptionStates.value[community_id] = { optionDiv: false, editDiv: false }
     }
-    videoOptionStates.value[video_id][option] = !videoOptionStates.value[video_id][option]
+    communityOptionStates.value[community_id][option] = !communityOptionStates.value[community_id][option]
 
-    videoTitle.value = video_title; // Puting the video title and desc in their inputs
-    videoDescription.value = video_description;
+    communityText.value = community_text;
 }
 
-const toggleVideoOptions = (video_id, video_title, video_description) => toggleOptions(video_id, video_title, video_description, 'optionDiv')
-const toggleVideoEdit = (video_id, video_title, video_description) => toggleOptions(video_id, video_title, video_description, 'editDiv')
+const toggleCommunityOptions = (community_id, community_text) => toggleOptions(community_id, community_text, 'optionDiv')
+const toggleCommunityEdit = (community_id, community_text) => toggleOptions(community_id, community_text, 'editDiv')
+
+const router = useRoute()
+
+watch(router, () => {
+    retrieveAllPosts()
+})
+
+let posts = reactive([])
+const retrieveAllPosts = async () => {
+    await axios.get("http://127.0.0.1:8000/videos/community/list", {
+        params: {
+            'user_session_id': sessionStorage.getItem('user_session_id'),
+            'queries': router.query
+        }
+    }).then((response) => {
+        posts.splice(0, posts.length, ...response.data.data)
+    }).catch((error) => {
+        console.log(error)
+    })
+}
+
+const toast = useToast()
+const submitFormData = (community_id) => {
+    const newFormData = new FormData();
+
+    newFormData.append("user_session_id", sessionStorage.getItem('user_session_id'))
+    newFormData.append("community_id", community_id)
+    newFormData.append("community_text", communityText.value)
+
+    axios.post("http://127.0.0.1:8000/videos/community/edit", newFormData).then((response) => {
+        if (response.status == 200) {
+            toast.success("Community updated successfully!");
+            toggleCommunityEdit(community_id, communityText.value);
+            retrieveAllPosts();
+        }
+    }).catch((error) => {
+        toast.error(error)
+    })
+}
+onMounted(() => {
+    retrieveAllPosts()
+})
 </script>
 <template>
     <div class="border-b font-roboto pl-[48px] w-full">
         <div v-for="post in posts" :key="post.id" class="table-itself border-b">
             <div class="video-thumbnail">
-                <img draggable="false" src="@/assets/img/Django.png" alt="">
-                <span class="video-duration">2:28</span>
+                <img draggable="false" src="/src/assets/img/Django.png" alt="">
             </div>
             <div class="video-detail relative flex flex-col font-normal text-[13px] mt-2" style="padding-left: 12px;">
-                <span>{{ post.title }}</span>
-                <span>{{ post.description }}</span>
+                <span>{{ post.community_text }}</span>
                 <div class="flex flex-row justify-start items-center">
-                    <button class="w-[39.2px] h-[39.2px] rounded-full hover:bg-[#eaeaea] flex items-center
-             justify-center">
-                        <img class="w-[20px] h-[20px] center" :src="youtubeIcon" alt="">
-                    </button>
-                    <button @click="sharedState.isVideoCreationOpen = true" class="w-[39.2px] h-[39.2px] rounded-full hover:bg-[#eaeaea] flex items-center
-             justify-center">
+                    <button @click="toggleCommunityEdit(post.id, post.community_text)" class="w-[39.2px] h-[39.2px] rounded-full hover:bg-[#eaeaea] flex items-center
+                 justify-center">
                         <img class="w-[17px] h-[17px] center" :src="editIcon" alt="">
                     </button>
-                    <button @click="toggleVideoOptions(post.id)" class="w-[39.2px] h-[39.2px] rounded-full hover:bg-[#eaeaea] flex items-center
-             justify-center">
+                    <button @click="toggleCommunityOptions(post.id, post.community_text)" class="w-[39.2px] h-[39.2px] rounded-full hover:bg-[#eaeaea] flex items-center
+                 justify-center">
                         <img class="w-[17px] h-[17px] center" :src="kebabMenuIcon" alt="">
                     </button>
-                    <div v-if="videoOptionStates[post.id]?.optionDiv" class="absolute left-40 top-0 video-edit-options w-[226px] h-auto rounded-xl bg-white flex flex-col
+                    <div v-if="communityOptionStates[post.id]?.optionDiv" class="absolute left-24 top-0 video-edit-options w-[226px] h-auto rounded-xl bg-white flex flex-col
                  justify-start items-center py-4">
-                        <div @click="toggleVideoEdit(post.id, post.title, post.description)" class="cursor-pointer w-full h-[32px] hover:bg-[#f9f9f9] flex flex-row justify-start items-center
-                 text-[15px] font-normal font-roboto">
-                            <img class="w-[17px] h-[17px] mx-4" :src="editIcon" alt="">
-                            <p>Edit title and description</p>
-                        </div>
-                        <div class="w-full h-[32px] hover:bg-[#f9f9f9] flex flex-row justify-start items-center
-                 text-[15px] font-normal font-roboto">
-                            <img class="w-[17px] h-[17px] mx-4" :src="downloadIcon" alt="">
-                            <p>Download</p>
-                        </div>
                         <div class="w-full h-[32px] hover:bg-[#f9f9f9] flex flex-row justify-start items-center
                  text-[15px] font-normal font-roboto">
                             <img class="w-[17px] h-[17px] mx-4" :src="uninstallIcon" alt="">
                             <p>Delete forever</p>
                         </div>
                     </div>
-                    <div v-if="videoOptionStates[post.id]?.editDiv" class="edit-title-description bg-white z-40 w-[488px] h-[368px] rounded-lg
+                    <div v-if="communityOptionStates[post.id]?.editDiv" class="edit-post-text bg-white z-40 w-[488px] h-auto max-h-[368px] rounded-lg
                  flex flex-col justify-start pt-2 items-center gap-y-4 absolute left-2 top-6">
                         <div class="w-[464px] h-[91px] rounded-lg border border-solid box-border border-[#d6d6d6] hover:border-black hover:border-2
                      focus:border-2 relative pl-2 pt-2"
                             :style="{ borderColor: userAbleToSave ? 'black' : 'red', borderWidth: !userAbleToSave ? '2px' : '1px' }">
-                            <span class="text-[12px] font-medium text-gray-600">Title (required)</span>
-                            <textarea @input="videoTitleEdit" v-model="videoTitle"
+                            <span class="text-[12px] font-medium text-gray-600">Post`s Text (required)</span>
+                            <textarea @input="communityTextEdit" v-model="communityText"
                                 class="mt-1 edit-title-input w-[440px] h-[41px] outline-none text-[15px] font-normal overflow-hidden leading-4"
-                                placeholder="Add title" minlength="1" required maxlength="100"></textarea>
+                                placeholder="Add Community (post) text" minlength="1" required
+                                maxlength="100"></textarea>
                             <span class="text-[12px] font-normal absolute right-1 bottom-1 text-gray-700"><span
-                                    class="title-char-counter">{{ videoTitleLength }}</span>/100</span>
-                        </div>
-                        <div
-                            class="w-[464px] relative max-w-[464px] h-[201px] max-h-[201px] rounded-lg border border-[#d6d6d6] pl-2 pt-2 hover:border-black hover:border-2">
-                            <span class="text-[12px] font-medium text-gray-600">Description</span>
-                            <textarea style="scrollbar-width: thin;" @input="videoDescriptionEdit"
-                                v-model="videoDescription"
-                                class="mt-1 edit-title-input w-[440px] h-[151px] outline-none text-[15px] font-normal overflow-y-auto leading-4"
-                                placeholder="Add description" maxlength="5000"></textarea>
-                            <span class="text-[12px] font-normal absolute right-1 bottom-1 text-gray-700"><span
-                                    class="title-char-counter">{{ videoDescriptionLength }}</span>/5000</span>
+                                    class="title-char-counter">{{ communityTextLength }}</span>/100</span>
                         </div>
                         <div class="flex flex-row w-full self-end justify-end items-center font-roboto 
                      gap-x-2 pr-2 pb-2">
                             <span v-if="!userAbleToSave" class="text-[12px] font-normal text-red-800">Your
-                                video needs a title</span>
-                            <button @click="toggleVideoEdit(post.id)" class="w-[74.9px] h-[36px] rounded-3xl text-[14px] font-medium
+                                post needs a title</span>
+                            <button @click="toggleCommunityEdit(post.id, post.community_text)" class="w-[74.9px] h-[36px] rounded-3xl text-[14px] font-medium
                          items-center text-black bg-[#f2f2f2] hover:bg-[#e5e5e5]">Cancel</button>
-                            <button :disabled="!userAbleToSave" class="w-[62.2px] h-[36px] rounded-3xl text-[14px] font-medium
+                            <button @click="submitFormData(post.id)" :disabled="!userAbleToSave" class="w-[62.2px] h-[36px] rounded-3xl text-[14px] font-medium
                          items-center text-white hover:bg-[#272727]"
                                 :style="{ backgroundColor: userAbleToSave ? 'black' : 'gray' }">Save</button>
                         </div>
@@ -154,7 +158,7 @@ const toggleVideoEdit = (video_id, video_title, video_description) => toggleOpti
     resize: none;
 }
 
-.edit-title-description {
+.edit-post-text {
     box-shadow: 0 0 12px rgba(0, 0, 0, 0.15);
 }
 

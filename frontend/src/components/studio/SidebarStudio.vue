@@ -17,10 +17,12 @@ import customizationIcon from '/src/assets/icons/svg-icons/customization-icon.sv
             <p class="text-[12px] font-normal">channel name</p>
         </div>
         <div class="top-section flex flex-col pl-4 mt-4">
-            <div class="large-menu-item">
-                <img :src="dashboardIcon" alt="">
-                <p>Dashboard</p>
-            </div>
+            <router-link to="/studio/">
+                <div class="large-menu-item">
+                    <img :src="dashboardIcon" alt="">
+                    <p>Dashboard</p>
+                </div>
+            </router-link>
             <div class="large-menu-item">
                 <img :src="contentIcon" alt="">
                 <p>Content</p>
@@ -37,10 +39,12 @@ import customizationIcon from '/src/assets/icons/svg-icons/customization-icon.sv
                 <img :src="earnIcon" alt="">
                 <p>Earn</p>
             </div>
-            <div class="large-menu-item">
-                <img :src="customizationIcon" alt="">
-                <p>Customization</p>
-            </div>
+            <router-link to="/studio/customization">
+                <div class="large-menu-item">
+                    <img :src="customizationIcon" alt="">
+                    <p>Customization</p>
+                </div>
+            </router-link>
         </div>
     </aside>
     <aside id="small-aside"

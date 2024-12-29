@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, watch, onMounted } from 'vue'
+import { ref, reactive, watch } from 'vue'
 import axios from 'axios';
 import DetailStep from './video_creation/DetailStep.vue';
 import VideoElements from './video_creation/VideoElements.vue';
@@ -8,6 +8,7 @@ import { sharedState } from '@/sharedState';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
+import PlaylistCreation from './video_creation/PlaylistCreation.vue';
 
 const router = useRouter();
 
@@ -33,6 +34,11 @@ const toggleVideoCreationVisibility = () => sharedState.isVideoCreationOpen.open
 const toggleFileUploadBox = (video_type) => {
     sharedState.isVideoUploadingOpen.open = !sharedState.isVideoUploadingOpen.open
     sharedState.isVideoUploadingOpen.video_type = video_type
+}
+
+const togglePlaylistCreation = () => {
+    sharedState.isPlaylistCreationOpen.open = !sharedState.isPlaylistCreationOpen.open;
+    sharedState.isPlaylistCreationOpen.playlist_id = null;
 }
 
 const inputField = ref(null)
@@ -215,10 +221,16 @@ axios.get("http://localhost:8000/users/is_authenticated", {
                     <img class="w-[20px] h-[20px] mr-4 ml-4" :src="postIcon" alt="">
                     <span>Create post</span>
                 </router-link>
-                <div class="cursor-pointer w-full h-[32px] flex justify-start items-center hover:bg-[#f9f9f9]">
+                <div @click="togglePlaylistCreation"
+                    class="cursor-pointer w-full h-[32px] flex justify-start items-center hover:bg-[#f9f9f9]">
                     <img class="w-[20px] h-[20px] mr-4 ml-4" :src="playlistIcon" alt="">
                     <span>New playlist</span>
                 </div>
+                <Teleport
+                    v-if="sharedState.isPlaylistCreationOpen.open && !sharedState.isPlaylistCreationOpen.playlist_id"
+                    to="body">
+                    <PlaylistCreation></PlaylistCreation>
+                </Teleport>
             </div>
             <img class="w-[32px] h-[32px] rounded-full cursor-pointer" :src="channelProfile" alt="">
         </div>

@@ -1,10 +1,19 @@
-from fastapi import APIRouter, UploadFile, File, Query, Form, status
+from fastapi import (
+    APIRouter,
+    UploadFile,
+    File,
+    Query,
+    Form,
+    status,
+    Path as Path_paramter,
+)
 from fastapi.responses import JSONResponse
 from database.models.user import Video, Playlist, Subtitle, Community
 from database.models.base import session
 from sqlalchemy import desc, asc
 from pydantic import BaseModel
 from pathlib import Path
+from typing import Optional
 from pymediainfo import MediaInfo
 import shutil
 import json
@@ -73,7 +82,7 @@ async def upload_video(
 
 def upload_file(user_id, file, type):
     UPLOAD_DIR_USER = Path(UPLOAD_DIR / str(user_id) / type)
-    UPLOAD_DIR_USER.mkdir(parents=True,exist_ok=True)
+    UPLOAD_DIR_USER.mkdir(parents=True, exist_ok=True)
     thumbnail_path = UPLOAD_DIR_USER / file.filename
     with thumbnail_path.open("wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
@@ -260,6 +269,15 @@ class PlaylistSerializer(BaseModel):
     visibility: str
 
 
+@router.get("/playlist")
+async def retrieve_playlist(user_session_id: str = Query(), playlist_id: int = Query()):
+    user_id = await get_current_user_id(user_session_id)
+
+    playlist = Playlist.query.filter_by(id=playlist_id).first()
+
+    serializer = {"title": playlist.title, "description": playlist.description}
+
+
 @router.get("/playlist/list")
 async def all_playlists(user_session_id: str = Query()):
     user_id = await get_current_user_id(user_session_id)
@@ -281,6 +299,7 @@ async def all_playlists(user_session_id: str = Query()):
         }
         for playlist in playlists
     ]
+
     return JSONResponse({"playlists": serializer}, status_code=status.HTTP_200_OK)
 
 
@@ -303,7 +322,63 @@ async def create_playlist(
     )
 
 
-async def update_playlists(video_id: int, playlist_ids: list):
+@router.get("/playlist/get/{playlist_id}")
+async def get_playlist(
+    user_session_id: str = Query(), playlist_id: int = Path_paramter()
+):
+    user_id = await get_current_user_id(user_session_id)
+
+    playlist = Playlist.query.filter_by(id=playlist_id).first()
+
+    serializer = {
+        "id": playlist.id,
+        "title": playlist.title,
+        "description": playlist.description,
+        "visibility": playlist.visibility,
+    }
+    return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)
+
+
+@router.put("/playlist/edit/{playlist_id}")
+async def edit_playlist(
+    user_session_id: str = Form(),
+    playlist_id: int = Path_paramter(),
+    title: str = Form(),
+    description: Optional[str] = Form(),
+    visibility: str = Form(),
+):
+    user_id = await get_current_user_id(user_session_id)
+    playlist = Playlist.query.filter_by(id=playlist_id).first()
+
+    playlist.title = title
+    playlist.description = description
+    playlist.visibility = visibility
+    session.commit()
+
+    return JSONResponse(
+        {"data": "Your playlist updated successfully!"}, status_code=status.HTTP_200_OK
+    )
+
+
+@router.delete("/playlist/delete/{playlist_id}")
+async def delete_playlist(
+    playlist_id: int = Path_paramter(), user_session_id: str = Query()
+):
+    user_id = await get_current_user_id(user_session_id)
+
+    playlist = Playlist.query.filter_by(id=playlist_id).first()
+    session.delete(playlist)
+    session.commit()
+
+    return JSONResponse(
+        {"data": "Your playlist deleted successfully!"},
+        status_code=status.HTTP_202_ACCEPTED,
+    )
+
+
+async def update_playlists(
+    video_id: int, playlist_ids: list
+):  # This function is used in Video Editing
     video = Video.query.filter_by(id=video_id).first()
     if video:
         video.playlists.clear()
@@ -339,4 +414,45 @@ async def create_community_post(
     return JSONResponse(
         {"data": "Your community added successfully!"},
         status_code=status.HTTP_201_CREATED,
+    )
+
+
+@router.get("/community/list")
+async def list_community_posts(
+    user_session_id: str = Query(),
+    filter: str = Query(None, alias="queries[filter]"),
+    type: str = Query(None, alias="queries[sortByType]"),
+    order: str = Query(None, alias="queries[sortByOrder]"),
+):
+
+    user_id = await get_current_user_id(user_session_id)
+    communities = Community.query.filter_by(user_id=user_id)
+
+    if type and order and type == "date" and order == "ASC":
+        communities = communities.order_by(asc(Community.id)).all()
+    elif type and order and type == "date" and order == "DESC":
+        communities = communities.order_by(desc(Community.id)).all()
+
+    serializer = [
+        {"id": community.id, "community_text": community.community_text}
+        for community in communities
+    ]
+
+    return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)
+
+
+@router.post("/community/edit")
+async def edit_community_post(
+    user_session_id: str = Form(),
+    community_id: int = Form(),
+    community_text: str = Form(),
+):
+    user_id = await get_current_user_id(user_session_id)
+
+    community = Community.query.filter_by(id=community_id).first()
+    community.community_text = community_text
+
+    session.commit()
+    return JSONResponse(
+        {"data": "community updated successfully!"}, status_code=status.HTTP_200_OK
     )

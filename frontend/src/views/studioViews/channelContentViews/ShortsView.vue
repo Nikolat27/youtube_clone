@@ -76,11 +76,11 @@ const toggleVideoEdit = (video_id, video_title, video_description) => toggleOpti
                     </button>
                     <div v-if="videoOptionStates[short.id]?.optionDiv" class="absolute left-40 top-0 video-edit-options w-[226px] h-auto rounded-xl bg-white flex flex-col
                  justify-start items-center py-4">
-                        <div @click="toggleVideoEdit(short.id, short.title, short.description)" class="cursor-pointer w-full h-[32px] hover:bg-[#f9f9f9] flex flex-row justify-start items-center
+                        <!-- <div @click="toggleVideoEdit(short.id, short.title, short.description)" class="cursor-pointer w-full h-[32px] hover:bg-[#f9f9f9] flex flex-row justify-start items-center
                  text-[15px] font-normal font-roboto">
                             <img class="w-[17px] h-[17px] mx-4" :src="editIcon" alt="">
                             <p>Edit title and description</p>
-                        </div>
+                        </div> -->
                         <div class="w-full h-[32px] hover:bg-[#f9f9f9] flex flex-row justify-start items-center
                  text-[15px] font-normal font-roboto">
                             <img class="w-[17px] h-[17px] mx-4" :src="downloadIcon" alt="">

@@ -133,7 +133,7 @@ onMounted(() => {
                                 <p>Delete forever</p>
                             </div>
                         </div>
-                        <div v-if="videoOptionStates[video.id]?.editDiv" class="edit-title-description bg-white z-40 w-[488px] h-[368px] rounded-lg
+                        <!-- <div v-if="videoOptionStates[video.id]?.editDiv" class="edit-title-description bg-white z-40 w-[488px] h-[368px] rounded-lg
                         flex flex-col justify-start pt-2 items-center gap-y-4 absolute left-2 top-6">
                             <div class="w-[464px] h-[91px] rounded-lg border border-solid box-border border-[#d6d6d6] hover:border-black hover:border-2
                         focus:border-2 relative pl-2 pt-2"
@@ -165,7 +165,7 @@ onMounted(() => {
                          items-center text-white hover:bg-[#272727]"
                                     :style="{ backgroundColor: userAbleToSave ? 'black' : 'gray' }">Save</button>
                             </div>
-                        </div>
+                        </div> -->
                     </div>
                 </div>
                 <div class="video-info w-[70%] relative h-full flex flex-row justify-end items-center text-[13px] font-normal
