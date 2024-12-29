@@ -16,6 +16,7 @@ class User(Model):
     email = Column(String(320), unique=True, nullable=False)
     full_name = Column(String(200), nullable=True)
     password = Column(String(400), nullable=False)
+    channel = relationship("Channel", uselist=False)
     created_at = Column(DateTime, default=get_utc_now, nullable=False)
     updated_at = Column(DateTime, onupdate=get_utc_now, nullable=True)
     user_log_info = relationship(
@@ -135,11 +136,29 @@ class Community(Model):
     __tablename__ = "communities"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
     community_text = Column(String(200), nullable=False)
     image_name = Column(String(200), nullable=True)
     image_url = Column(String(400), nullable=True)
 
     def __repr__(self):
         return self.community_text
-    
+
+
+class Channel(Model):
+    __tablename__ = "channels"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
+    banner_img_url = Column(String(200), nullable=True)
+    profile_picture_url = Column(String(200), nullable=True)
+    video_watermark_url = Column(String(200), nullable=True)
+    name = Column(String(200), nullable=True)
+    unique_identifier = Column(String(100), nullable=True)
+    description = Column(String(500), nullable=True)
+    contact_email = Column(String(100), nullable=True)
+
+    def __repr__(self):
+        return f"{self.owner_id} Channel"

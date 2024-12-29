@@ -8,7 +8,7 @@ from fastapi import (
     Path as Path_paramter,
 )
 from fastapi.responses import JSONResponse
-from database.models.user import Video, Playlist, Subtitle, Community
+from database.models.user import Video, Playlist, Subtitle, Community, Channel
 from database.models.base import session
 from sqlalchemy import desc, asc
 from pydantic import BaseModel
@@ -456,3 +456,21 @@ async def edit_community_post(
     return JSONResponse(
         {"data": "community updated successfully!"}, status_code=status.HTTP_200_OK
     )
+
+
+@router.get("/channel/customization")
+async def get_channel_info(user_session_id: str = Query()):
+    user_id = await get_current_user_id(user_session_id)
+
+    channel = Channel.query.filter_by(owner_id=user_id).first()
+
+    serializer = {
+        "owner_id": user_id,
+        "banner_img_url": channel.channel,
+        "profile_picture_url": null,
+        "video_watermark_url": null,
+        "name": "",
+        "unique_identifier": "",
+        "description": "",
+        "contact_email": "",
+    }

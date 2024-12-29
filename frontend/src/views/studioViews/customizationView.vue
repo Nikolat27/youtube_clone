@@ -1,6 +1,37 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, reactive, onMounted } from 'vue';
+import axios from 'axios';
 import uploadImage from '/src/assets/img/upload-video-img.svg'
+
+
+
+
+
+const formData = reactive({
+    "owner_id": '',
+    'banner_img_url': null,
+    'profile_picture_url': null,
+    'video_watermark_url': null,
+    'name': '',
+    'unique_identifier': '',
+    'description': '',
+    'contact_email': '',
+})
+
+const channelInfo = {
+    "owner_id": '',
+    'banner_img_url': null,
+    'profile_picture_url': null,
+    'video_watermark_url': null,
+    'name': '',
+    'unique_identifier': '',
+    'description': '',
+    'contact_email': '',
+}
+
+onMounted(() => {
+    axios.get("")
+})
 
 </script>
 
