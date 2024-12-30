@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 import uvicorn
 from routers import users, videos
@@ -23,6 +24,10 @@ app.add_middleware(
 
 app.include_router(users.router)
 app.include_router(videos.router)
+app.mount(
+    "/static",
+    StaticFiles(directory="C:/Users/Sam/Desktop/youtube_clone/backend")
+)
 
 if __name__ == "__main__":
     uvicorn.run("main:app")

@@ -12,6 +12,7 @@ import kebabMenuIcon from '@/assets/icons/svg-icons/kebab-menu.svg'
 import downloadIcon from '@/assets/icons/svg-icons/download-icon2.svg'
 import uninstallIcon from '@/assets/icons/svg-icons/uninstall-icon.svg'
 import { useToast } from 'vue-toastification';
+import x from 'C:/Users/Sam/Desktop/youtube_clone/backend/uploaded_videos/3/thumbnail/benchmark.png'
 
 
 // Edit Video Title Management

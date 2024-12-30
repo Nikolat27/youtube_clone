@@ -130,6 +130,7 @@ const formData = reactive({
         playlists: [],
         audience: 'kids',
         ageRestriction: '',
+        thumbnail_url: '',
         language: 'not-applicable',
         monetized: false,
     },

@@ -86,7 +86,7 @@ def upload_file(user_id, file, type):
     thumbnail_path = UPLOAD_DIR_USER / file.filename
     with thumbnail_path.open("wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
-    return thumbnail_path.resolve()
+    return thumbnail_path
 
 
 async def update_subtitle(
@@ -121,7 +121,7 @@ async def get_video(video_id: int = Query()):
             "video_id": video_id,
             "title": video.title,
             "description": video.description,
-            "thumbnail_url": video.thumbnail_url,
+            "thumbnail_url": f"http://127.0.0.1:8000/static/{video.thumbnail_url}",
             "audience": "kids" if video.audience else "not-kids",
             "ageRestriction": "yes" if video.age_restriction else "no",
             "language": video.language,
@@ -252,7 +252,7 @@ async def list_video(
                 "video_type": video_type,
                 "description": video.description,
                 "duration": await get_video_duration(video.file_url),
-                "thumbnail_url": video.thumbnail_url,
+                "thumbnail_url": f"http://127.0.0.1:8000/static/{video.thumbnail_url}",
                 "visibility": video.visibility,
                 "restriction": video.age_restriction,
                 "created_at": await time_formatter(video.created_at),
