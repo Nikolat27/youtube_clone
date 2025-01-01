@@ -30,7 +30,7 @@ const changePlaylistVisibility = (type) => {
 const toast = useToast();
 
 const retrievePlaylist = async () => {
-    await axios.get(`http://127.0.0.1:8000/videos/playlist/get/${sharedState.isPlaylistCreationOpen.playlist_id}`, {
+    await axios.get(`http://127.0.0.1:8000/studio/playlist/get/${sharedState.isPlaylistCreationOpen.playlist_id}`, {
         params: {
             user_session_id: sessionStorage.getItem("user_session_id")
         }
@@ -71,7 +71,7 @@ const submitForm = async () => {
 
     const playlist_id = sharedState.isPlaylistCreationOpen.playlist_id
     if (playlist_id) {
-        await axios.put(`http://127.0.0.1:8000/videos/playlist/edit/${playlist_id}`, submitFormData).then((response) => {
+        await axios.put(`http://127.0.0.1:8000/studio/playlist/edit/${playlist_id}`, submitFormData).then((response) => {
             isLoading.value = false
             toast.success("Your playlist Updated Successfully!")
             sharedState.isPlaylistCreationOpen.playlist_id = null
@@ -79,7 +79,7 @@ const submitForm = async () => {
             sharedState.refreshRetrievePlaylists = true
         }, (error) => toast.error(error))
     } else {
-        await axios.post("http://127.0.0.1:8000/videos/playlist/create", submitFormData).then((response) => {
+        await axios.post("http://127.0.0.1:8000/studio/playlist/create", submitFormData).then((response) => {
             isLoading.value = false
             toast.success("Your playlist Created Successfully!")
             sharedState.isPlaylistCreationOpen.playlist_id = null

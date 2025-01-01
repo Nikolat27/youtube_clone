@@ -305,8 +305,8 @@ onMounted(() => {
 
 
 <template>
-    <div @mouseover="handleControlBar('open')" @mouseleave="handleControlBar('close')" class="video-container top-12 relative overflow-hidden
-     mx-auto flex justify-center items-center rounded-2xl">
+    <div @mouseover="handleControlBar('open')" @mouseleave="handleControlBar('close')"
+        class="video-container top-14 left-12 relative overflow-hidden w-[920px] h-[480px] flex justify-center items-center rounded-2xl">
         <video ref="videoRef" src="/src/assets/video/test-vid2.mp4" :muted="videoMuted" volume="0.5"
             class="main-video cursor-pointer w-full h-full object-fill overflow-hidden">
         </video>
@@ -578,7 +578,7 @@ onMounted(() => {
     </div>
 
     <div class="right-side-container flex flex-col">
-        <div class="top-12 w-[400px] h-[66px] bg-[#e4dfec] hover:bg-[#d1c2e9] flex flex-col justify-center
+        <div class="top-14 w-[400px] h-[66px] bg-[#e4dfec] hover:bg-[#d1c2e9] flex flex-col justify-center
          absolute right-[110px] rounded-xl pl-3 transition-all duration-300 ease-in-out">
             <div class="flex flex-row items-center text-base">
                 <p class="font-semibold">Next:&nbsp;</p>
@@ -777,7 +777,6 @@ onMounted(() => {
         </div>
     </div>
 </template>
-
 <style scoped>
 .annotation-div {
     transition: bottom 0.1s ease-in-out;

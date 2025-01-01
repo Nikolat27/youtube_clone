@@ -86,7 +86,7 @@ class Video(Model):
 
     id = Column(Integer, primary_key=True, autoincrement=True, index=True)
     title = Column(String(80), nullable=False)
-    video_type = Column(String(20), default="long_video", nullable=False)
+    video_type = Column(String(20), default="long_video", nullable=False) # long_video - short_video
     user_id = Column(
         Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )

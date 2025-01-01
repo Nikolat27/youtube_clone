@@ -45,7 +45,7 @@ const removeProfilePicture = async () => {
         return;
     }
     try {
-        await axios.delete("http://127.0.0.1:8000/videos/channel/customization/remove", {
+        await axios.delete("http://127.0.0.1:8000/studio/channel/customization/remove", {
             params: {
                 user_session_id: sessionStorage.getItem("user_session_id"),
                 image_type: 'profile_img',
@@ -71,7 +71,7 @@ const removeChannelWatermark = async () => {
         return;
     }
     try {
-        await axios.delete("http://127.0.0.1:8000/videos/channel/customization/remove", {
+        await axios.delete("http://127.0.0.1:8000/studio/channel/customization/remove", {
             params: {
                 user_session_id: sessionStorage.getItem("user_session_id"),
                 image_type: 'watermark_img',
@@ -115,7 +115,7 @@ const submitForm = () => {
         submitFormData.append("video_watermark", channelInfo.video_watermark)
     }
 
-    axios.put("http://127.0.0.1:8000/videos/channel/customization/update", submitFormData, {
+    axios.put("http://127.0.0.1:8000/studio/channel/customization/update", submitFormData, {
         headers: {
             'Content-Type': 'multipart/form-data'
         }
@@ -131,7 +131,7 @@ const submitForm = () => {
 
 const retrieveChannelInfo = () => {
     isLoading.value = true
-    axios.get("http://127.0.0.1:8000/videos/channel/customization", {
+    axios.get("http://127.0.0.1:8000/studio/channel/customization", {
         params: {
             "user_session_id": sessionStorage.getItem("user_session_id")
         }

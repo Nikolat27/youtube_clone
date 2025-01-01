@@ -48,7 +48,7 @@ const playlistIsLoading = ref(false)
 let playlists = ref([])
 const retrieveAllUserPlaylists = async () => {
     playlistIsLoading.value = true
-    await axios.get('http://127.0.0.1:8000/videos/playlist/list', {
+    await axios.get('http://127.0.0.1:8000/studio/playlist/list', {
         params: {
             user_session_id: sessionStorage.getItem("user_session_id")
         }
