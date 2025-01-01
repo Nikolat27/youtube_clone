@@ -89,6 +89,18 @@ def upload_file(user_id, file, type):
     return thumbnail_path
 
 
+def delete_file(file_url):
+    file_path = Path(file_url)
+    try:
+        if file_path.exists():
+            file_path.unlink()  # Delete the file
+            print(f"File {file_path} deleted successfully.")
+        else:
+            print(f"File {file_path} does not exist.")
+    except Exception as e:
+        print(f"An error occurred while trying to delete the file: {e}")
+
+
 async def update_subtitle(
     video_id: int, subtitle_file: UploadFile, subtitle_path: Path
 ):
@@ -465,14 +477,18 @@ async def get_channel_info(user_session_id: str = Query()):
     channel = Channel.query.filter_by(owner_id=user_id).first()
 
     serializer = {
-        "owner_id": user_id,
-        "banner_img_url": "",
-        "profile_picture_url": "",
-        "video_watermark_url": "",
-        "name": channel.name or "",
-        "unique_identifier": channel.unique_identifier or "",
-        "description": channel.description or "",
-        "contact_email": channel.contact_email or "",
+        "detail": {
+            "owner_id": user_id,
+            "name": channel.name or "",
+            "unique_identifier": channel.unique_identifier or "",
+            "description": channel.description or "",
+            "contact_email": channel.contact_email or "",
+        },
+        "banner_img": f"http://127.0.0.1:8000/static/{channel.banner_img_url}" or "",
+        "profile_picture": f"http://127.0.0.1:8000/static/{channel.profile_picture_url}"
+        or "",
+        "video_watermark": f"http://127.0.0.1:8000/static/{channel.video_watermark_url}"
+        or "",
     }
 
     return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)
@@ -480,13 +496,67 @@ async def get_channel_info(user_session_id: str = Query()):
 
 @router.put("/channel/customization/update")
 async def update_channel_info(
-    user_session_id: str = Query(),
-    detail: dict = Form(),
+    user_session_id: str = Form(),
+    detail: str = Form(),
     banner_img: UploadFile = File(None),
     profile_img: UploadFile = File(None),
     watermark_img: UploadFile = File(None),
 ):
     user_id = await get_current_user_id(user_session_id)
-    print(detail)
-    print(banner_img, profile_img, watermark_img)
+    detail = json.loads(detail)
 
+    channel = Channel.query.filter_by(owner_id=user_id).first()
+
+    channel.name = detail["name"]
+    channel.description = detail["description"]
+    channel.unique_identifier = detail["unique_identifier"]
+    channel.contact_email = detail["contact_email"]
+
+    if banner_img:
+        banner_img_url = upload_file(user_id, banner_img, "banner_img")
+        channel.banner_img_url = str(banner_img_url)
+
+    if profile_img:
+        profile_img_url = upload_file(user_id, profile_img, "profile_img")
+        channel.profile_img_url = profile_img_url
+
+    if watermark_img:
+        watermark_img_url = upload_file(user_id, watermark_img, "watermark_img")
+        channel.watermark_img_url = watermark_img_url
+
+    session.commit()
+    return JSONResponse(
+        {"data": "Channel updated successfully!"}, status_code=status.HTTP_200_OK
+    )
+
+
+@router.delete("/channel/customization/remove")
+async def remove_channel_image(
+    user_session_id: str = Query(...),
+    image_type: str = Query(...),
+):
+    user_id = await get_current_user_id(user_session_id)
+
+    channel = Channel.query.filter_by(owner_id=user_id).first()
+    if not channel:
+        return JSONResponse(
+            {"error": "Channel not found"}, status_code=status.HTTP_404_NOT_FOUND
+        )
+
+    if image_type == "banner_img":
+        if channel.banner_img_url:
+            delete_file(channel.banner_img_url)
+            channel.banner_img_url = ""
+    elif image_type == "profile_img":
+        if channel.profile_img_url:
+            delete_file(channel.profile_img_url)
+            channel.profile_img_url = ""
+    elif image_type == "watermark_img":
+        if channel.watermark_img_url:
+            delete_file(channel.watermark_img_url)
+            channel.watermark_img_url = ""
+
+    session.commit()
+    return JSONResponse(
+        {"data": f"{image_type} removed successfully!"}, status_code=status.HTTP_200_OK
+    )

@@ -1,8 +1,11 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
+import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
 import axios from 'axios';
 import uploadImage from '/src/assets/img/upload-video-img.svg'
 import { useToast } from 'vue-toastification';
+
+const cancelPublishing = () => location.reload()
 
 const bannerImgPreview = ref(null)
 const bannerImgInput = ref(null)
@@ -11,12 +14,23 @@ const uploadBannerImage = (event) => {
     channelInfo.banner_img = file;
     bannerImgPreview.value = URL.createObjectURL(file)
 }
-const removeBannerImg = () => {
-    if (!confirm("Delete your image?")) {
+const removeBannerImg = async () => {
+    if (!confirm("Delete your banner image?")) {
         return;
-    };
-    bannerImgPreview.value = null
-    channelInfo.banner_img = null
+    }
+    try {
+        await axios.delete("http://127.0.0.1:8000/videos/channel/customization/remove", {
+            params: {
+                user_session_id: sessionStorage.getItem("user_session_id"),
+                image_type: 'banner_img',
+            },
+        });
+        bannerImgPreview.value = null;
+        channelInfo.banner_img = null;
+        toast.success("Banner image removed successfully!");
+    } catch (error) {
+        toast.error("Error removing banner image");
+    }
 }
 
 const profileImgPreview = ref(null)
@@ -26,12 +40,23 @@ const uploadProfilePicture = (event) => {
     channelInfo.profile_picture = file;
     profileImgPreview.value = URL.createObjectURL(file)
 }
-const removeProfilePicture = () => {
-    if (!confirm("Delete your image?")) {
+const removeProfilePicture = async () => {
+    if (!confirm("Delete your profile picture?")) {
         return;
-    };
-    profileImgPreview.value = null
-    channelInfo.profile_picture = null
+    }
+    try {
+        await axios.delete("http://127.0.0.1:8000/videos/channel/customization/remove", {
+            params: {
+                user_session_id: sessionStorage.getItem("user_session_id"),
+                image_type: 'profile_img',
+            },
+        });
+        profileImgPreview.value = null;
+        channelInfo.profile_picture = null;
+        toast.success("Profile picture removed successfully!");
+    } catch (error) {
+        toast.error("Error removing profile picture");
+    }
 }
 
 const watermarkImgPreview = ref(null)
@@ -41,26 +66,24 @@ const uploadChannelWatermark = (event) => {
     channelInfo.video_watermark = file;
     watermarkImgPreview.value = URL.createObjectURL(file)
 }
-const removeChannelWatermark = () => {
-    if (!confirm("Delete your image?")) {
+const removeChannelWatermark = async () => {
+    if (!confirm("Delete your watermark image?")) {
         return;
-    };
-    watermarkImgPreview.value = null
-    channelInfo.video_watermark = null
+    }
+    try {
+        await axios.delete("http://127.0.0.1:8000/videos/channel/customization/remove", {
+            params: {
+                user_session_id: sessionStorage.getItem("user_session_id"),
+                image_type: 'watermark_img',
+            },
+        });
+        watermarkImgPreview.value = null;
+        channelInfo.video_watermark = null;
+        toast.success("Watermark image removed successfully!");
+    } catch (error) {
+        toast.error("Error removing watermark image");
+    }
 }
-
-const formData = reactive({
-    "detail": {
-        "owner_id": '',
-        'name': '',
-        'unique_identifier': '',
-        'description': '',
-        'contact_email': '',
-    },
-    'banner_img': null,
-    'profile_picture': null,
-    'video_watermark': null,
-})
 
 const channelInfo = reactive({
     "detail": {
@@ -75,26 +98,61 @@ const channelInfo = reactive({
     'video_watermark': null,
 })
 
+const isLoading = ref(false)
 const toast = useToast()
 const submitForm = () => {
-    print(channelInfo)
+    const submitFormData = new FormData()
+
+    submitFormData.append("user_session_id", sessionStorage.getItem("user_session_id"))
+    submitFormData.append("detail", JSON.stringify(channelInfo.detail))
+    if (channelInfo.banner_img) {
+        submitFormData.append("banner_img", channelInfo.banner_img)
+    }
+    if (channelInfo.profile_picture) {
+        submitFormData.append("profile_picture", channelInfo.profile_picture)
+    }
+    if (channelInfo.banner_img) {
+        submitFormData.append("video_watermark", channelInfo.video_watermark)
+    }
+
+    axios.put("http://127.0.0.1:8000/videos/channel/customization/update", submitFormData, {
+        headers: {
+            'Content-Type': 'multipart/form-data'
+        }
+    }).then((response) => {
+        if (response.status == 200) {
+            retrieveChannelInfo()
+            toast.success(response.data.data)
+        }
+    }).catch((error) => {
+        toast.error(error)
+    })
 }
-onMounted(() => {
+
+const retrieveChannelInfo = () => {
+    isLoading.value = true
     axios.get("http://127.0.0.1:8000/videos/channel/customization", {
         params: {
             "user_session_id": sessionStorage.getItem("user_session_id")
         }
     }).then((response) => {
-        channelInfo.detail = response.data.data
+        channelInfo.detail = response.data.data.detail
+        channelInfo.banner_img = response.data.data.banner_img
+        channelInfo.profile_picture = response.data.data.profile_picture
+        channelInfo.video_watermark = response.data.data.video_watermark
     }).catch((error) => {
         toast.error(error)
-    })
+    }).finally(() => isLoading.value = false)
+}
+
+onMounted(() => {
+    retrieveChannelInfo()
 })
 
 </script>
 
 <template>
-    <div class="flex font-roboto flex-col w-full justify-start items-center pl-12 absolute
+    <div class="flex font-roboto flex-col w-full h-full justify-start items-center pl-12 absolute
      left-[240px] top-[90px]">
         <div class="title w-full h-[55px]">
             <h1 class="text-[25px] font-semibold">Channel customization</h1>
@@ -109,22 +167,23 @@ onMounted(() => {
                 </div>
             </div>
             <div class="flex flex-row justify-self-end ml-auto gap-x-2 mr-10 text-[14px] font-medium pb-2">
-                <button class="w-[75px] h-[36px] bg-black text-white rounded-3xl">
+                <button @click="cancelPublishing" class="w-[75px] h-[36px] bg-black text-white rounded-3xl">
                     Cancel
                 </button>
-                <button class="w-[75px] h-[36px] bg-[#d8d8d8] rounded-3xl">
+                <button @click="submitForm" class="w-[75px] h-[36px] bg-[#d8d8d8] rounded-3xl">
                     Publish
                 </button>
             </div>
         </div>
 
-        <section class="flex flex-col gap-y-6 w-full mt-6">
+        <section v-if="!isLoading" class="flex flex-col gap-y-6 w-full mt-6">
             <div class="flex flex-col gap-y-2">
                 <p class="text-[15px] font-medium">Banner image</p>
                 <span class="text-[13px] font-normal">This image will appear across the top of your channel</span>
                 <div class="flex flex-row gap-x-4">
                     <div class="w-[270px] h-[160px] rounded-lg bg-[#f9f9f9] z-0">
-                        <img :src="bannerImgPreview" class="w-full h-full z-10" draggable="false" alt="">
+                        <img :src="bannerImgPreview ?? channelInfo.banner_img" class="w-full h-full z-10"
+                            draggable="false" alt="">
                     </div>
                     <div class="flex flex-col gap-y-2">
                         <div class="max-w-[330px] h-[40px]">
@@ -247,6 +306,9 @@ onMounted(() => {
                 </div>
             </div>
         </section>
+        <div v-else class="h-full w-full mr-[200px] mb-[100px] flex justify-center items-center">
+            <PulseLoader color="red" size="22px"></PulseLoader>
+        </div>
     </div>
 </template>
 <style scoped>
