@@ -466,11 +466,27 @@ async def get_channel_info(user_session_id: str = Query()):
 
     serializer = {
         "owner_id": user_id,
-        "banner_img_url": channel.channel,
-        "profile_picture_url": null,
-        "video_watermark_url": null,
-        "name": "",
-        "unique_identifier": "",
-        "description": "",
-        "contact_email": "",
+        "banner_img_url": "",
+        "profile_picture_url": "",
+        "video_watermark_url": "",
+        "name": channel.name or "",
+        "unique_identifier": channel.unique_identifier or "",
+        "description": channel.description or "",
+        "contact_email": channel.contact_email or "",
     }
+
+    return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)
+
+
+@router.put("/channel/customization/update")
+async def update_channel_info(
+    user_session_id: str = Query(),
+    detail: dict = Form(),
+    banner_img: UploadFile = File(None),
+    profile_img: UploadFile = File(None),
+    watermark_img: UploadFile = File(None),
+):
+    user_id = await get_current_user_id(user_session_id)
+    print(detail)
+    print(banner_img, profile_img, watermark_img)
+
