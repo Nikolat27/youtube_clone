@@ -70,7 +70,7 @@ watch(() => router.query, () => {
 
 const retrieveAllVideos = async () => {
     isVideoRetrievingLoading.value = true
-    await axios.get(`http://127.0.0.1:8000/videos/list`, {
+    await axios.get(`http://127.0.0.1:8000/studio/list`, {
         params: {
             user_session_id: sessionStorage.getItem("user_session_id"),
             queries: router.query,

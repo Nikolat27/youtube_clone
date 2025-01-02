@@ -45,7 +45,7 @@ watch(router, () => {
 
 let posts = reactive([])
 const retrieveAllPosts = async () => {
-    await axios.get("http://127.0.0.1:8000/videos/community/list", {
+    await axios.get("http://127.0.0.1:8000/studio/community/list", {
         params: {
             'user_session_id': sessionStorage.getItem('user_session_id'),
             'queries': router.query

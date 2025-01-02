@@ -1,11 +1,8 @@
 <script setup>
-import { onMounted, ref } from 'vue';
-
-const shortVideos = [
-    { title: "Django Tutorial", view: "120K" },
-    { title: "Django Tutorial", view: "120K" },
-    { title: "Django Tutorial", view: "120K" },
-]
+import { onMounted, reactive, ref } from 'vue';
+import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
+import ClipLoader from 'vue-spinner/src/ClipLoader.vue';
+import axios from 'axios';
 
 const isAtStart = ref(true);
 const isAtEnd = ref(false);
@@ -34,57 +31,75 @@ const handleScrollRight = () => {
 };
 
 
+// Infinite scrolling Management
+const infiniteIsLoading = ref(false)
+const page = ref(1)
+const size = ref(12)
+const checkScroll = () => {
+    const endOfPage = window.innerHeight + window.pageYOffset >= document.documentElement.scrollHeight - 150
+    if (endOfPage && !infiniteIsLoading.value) {
+        loadMoreVideos()
+    }
+}
+
+const isLoading = ref(false)
+const shortVideos = reactive([])
+const longVideos = reactive([])
+const retrieveVideos = () => {
+    isLoading.value = true
+    axios.get("http://127.0.0.1:8000/videos/", {
+        params: {
+            size: size.value,
+            page: page.value
+        }
+    }).then((response) => {
+        if (response.status == 200) {
+            shortVideos.splice(0, shortVideos.length, ...response.data.data.short_videos)
+            longVideos.splice(0, longVideos.length, ...response.data.data.long_videos.items)
+        }
+    }).catch((error) => {
+        console.log(error)
+    }).finally(() => isLoading.value = false)
+}
+
+const loadMoreVideos = () => {
+    infiniteIsLoading.value = true
+    page.value += 1
+    axios.get("http://127.0.0.1:8000/videos/load-more", {
+        params: {
+            page: page.value,
+            size: size.value,
+        }
+    }).then((response) => {
+        longVideos.splice(longVideos.length, 0, ...response.data.data.long_videos.items)
+    }).catch((error) => console.log(error))
+        .finally(() => infiniteIsLoading.value = false)
+}
+
 onMounted(() => {
     const shortContainerDiv = document.getElementById("shortVideoScrollDiv");
     updateScrollState(shortContainerDiv);
+    retrieveVideos()
+
+    document.addEventListener("scroll", checkScroll)
 });
 </script>
 
 <template>
-    <div class="container">
+    <div v-if="!isLoading" class="container">
         <div class="regular-videos">
-            <div class="video-preview">
+            <div v-for="video in longVideos.slice(0, 3)" :key="video.id" class="video-preview">
                 <div class="video-thumbnail">
-                    <img src="@/assets/img/Django.png" alt="">
+                    <img :src="video.thumbnail_url" alt="">
                 </div>
                 <div class="video-info">
                     <div class="channel-logo">
                         <img src="@/assets/img/Django.png" alt="">
                     </div>
-                    <div class="video-title-div">
-                        <p class="video-title"><a href="">Django Tutorial</a></p>
+                    <div class="video-title-div ml-2">
+                        <p class="video-title"><a href="">{{ video.title }}</a></p>
                         <p class="video-channel-name">Channel name</p>
-                        <p class="video-stats">409K views . 2 months ago</p>
-                    </div>
-                </div>
-            </div>
-            <div class="video-preview">
-                <div class="video-thumbnail">
-                    <img src="@/assets/img/Django.png" alt="">
-                </div>
-                <div class="video-info">
-                    <div class="channel-logo">
-                        <img src="@/assets/img/Django.png" alt="">
-                    </div>
-                    <div class="video-title-div">
-                        <p class="video-title"><a href="">Django Tutorial</a></p>
-                        <p class="video-channel-name">Channel name</p>
-                        <p class="video-stats">409K views . 2 months ago</p>
-                    </div>
-                </div>
-            </div>
-            <div class="video-preview">
-                <div class="video-thumbnail">
-                    <img src="@/assets/img/Django.png" alt="">
-                </div>
-                <div class="video-info">
-                    <div class="channel-logo">
-                        <img src="@/assets/img/Django.png" alt="">
-                    </div>
-                    <div class="video-title-div">
-                        <p class="video-title"><a href="">Django Tutorial</a></p>
-                        <p class="video-channel-name">Channel name</p>
-                        <p class="video-stats">409K views . 2 months ago</p>
+                        <p class="video-stats">409K views . {{ video.created_at }}</p>
                     </div>
                 </div>
             </div>
@@ -101,8 +116,8 @@ onMounted(() => {
                 </svg>
             </button>
 
-            <div id="shortVideoScrollDiv" class="flex flex-row overflow-hidden gap-x-[30px]">
-                <div v-for="(short, index) in shortVideos" :key="index" class=" select-none short-video-preview">
+            <div id="shortVideoScrollDiv" class="flex flex-row overflow-hidden gap-x-[30px] scroll-smooth">
+                <div v-for='short in shortVideos' :key="short.id" class=" select-none short-video-preview">
                     <div class="short-video-thumbnail">
                         <img src="@/assets/img/Django.png" alt="">
                     </div>
@@ -124,36 +139,26 @@ onMounted(() => {
             </button>
         </div>
 
-        <div class="video-preview">
+        <div v-for="video in longVideos.slice(3)" :key="video.id" class="video-preview">
             <div class="video-thumbnail">
-                <img src="@/assets/img/Django.png" alt="">
+                <img :src="video.thumbnail_url" alt="">
             </div>
             <div class="video-info">
                 <div class="channel-logo">
                     <img src="@/assets/img/Django.png" alt="">
                 </div>
                 <div class="video-title-div">
-                    <p class="video-title"><a href="">Django Tutorial</a></p>
+                    <p class="video-title"><a href="">{{ video.title }}</a></p>
                     <p class="video-channel-name">Channel name</p>
-                    <p class="video-stats">409K views . 2 months ago</p>
+                    <p class="video-stats">409K views . {{ video.created_at }}</p>
                 </div>
             </div>
         </div>
-        <div class="video-preview">
-            <div class="video-thumbnail">
-                <img src="@/assets/img/Django.png" alt="">
-            </div>
-            <div class="video-info">
-                <div class="channel-logo">
-                    <img src="@/assets/img/Django.png" alt="">
-                </div>
-                <div class="video-title-div">
-                    <p class="video-title"><a href="">Django Tutorial</a></p>
-                    <p class="video-channel-name">Channel name</p>
-                    <p class="video-stats">409K views . 2 months ago</p>
-                </div>
-            </div>
+        <div class="w-full flex justify-center items-center mr-[300px] my-16">
+            <ClipLoader size="45px" color="red"></ClipLoader>
         </div>
-
+    </div>
+    <div v-else class="w-full h-[100vh] flex justify-center items-center">
+        <PulseLoader color="red" size="20px"></PulseLoader>
     </div>
 </template>

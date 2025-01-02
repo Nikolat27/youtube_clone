@@ -39,7 +39,7 @@ const isLoading = ref(false)
 
 const deletePlaylist = async (playlist_id) => {
     isLoading.value = true
-    await axios.delete(`http://127.0.0.1:8000/videos/playlist/delete/${playlist_id}`, {
+    await axios.delete(`http://127.0.0.1:8000/studio/playlist/delete/${playlist_id}`, {
         params: {
             user_session_id: sessionStorage.getItem("user_session_id")
         }
@@ -56,7 +56,7 @@ const deletePlaylist = async (playlist_id) => {
 const playlists = reactive([])
 const retrieveAllPlaylists = async () => {
     isLoading.value = true
-    await axios.get("http://127.0.0.1:8000/videos/playlist/list", {
+    await axios.get("http://127.0.0.1:8000/studio/playlist/list", {
         params: {
             user_session_id: sessionStorage.getItem("user_session_id")
         }
