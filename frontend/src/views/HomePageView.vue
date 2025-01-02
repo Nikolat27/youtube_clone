@@ -37,7 +37,9 @@ const page = ref(1)
 const size = ref(12)
 const checkScroll = () => {
     const endOfPage = window.innerHeight + window.pageYOffset >= document.documentElement.scrollHeight - 150
-    if (endOfPage && !infiniteIsLoading.value) {
+    const lastPage = page.value == totalPages.value
+    if (!lastPage && endOfPage && !infiniteIsLoading.value) {
+        console.log("hi")
         loadMoreVideos()
     }
 }
@@ -45,6 +47,7 @@ const checkScroll = () => {
 const isLoading = ref(false)
 const shortVideos = reactive([])
 const longVideos = reactive([])
+const totalPages = ref(null)
 const retrieveVideos = () => {
     isLoading.value = true
     axios.get("http://127.0.0.1:8000/videos/", {
@@ -54,6 +57,7 @@ const retrieveVideos = () => {
         }
     }).then((response) => {
         if (response.status == 200) {
+            totalPages.value = response.data.data.long_videos.pages
             shortVideos.splice(0, shortVideos.length, ...response.data.data.short_videos)
             longVideos.splice(0, longVideos.length, ...response.data.data.long_videos.items)
         }
@@ -62,10 +66,10 @@ const retrieveVideos = () => {
     }).finally(() => isLoading.value = false)
 }
 
-const loadMoreVideos = () => {
+const loadMoreVideos = async () => {
     infiniteIsLoading.value = true
     page.value += 1
-    axios.get("http://127.0.0.1:8000/videos/load-more", {
+    await axios.get("http://127.0.0.1:8000/videos/load-more", {
         params: {
             page: page.value,
             size: size.value,
@@ -74,6 +78,8 @@ const loadMoreVideos = () => {
         longVideos.splice(longVideos.length, 0, ...response.data.data.long_videos.items)
     }).catch((error) => console.log(error))
         .finally(() => infiniteIsLoading.value = false)
+
+    console.log(page.value)
 }
 
 onMounted(() => {
@@ -86,24 +92,27 @@ onMounted(() => {
 </script>
 
 <template>
-    <div v-if="!isLoading" class="container">
+    <div v-if="!isLoading" class="container mb-10">
         <div class="regular-videos">
             <div v-for="video in longVideos.slice(0, 3)" :key="video.id" class="video-preview">
                 <div class="video-thumbnail">
-                    <img :src="video.thumbnail_url" alt="">
+                    <img loading="lazy" :src="video.thumbnail_url" alt="">
                 </div>
                 <div class="video-info">
                     <div class="channel-logo">
-                        <img src="@/assets/img/Django.png" alt="">
+                        <img loading="lazy" src="@/assets/img/Django.png" alt="">
                     </div>
                     <div class="video-title-div ml-2">
-                        <p class="video-title"><a href="">{{ video.title }}</a></p>
+                        <router-link :to="`/video/${video.id}`">
+                            <p class="video-title">{{ video.title }}</p>
+                        </router-link>
                         <p class="video-channel-name">Channel name</p>
                         <p class="video-stats">409K views . {{ video.created_at }}</p>
                     </div>
                 </div>
             </div>
         </div>
+
         <div class="short-videos-div">
             <img class="youtube-short-icon-videos" src="@/assets/icons/side-bar/youtube-shorts.jpg" alt="">
             <button @click="handleScrollLeft"
@@ -119,7 +128,7 @@ onMounted(() => {
             <div id="shortVideoScrollDiv" class="flex flex-row overflow-hidden gap-x-[30px] scroll-smooth">
                 <div v-for='short in shortVideos' :key="short.id" class=" select-none short-video-preview">
                     <div class="short-video-thumbnail">
-                        <img src="@/assets/img/Django.png" alt="">
+                        <img loading="lazy" src="@/assets/img/Django.png" alt="">
                     </div>
                     <div class="short-video-title-div">
                         <p class="short-video-title"><a href="">{{ short.title }}</a></p>
@@ -145,17 +154,64 @@ onMounted(() => {
             </div>
             <div class="video-info">
                 <div class="channel-logo">
-                    <img src="@/assets/img/Django.png" alt="">
+                    <img loading="lazy" src="@/assets/img/Django.png" alt="">
                 </div>
                 <div class="video-title-div">
-                    <p class="video-title"><a href="">{{ video.title }}</a></p>
+                    <router-link :to="`/video/${video.id}`">
+                        <p class="video-title">{{ video.title }}</p>
+                    </router-link>
                     <p class="video-channel-name">Channel name</p>
                     <p class="video-stats">409K views . {{ video.created_at }}</p>
                 </div>
             </div>
         </div>
-        <div class="w-full flex justify-center items-center mr-[300px] my-16">
+
+        <!-- <div v-if="infiniteIsLoading" class="w-full flex justify-center items-center mr-[300px] my-16">
             <ClipLoader size="45px" color="red"></ClipLoader>
+        </div> -->
+        <div v-if="infiniteIsLoading" class="skeleton-loaders flex flex-row">
+            <div>
+                <div class="video-preview">
+                    <div class="video-thumbnail bg-gray-300 opacity-70 rounded-lg">
+                    </div>
+                    <div class="video-info flex flex-row">
+                        <div class="channel-logo bg-gray-300 opacity-70 rounded-full">
+                        </div>
+                        <div class="video-title-div ml-2">
+                            <p class="w-[280px] h-[16px] rounded-lg bg-gray-300 opacity-70"></p>
+                            <p class="w-[140px] mt-2 h-[12px] rounded-lg bg-gray-300 opacity-70"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div class="video-preview">
+                    <div class="video-thumbnail bg-gray-300 opacity-70 rounded-lg">
+                    </div>
+                    <div class="video-info">
+                        <div class="channel-logo bg-gray-300 opacity-70 rounded-full">
+                        </div>
+                        <div class="video-title-div ml-2">
+                            <p class="w-[280px] h-[16px] rounded-lg bg-gray-300 opacity-70"></p>
+                            <p class="w-[140px] mt-2 h-[12px] rounded-lg bg-gray-300 opacity-70"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div class="video-preview">
+                    <div class="video-thumbnail bg-gray-300 opacity-70 rounded-lg">
+                    </div>
+                    <div class="video-info">
+                        <div class="channel-logo bg-gray-300 opacity-70 rounded-full">
+                        </div>
+                        <div class="video-title-div ml-2">
+                            <p class="w-[280px] h-[16px] rounded-lg bg-gray-300 opacity-70"></p>
+                            <p class="w-[140px] mt-2 h-[12px] rounded-lg bg-gray-300 opacity-70"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
     <div v-else class="w-full h-[100vh] flex justify-center items-center">

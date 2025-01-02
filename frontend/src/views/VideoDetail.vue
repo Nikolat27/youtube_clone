@@ -95,7 +95,7 @@ const togglePlaylistDivision = () => {
 
 
 // Advertisement and such...
-let isVideoAd = ref(true)
+let isVideoAd = ref(false)
 let adSkipDuration = ref(5) // in seconds
 let adFinished = ref(false)
 let durationInternal = null; // Interval for advertisement

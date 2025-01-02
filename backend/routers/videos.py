@@ -89,10 +89,6 @@ async def videos_list() -> Page:
     return JSONResponse({"data": response_data}, status_code=status.HTTP_200_OK)
 
 
-class UserSerializer(BaseModel):
-    username: str
-
-
 def get_channel_name(user_id):
     user = User.query.filter_by(id=user_id).first()
     return user.channel.name or user.username
@@ -105,6 +101,9 @@ def get_channel_profile(user_id):
 
 @router.get("/load-more")
 async def load_more_videos() -> Page:
+    import time
+    time.sleep(1)
+    
     long_videos = paginate(
         session,
         select(
