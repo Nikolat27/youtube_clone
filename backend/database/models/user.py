@@ -181,3 +181,19 @@ class Like(Model):
 
     def __repr__(self):
         return f"{self.user_id} - {self.video_id} - {self.action_type}"
+
+
+class SaveVideos(Model):
+    __tablename__ = "saves"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    video_id = Column(
+        Integer, ForeignKey("videos.id", ondelete="CASCADE"), nullable=False
+    )
+    created_at = Column(DateTime, default=get_utc_now)
+
+    def __repr__(self):
+        return f"{self.user_id} - {self.video_id} - {self.action_type}"

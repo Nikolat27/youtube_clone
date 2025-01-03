@@ -17,6 +17,8 @@ import emptyLikeIcon from '/src/assets/icons/svg-icons/like-empty.svg'
 import fillLikeIcon from '/src/assets/icons/svg-icons/like-fill.svg'
 import emptyDislikeIcon from '/src/assets/icons/svg-icons/dislike-empty.svg'
 import fillDislikeIcon from '/src/assets/icons/svg-icons/dislike-fill.svg'
+import saveIcon from '/src/assets/icons/svg-icons/save-btn.svg'
+import unSaveIcon from '/src/assets/icons/svg-icons/unsave-btn.svg'
 
 const route = useRoute()
 
@@ -348,6 +350,9 @@ let videoInfo = reactive({
     video_url: '',
     duration: '',
     created_at: '',
+    channel_name: '',
+    channel_profile_url: '',
+    channel_watermark_url: '',
 })
 
 const likeSituation = ref(null)
@@ -355,6 +360,33 @@ const userLikeSituation = async (video_id, user_session_id) => {
     await axios.get(`http://127.0.0.1:8000/videos/like-situation/${video_id}/${user_session_id}`).then((response) => {
         if (response.status == 200) {
             likeSituation.value = response.data.data
+        }
+    }).catch((error) => {
+        console.log(error)
+    })
+}
+
+const saveSituation = ref(null)
+const saveVideo = async () => {
+    const user_session_id = sessionStorage.getItem("user_session_id")
+    if (!user_session_id) {
+        toast.error("You have to be Logged in!")
+        return;
+    }
+
+    await axios.get(`http://127.0.0.1:8000/videos/save/${route.params.id}/${user_session_id}`).then((response) => {
+        if (response.status == 200) {
+            toast.info("Your Video Saved successfully!")
+            videoSaveSituation(route.params.id, user_session_id)
+        }
+    }).catch((error) => {
+        toast.error(error)
+    })
+}
+const videoSaveSituation = async (video_id, user_session_id) => {
+    await axios.get(`http://127.0.0.1:8000/videos/is-save/${video_id}/${user_session_id}`).then((response) => {
+        if (response.status == 200) {
+            saveSituation.value = response.data.data
         }
     }).catch((error) => {
         console.log(error)
@@ -382,6 +414,7 @@ onMounted(() => {
     const user_session_id = sessionStorage.getItem("user_session_id")
     if (user_session_id) {
         userLikeSituation(videoId, user_session_id)
+        videoSaveSituation(videoId, user_session_id)
     }
 });
 </script>
@@ -531,9 +564,9 @@ onMounted(() => {
     </div>
 
     <div class="video-detail-info">
-        <img class="video-detail-channel-logo" src="@/assets/img/Django.png" alt="">
+        <img class="video-detail-channel-logo" loading="eager" :src="videoInfo.channel_profile_url" alt="">
         <div class="video-detail-upload-info">
-            <p class="video-detail-channel-name">Channel name</p>
+            <p class="video-detail-channel-name">{{ videoInfo.channel_name }}</p>
             <p class="video-detail-channel-sub-count">2.5K subscribers</p>
         </div>
         <button class="video-detail-channel-sub-btn">Subscribe</button>
@@ -547,7 +580,7 @@ onMounted(() => {
             <button class="share-btn"><img src="@/assets/icons/svg-icons/share-btn.svg" alt="">
                 <span>&nbsp;Share</span>
             </button>
-            <button class="save-btn"><img src="@/assets/icons/svg-icons/save-btn.svg" alt="">
+            <button @click="saveVideo" class="save-btn"><img :src="saveSituation ? unSaveIcon : saveIcon">
                 <span>Save</span>
             </button>
             <button class="download-btn"><img src="@/assets/icons/svg-icons/download-icon.svg" alt="">

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Path as Path_parameter, status, Query, Header
 from database.models.base import session
-from database.models.user import Video, User, Like
+from database.models.user import Video, User, Like, SaveVideos, Channel
 from fastapi.responses import JSONResponse, Response
 from sqlalchemy import select
 from fastapi_pagination import Page
@@ -165,17 +165,29 @@ async def video_detail(
         .first()
     )
 
+    channel = (
+        Channel.query.with_entities(
+            Channel.name, Channel.profile_picture_url, Channel.video_watermark_url
+        )
+        .filter_by(owner_id=video.user_id)
+        .first()
+    )
+    print("Channel: ", channel.profile_picture_url)
+
     serializer = {
         "id": video.id,
         "title": video.title,
         "user_id": video.user_id,
-        "description": video.description or "asdfasdfasdf",
+        "description": video.description or "",
         "file_url": await static_file(video.file_url),
         "thumbnail_url": await static_file(video.thumbnail_url),
         "duration": await get_video_duration(video.file_url),
         "created_at": f"{await time_difference(video.created_at)} days ",
+        "channel_name": channel.name,
+        "channel_profile_url": await static_file(channel.profile_picture_url) or "",
+        "channel_watermark_url": await static_file(channel.video_watermark_url) or "",
     }
-
+    print("File: ", serializer["channel_profile_url"])
     return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)
 
 
@@ -239,3 +251,52 @@ async def is_user_liked(
         like_situation = like.action_type
 
     return JSONResponse({"data": like_situation}, status_code=status.HTTP_200_OK)
+
+
+@router.get("/save/{video_id}/{user_session_id}")
+async def save_video(
+    video_id: int = Path_parameter(), user_session_id: str = Path_parameter()
+):
+    user_id = await get_current_user_id(user_session_id)
+
+    video_exist = Video.query.with_entities(Video.id).filter_by(id=video_id).first()
+    if not video_exist:
+        return JSONResponse(
+            {"error": "This video doesnt exist!"}, status_code=status.HTTP_404_NOT_FOUND
+        )
+
+    save_instance = SaveVideos.query.filter_by(
+        video_id=video_id, user_id=user_id
+    ).first()
+    if save_instance:  # If exists, just delete it (Unsave)
+        session.delete(save_instance)
+    else:  # If doesnt Exist, Create a new one (Save)
+        save_instance = SaveVideos(video_id=video_id, user_id=user_id)
+        session.add(save_instance)
+
+    session.commit()
+    return JSONResponse(
+        {"data": "Your video saved successfully!"}, status_code=status.HTTP_200_OK
+    )
+
+
+@router.get("/is-save/{video_id}/{user_session_id}")
+async def is_video_saved(
+    video_id: int = Path_parameter(), user_session_id: str = Path_parameter()
+):
+    user_id = await get_current_user_id(user_session_id)
+
+    video_exist = Video.query.with_entities(Video.id).filter_by(id=video_id).first()
+    if not video_exist:
+        return JSONResponse(
+            {"error": "This video doesnt exist!"}, status_code=status.HTTP_404_NOT_FOUND
+        )
+
+    is_video_saved = False
+    save_instance = SaveVideos.query.filter_by(
+        video_id=video_id, user_id=user_id
+    ).first()
+    if save_instance:
+        is_video_saved = True
+
+    return JSONResponse({"data": is_video_saved}, status_code=status.HTTP_200_OK)

@@ -105,16 +105,16 @@ const submitForm = () => {
 
     submitFormData.append("user_session_id", sessionStorage.getItem("user_session_id"))
     submitFormData.append("detail", JSON.stringify(channelInfo.detail))
-    if (channelInfo.banner_img) {
+
+    if (typeof channelInfo.banner_img === 'object' && channelInfo.banner_img !== null) {
         submitFormData.append("banner_img", channelInfo.banner_img)
     }
-    if (channelInfo.profile_picture) {
-        submitFormData.append("profile_picture", channelInfo.profile_picture)
+    if (typeof channelInfo.profile_picture === 'object' && channelInfo.profile_picture !== null) {
+        submitFormData.append("profile_img", channelInfo.profile_picture)
     }
-    if (channelInfo.banner_img) {
-        submitFormData.append("video_watermark", channelInfo.video_watermark)
+    if (typeof channelInfo.video_watermark === 'object' && channelInfo.video_watermark !== null) {
+        submitFormData.append("watermark_img", channelInfo.video_watermark)
     }
-
     axios.put("http://127.0.0.1:8000/studio/channel/customization/update", submitFormData, {
         headers: {
             'Content-Type': 'multipart/form-data'

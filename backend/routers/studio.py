@@ -43,6 +43,12 @@ async def get_video_duration(file):  # Using pymediainfo (This is faster)
     return media_info.tracks[0].duration // 1000  # coverting ms to s
 
 
+async def static_file(file_url):
+    if not file_url:
+        return ""
+    return f"http://127.0.0.1:8000/static/{file_url}"
+
+
 @router.post("/upload")
 async def upload_video(
     file: UploadFile = File(...),
@@ -473,7 +479,6 @@ async def edit_community_post(
 @router.get("/channel/customization")
 async def get_channel_info(user_session_id: str = Query()):
     user_id = await get_current_user_id(user_session_id)
-
     channel = Channel.query.filter_by(owner_id=user_id).first()
 
     serializer = {
@@ -484,11 +489,9 @@ async def get_channel_info(user_session_id: str = Query()):
             "description": channel.description or "",
             "contact_email": channel.contact_email or "",
         },
-        "banner_img": f"http://127.0.0.1:8000/static/{channel.banner_img_url}" or "",
-        "profile_picture": f"http://127.0.0.1:8000/static/{channel.profile_picture_url}"
-        or "",
-        "video_watermark": f"http://127.0.0.1:8000/static/{channel.video_watermark_url}"
-        or "",
+        "banner_img": await static_file(channel.banner_img_url),
+        "profile_picture": await static_file(channel.profile_picture_url),
+        "video_watermark": await static_file(channel.video_watermark_url),
     }
 
     return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)
@@ -504,7 +507,6 @@ async def update_channel_info(
 ):
     user_id = await get_current_user_id(user_session_id)
     detail = json.loads(detail)
-
     channel = Channel.query.filter_by(owner_id=user_id).first()
 
     channel.name = detail["name"]
@@ -518,11 +520,11 @@ async def update_channel_info(
 
     if profile_img:
         profile_img_url = upload_file(user_id, profile_img, "profile_img")
-        channel.profile_img_url = profile_img_url
+        channel.profile_picture_url = str(profile_img_url)
 
     if watermark_img:
         watermark_img_url = upload_file(user_id, watermark_img, "watermark_img")
-        channel.watermark_img_url = watermark_img_url
+        channel.video_watermark_url = str(watermark_img_url)
 
     session.commit()
     return JSONResponse(
