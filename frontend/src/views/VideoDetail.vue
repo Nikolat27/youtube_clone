@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, reactive } from 'vue';
 import { useRoute } from 'vue-router';
 import axios from 'axios';
+import { useToast } from 'vue-toastification';
 
 // Icons
 import playIcon from '/src/assets/icons/video-player/play-icon.png'
@@ -11,6 +12,11 @@ import offSubtitleIcon from '/src/assets/icons/video-player/subtitle-off-icon.pn
 import fullSpeakerIcon from '/src/assets/icons/video-player/full-speaker-icon.png'
 import halfSpeakerIcon from '/src/assets/icons/video-player/half-speaker-icon.png'
 import muteSpeakerIcon from '/src/assets/icons/video-player/mute-speaker-icon.png'
+
+import emptyLikeIcon from '/src/assets/icons/svg-icons/like-empty.svg'
+import fillLikeIcon from '/src/assets/icons/svg-icons/like-fill.svg'
+import emptyDislikeIcon from '/src/assets/icons/svg-icons/dislike-empty.svg'
+import fillDislikeIcon from '/src/assets/icons/svg-icons/dislike-fill.svg'
 
 const route = useRoute()
 
@@ -319,6 +325,20 @@ const hideAnnotationButton = () => {
     }, 1000);
 };
 
+const toast = useToast()
+const likeVideo = (action_type) => { // true == 'like', false == 'dislike', null == 'None'
+    const user_session_id = sessionStorage.getItem("user_session_id")
+    if (!user_session_id) {
+        toast.error("You have to be Logged in!")
+        return;
+    }
+    axios.get(`http://127.0.0.1:8000/videos/like/${videoInfo.id}/${action_type}/${user_session_id}`).then((response) => {
+        userLikeSituation(route.params.id, user_session_id)
+    }).catch((error) => {
+        toast.error(error)
+    })
+}
+
 let videoInfo = reactive({
     id: '',
     user_id: '',
@@ -330,6 +350,16 @@ let videoInfo = reactive({
     created_at: '',
 })
 
+const likeSituation = ref(null)
+const userLikeSituation = async (video_id, user_session_id) => {
+    await axios.get(`http://127.0.0.1:8000/videos/like-situation/${video_id}/${user_session_id}`).then((response) => {
+        if (response.status == 200) {
+            likeSituation.value = response.data.data
+        }
+    }).catch((error) => {
+        console.log(error)
+    })
+}
 
 onMounted(() => {
     // This 'timeupdate' invokes whenever timeCurrent of the video changes
@@ -338,7 +368,7 @@ onMounted(() => {
     const videoId = route.params.id
     axios.get(`http://127.0.0.1:8000/videos/detail/${videoId}`, {
         params: {
-            'video_id': videoId
+            user_session_id: sessionStorage.getItem("user_session_id")
         }
     }).then((response) => {
         if (response.status == 200) {
@@ -348,6 +378,11 @@ onMounted(() => {
     }).catch((error) => {
         console.log(error)
     })
+
+    const user_session_id = sessionStorage.getItem("user_session_id")
+    if (user_session_id) {
+        userLikeSituation(videoId, user_session_id)
+    }
 });
 </script>
 
@@ -503,10 +538,12 @@ onMounted(() => {
         </div>
         <button class="video-detail-channel-sub-btn">Subscribe</button>
         <div class="video-detail-other-btn">
-            <button class="like-btn"><img src="@/assets/icons/svg-icons/like-empty.svg" alt="">
+            <button @click="likeVideo(true)" class="like-btn"><img
+                    :src="likeSituation === true ? fillLikeIcon : emptyLikeIcon" alt="">
                 <span class="like-amount">1K</span>
             </button>
-            <button class="dislike-btn"><img src="@/assets/icons/svg-icons/dislike-empty.svg" alt=""></button>
+            <button @click="likeVideo(false)" class="dislike-btn"><img
+                    :src="likeSituation === false ? fillDislikeIcon : emptyDislikeIcon" alt=""></button>
             <button class="share-btn"><img src="@/assets/icons/svg-icons/share-btn.svg" alt="">
                 <span>&nbsp;Share</span>
             </button>

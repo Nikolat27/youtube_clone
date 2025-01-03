@@ -1,19 +1,14 @@
-from fastapi import APIRouter, Path, status, Query, Header
+from fastapi import APIRouter, Path as Path_parameter, status, Query, Header
 from database.models.base import session
-from database.models.user import Video, User
+from database.models.user import Video, User, Like
 from fastapi.responses import JSONResponse, Response
-from pydantic import BaseModel
 from sqlalchemy import select
 from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
 from datetime import datetime
 from pymediainfo import MediaInfo
 from pathlib import Path
-import speedtest
-import time
-import subprocess
-from concurrent.futures import ThreadPoolExecutor
-import asyncio
+from dependencies import get_current_user_id
 
 router = APIRouter(prefix="/videos", tags=["videos"])
 
@@ -153,7 +148,9 @@ async def load_more_videos() -> Page:
 
 
 @router.get("/detail/{video_id}")
-async def video_detail(video_id: int = Path()):
+async def video_detail(
+    video_id: int = Path_parameter(), user_session_id: str = Query(None)
+):
     video = (
         Video.query.with_entities(
             Video.id,
@@ -182,22 +179,14 @@ async def video_detail(video_id: int = Path()):
     return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)
 
 
-@router.get("/internet-speed")
-async def get_internet_speed():
-    users_speed = speedtest.Speedtest().download()
-    return round(users_speed / 1024 / 1024 / 8)
-
-
-CHUNK_SIZE = 1024 * 1024
-
-
 @router.get("/stream/{video_id}/")
-async def video_stream(video_id: int = Path(), range: str = Header(None)):
+async def video_stream(video_id: int = Path_parameter(), range: str = Header(None)):
     video = Video.query.with_entities(Video.file_url).filter_by(id=video_id).first()
     video_path = Path(f"{video.file_url}").resolve()
 
     start, end = range.replace("bytes=", "").split("-")
     start = int(start)
+    CHUNK_SIZE = 1024 * 1024
     end = int(end) if end else start + CHUNK_SIZE
 
     with open(video_path, "rb") as video:
@@ -211,25 +200,42 @@ async def video_stream(video_id: int = Path(), range: str = Header(None)):
         return Response(data, status_code=206, headers=headers, media_type="video/mp4")
 
 
-@router.get("/frame/{video_id}")
-async def get_video_frame(video_id: int = Path(), duration: str = Query()):
-    img_output_path = Path(r"uploaded_videos\3\video_frame\videoframe.png").absolute()
-    src_video_path = Path(r"uploaded_videos\3\long_video\redmagic-video.mp4").absolute()
-    duration = duration
-    command = [
-        "ffmpeg",
-        "-y",
-        "-ss",
-        duration,
-        "-i",
-        src_video_path,
-        "-vframes",
-        "1",
-        "-vf",
-        "scale=225:130",
-        img_output_path,
-    ]
-    subprocess.run(command, check=True)
-    return {
-        "data": r"http://127.0.0.1:8000/static/uploaded_videos\3\video_frame\videoframe.png"
-    }
+@router.get("/like/{video_id}/{action_type}/{user_session_id}")
+async def like_video(
+    video_id: str = Path_parameter(),
+    action_type: bool = Path_parameter(),
+    user_session_id: str = Path_parameter(),
+):  # True == Like, False == Dislike
+    user_id = await get_current_user_id(user_session_id)
+
+    like = Like.query.filter_by(video_id=video_id, user_id=user_id).first()
+    if like and like.action_type == action_type:
+        session.delete(like)
+    elif like and like.action_type != action_type:
+        like.action_type = action_type
+    else:
+        new_like = Like(user_id=user_id, video_id=video_id, action_type=action_type)
+        session.add(new_like)
+
+    session.commit()
+    return JSONResponse(
+        {"data": action_type},
+        status_code=status.HTTP_200_OK,
+    )
+
+
+@router.get("/like-situation/{video_id}/{user_session_id}")
+async def is_user_liked(
+    video_id: int = Path_parameter(), user_session_id: str = Path_parameter()
+):
+    user_id = await get_current_user_id(user_session_id)
+    like_situation = None
+    like = (
+        Like.query.with_entities(Like.action_type)
+        .filter_by(video_id=video_id, user_id=user_id)
+        .first()
+    )
+    if like:
+        like_situation = like.action_type
+
+    return JSONResponse({"data": like_situation}, status_code=status.HTTP_200_OK)
