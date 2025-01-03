@@ -10,6 +10,10 @@ from datetime import datetime
 from pymediainfo import MediaInfo
 from pathlib import Path
 import speedtest
+import time
+import subprocess
+from concurrent.futures import ThreadPoolExecutor
+import asyncio
 
 router = APIRouter(prefix="/videos", tags=["videos"])
 
@@ -113,10 +117,6 @@ def get_channel_profile(user_id):
 
 @router.get("/load-more")
 async def load_more_videos() -> Page:
-    import time
-
-    time.sleep(1)
-
     long_videos = paginate(
         session,
         select(
@@ -192,11 +192,9 @@ CHUNK_SIZE = 1024 * 1024
 
 
 @router.get("/stream/{video_id}/")
-async def video_endpoint(video_id: int = Path(), range: str = Header(None)):
+async def video_stream(video_id: int = Path(), range: str = Header(None)):
     video = Video.query.with_entities(Video.file_url).filter_by(id=video_id).first()
-    video_path = Path(
-        r"C:\Users\Sam\Desktop\youtube_clone\backend\uploaded_videos\3\long_video\vue-ep-31.mp4"
-    )
+    video_path = Path(f"{video.file_url}").resolve()
 
     start, end = range.replace("bytes=", "").split("-")
     start = int(start)
@@ -211,3 +209,27 @@ async def video_endpoint(video_id: int = Path(), range: str = Header(None)):
             "Accept-Ranges": "bytes",
         }
         return Response(data, status_code=206, headers=headers, media_type="video/mp4")
+
+
+@router.get("/frame/{video_id}")
+async def get_video_frame(video_id: int = Path(), duration: str = Query()):
+    img_output_path = Path(r"uploaded_videos\3\video_frame\videoframe.png").absolute()
+    src_video_path = Path(r"uploaded_videos\3\long_video\redmagic-video.mp4").absolute()
+    duration = duration
+    command = [
+        "ffmpeg",
+        "-y",
+        "-ss",
+        duration,
+        "-i",
+        src_video_path,
+        "-vframes",
+        "1",
+        "-vf",
+        "scale=225:130",
+        img_output_path,
+    ]
+    subprocess.run(command, check=True)
+    return {
+        "data": r"http://127.0.0.1:8000/static/uploaded_videos\3\video_frame\videoframe.png"
+    }

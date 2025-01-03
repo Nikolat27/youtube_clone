@@ -216,15 +216,28 @@ let canvasDisplay = ref('none')
 let position = ref(0)
 
 let videoTimeDisplay = ref('none')
-let videoTimeText = ref(null)
 let videoTimeValue = ref(null)
 let videoTimePosition = ref(null)
-const getVideoFrame = (event) => {
+
+let timeout;
+function debounce(func, delay) {
+    return function (...args) {
+        const context = this;
+        clearTimeout(timeout); // Clears the timeout
+        timeout = setTimeout(() => func.apply(context, args), delay);
+    };
+}
+
+const clearTimeOut = () => {
+    clearTimeout(timeout);
+}
+
+const getVideoFrame = debounce((event) => {
     const input = event.target;
     const { left, width } = input.getBoundingClientRect();
     const positionX = event.clientX - left;
 
-    // Half Width of the canvas(because we want to Locate the Center of the Canvas on the Top of Our mouse cursor)
+    // Half Width of the canvas(because we want to Locate the Canvas, Center Top of Our mouse cursor)
     const canvasWidth = 225;
     const halfCanvasWidth = canvasWidth / 2;
 
@@ -236,35 +249,42 @@ const getVideoFrame = (event) => {
     position.value = leftPosition;
 
     const percentage = Math.round(positionX / (width / 100));
-    const video = videoRef.value;
-    mouseValue.value = (video.duration / 100) * percentage;
+    mouseValue.value = (videoInfo.duration / 100) * percentage;
 
     // Time tracker (under the canvas)
     videoTimePosition.value = positionX - 15
     videoTimeValue.value = calculateTime(mouseValue.value);
 
     // Creating the canvas
-    const canvas = document.getElementById("myCanvas");
+    const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
+    canvas.width = 225;
+    canvas.height = 130;
+    const videoFrameImg = document.getElementById("video-frame-img");
 
-    // Creating the hidden video for getting the screenshot of the specific time with canvas
     const hiddenVideo = document.createElement('video');
-    hiddenVideo.src = video.src;
+    hiddenVideo.crossOrigin = "anonymous"; // This is necassary for CORS origin
+    hiddenVideo.src = `http://127.0.0.1:8000/videos/stream/${videoInfo.id}/`;
+    hiddenVideo.currentTime = mouseValue.value;
 
     hiddenVideo.addEventListener('loadeddata', () => {
-        hiddenVideo.currentTime = mouseValue.value;
+        if (hiddenVideo.readyState >= 2) { // 3 and 4 means loading and completed (They are loading request situations)
+            hiddenVideo.pause();
+            context.drawImage(hiddenVideo, 0, 0, canvas.width, canvas.height);
+            videoFrameImg.src = canvas.toDataURL(); // Set the image source to the canvas data URL
+        }
     });
 
     hiddenVideo.addEventListener('seeked', () => {
         context.drawImage(hiddenVideo, 0, 0, canvas.width, canvas.height);
+        videoFrameImg.src = canvas.toDataURL(); // Update the image source
     });
-
     hiddenVideo.load();
 
     // handling display for appearing and disappearing the canvas
     canvasDisplay.value = 'flex'
     videoTimeDisplay.value = 'flex'
-}
+}, 300);
 
 
 // Using divmod to convert the total seconds to hours and minutes
@@ -323,7 +343,7 @@ onMounted(() => {
     }).then((response) => {
         if (response.status == 200) {
             Object.assign(videoInfo, response.data.data)
-            videoDuration.value = videoInfo.duration
+            videoDuration.value = calculateTime(videoInfo.duration)
         }
     }).catch((error) => {
         console.log(error)
@@ -363,17 +383,18 @@ onMounted(() => {
         <div class="bg-transparent z-50 control-bar flex opacity-0 w-full h-[48px] max-h-[48px] absolute bottom-0 justify-center
          items-center flex-row bg-gray-200 bg-opacity-80">
             <div class="video-progress-bar w-[906px] h-[8px] absolute bottom-14">
-                <div class="z-10 video-img-tracker overflow-hidden w-[225px] h-[130px] rounded-lg border-[3px] border-white
-                  absolute bottom-12" :style="{ left: `${position}px`, display: `${canvasDisplay}`, }">
-                    <canvas id="myCanvas" class="z-0 w-full h-full object-fill"></canvas>
+                <div class="video-img-tracker z-10 overflow-hidden w-[225px] h-[130px] rounded-lg border-[3px] border-white
+                        absolute bottom-12" :style="{ left: `${position}px`, display: `${canvasDisplay}`, }">
+                    <img class="w-full h-full" id="video-frame-img" loading="lazy" alt="">
                 </div>
-                <p ref="videoTimeText" class="text-[13px] text-white absolute bottom-4 font-medium"
+                <p class="text-[13px] text-white absolute bottom-4 font-medium"
                     :style="{ left: `${videoTimePosition}px`, display: `${videoTimeDisplay}` }">
                     {{ videoTimeValue }}
                 </p>
                 <input :disabled="isVideoAd" @mousemove="getVideoFrame"
-                    @mouseleave="mouseValue = null, canvasDisplay = 'none', videoTimeDisplay = 'none'" min="0" max="100"
-                    :value="videoProgress" id="progress-bar" class="h-full w-full" type="range" @input="seekVideo">
+                    @mouseleave="mouseValue = null, canvasDisplay = 'none', videoTimeDisplay = 'none'; clearTimeOut()"
+                    min="0" max="100" :value="videoProgress" id="progress-bar" class="h-full w-full" type="range"
+                    @input="seekVideo">
             </div>
             <div class="w-[618px] h-full left-controls flex flex-row justify-start
              items-center gap-x-6 pl-2">
