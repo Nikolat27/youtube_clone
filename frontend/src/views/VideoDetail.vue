@@ -1,6 +1,7 @@
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue';
+import { ref, computed, onMounted, reactive } from 'vue';
 import { useRoute } from 'vue-router';
+import axios from 'axios';
 
 // Icons
 import playIcon from '/src/assets/icons/video-player/play-icon.png'
@@ -12,13 +13,22 @@ import halfSpeakerIcon from '/src/assets/icons/video-player/half-speaker-icon.pn
 import muteSpeakerIcon from '/src/assets/icons/video-player/mute-speaker-icon.png'
 
 const route = useRoute()
-const videoId = route.params.id
 
 // Description Toggling
 const showFullDescription = ref(false);
 const toggleFullDescription = () => {
     showFullDescription.value = !showFullDescription.value;
 };
+
+const truncatedDescription = computed(() => {
+    const description = videoInfo.description
+    if (description.length >= 60) {
+        return showFullDescription.value ? description : `${description.substring(0, 60)}...`;
+    } else {
+        return description;
+    }
+});
+
 
 const comments = [
     {
@@ -33,14 +43,6 @@ const comments = [
         ]
     }
 ]
-
-const truncatedDescription = computed(() => {
-    const description = "<p id=''>Lorem ipsum dolor sit amet consectetur adipisicing elit. Perspiciatis eos doloribus quibusdam quidem tempore qui voluptatibus ducimus veritatis sunt alias aliquid inventore iure, ex dolor consectetur eveniet, deleniti nobis aperiam.</p>";
-    return showFullDescription.value
-        ? description
-        : `${description.substring(0, 60)}...`;
-});
-
 
 // Video Comment Toggling
 const videoCommentButtonsShow = ref(false);
@@ -297,9 +299,35 @@ const hideAnnotationButton = () => {
     }, 1000);
 };
 
+let videoInfo = reactive({
+    id: '',
+    user_id: '',
+    title: '',
+    description: '',
+    thumbnail_url: '',
+    video_url: '',
+    duration: '',
+    created_at: '',
+})
+
+
 onMounted(() => {
     // This 'timeupdate' invokes whenever timeCurrent of the video changes
     videoRef.value.addEventListener('timeupdate', updateProgress);
+
+    const videoId = route.params.id
+    axios.get(`http://127.0.0.1:8000/videos/detail/${videoId}`, {
+        params: {
+            'video_id': videoId
+        }
+    }).then((response) => {
+        if (response.status == 200) {
+            Object.assign(videoInfo, response.data.data)
+            videoDuration.value = videoInfo.duration
+        }
+    }).catch((error) => {
+        console.log(error)
+    })
 });
 </script>
 
@@ -307,8 +335,9 @@ onMounted(() => {
 <template>
     <div @mouseover="handleControlBar('open')" @mouseleave="handleControlBar('close')"
         class="video-container top-14 left-12 relative overflow-hidden w-[920px] h-[480px] flex justify-center items-center rounded-2xl">
-        <video ref="videoRef" src="/src/assets/video/test-vid2.mp4" :muted="videoMuted" volume="0.5"
+        <video ref="videoRef" :poster="videoInfo.thumbnail_url" :muted="videoMuted" volume="0.5"
             class="main-video cursor-pointer w-full h-full object-fill overflow-hidden">
+            <source :src="`http://127.0.0.1:8000/videos/stream/${$route.params.id}/`" type="video/mp4" />
         </video>
         <button :disabled="!adFinished" @click="skipVideoAd" :style="{ backgroundColor: adFinished ? 'black' : 'gray' }"
             class="skip-ad-btn text-[14px] gap-x-1 font-normal text-white cursor-pointer absolute bottom-36
@@ -332,7 +361,7 @@ onMounted(() => {
             </div>
         </div>
         <div class="bg-transparent z-50 control-bar flex opacity-0 w-full h-[48px] max-h-[48px] absolute bottom-0 justify-center
-         items-center flex-row">
+         items-center flex-row bg-gray-200 bg-opacity-80">
             <div class="video-progress-bar w-[906px] h-[8px] absolute bottom-14">
                 <div class="z-10 video-img-tracker overflow-hidden w-[225px] h-[130px] rounded-lg border-[3px] border-white
                   absolute bottom-12" :style="{ left: `${position}px`, display: `${canvasDisplay}`, }">
@@ -371,7 +400,7 @@ onMounted(() => {
                 <button>
                     <img @click="toggleSubtitle" style="width: 30px; height: 30px;" :src="subtitleIconSrc" alt="">
                 </button>
-                <button :disabled="!isVideoAd" @click="toggleVideoOptions" class="setting-btn">
+                <button :disabled="isVideoAd" @click="toggleVideoOptions" class="setting-btn">
                     <img src="@/assets/icons/video-player/settings-icon.png" alt="">
                 </button>
                 <div v-if="!isPlaybackSpeedDivOpen && isVideoOptionsOpen" class="video-options select-none video-settings flex flex-col text-white items-start justify-center w-[250px] h-auto pb-4 pt-4
@@ -442,7 +471,7 @@ onMounted(() => {
     </div>
 
     <div class="mt-14">
-        <h1 class="video-title cursor-pointer">Video title</h1>
+        <h1 class="video-title cursor-pointer">{{ videoInfo.title }}</h1>
     </div>
 
     <div class="video-detail-info">
@@ -471,11 +500,11 @@ onMounted(() => {
 
     <div class="video-description">
         <p class="video-detail-stats"><span class="view-amount">6.1M </span>views
-            <span class="upload-date">2 years </span>ago
+            <span class="upload-date">{{ videoInfo.created_at }} </span>ago
             <span class="hashtags">#slowedandreverb #coolio #tiktoksong</span>
         </p>
         <p id="shortDescription">{{ truncatedDescription }}</p>
-        <button @click="toggleFullDescription" id="readMoreButton">
+        <button v-if="videoInfo.description.length > 60" @click="toggleFullDescription" id="readMoreButton">
             {{ showFullDescription ? "Read less" : "Read more" }}
         </button>
     </div>
@@ -919,12 +948,12 @@ button:hover #volume-bar {
 } */
 
 #progress-bar::-moz-range-progress {
-    background: yellow;
+    background: red;
 }
 
 #progress-bar::-moz-range-thumb {
     visibility: hidden;
-    background: yellow;
+    background: red;
     border: none;
     width: 13px;
     height: 13px;

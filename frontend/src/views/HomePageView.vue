@@ -9,6 +9,7 @@ const isAtEnd = ref(false);
 let scrolledAmount = ref(0);
 const itemWidth = 300;
 
+
 const updateScrollState = (shortContainerDiv) => {
     const scrollLeft = shortContainerDiv.scrollLeft;
     const maxScrollWidth = shortContainerDiv.scrollWidth - shortContainerDiv.clientWidth;
@@ -94,6 +95,8 @@ onMounted(() => {
 <template>
     <div v-if="!isLoading" class="container mb-10">
         <div class="regular-videos">
+            <b v-if="isLoadingNProgress" class="ml-2">{{ ((progress || 0) * 100).toFixed(0) }}%</b>
+
             <div v-for="video in longVideos.slice(0, 3)" :key="video.id" class="video-preview">
                 <div class="video-thumbnail">
                     <img loading="lazy" :src="video.thumbnail_url" alt="">

@@ -1,4 +1,5 @@
 import { createWebHistory, createRouter } from "vue-router";
+import NProgress from 'nprogress'
 import HomePageView from "@/views/HomePageView.vue";
 import VideoDetail from "@/views/VideoDetail.vue";
 import SubscriptionsView from "@/views/SubscriptionsView.vue";
@@ -75,6 +76,15 @@ const routes = [
 const router = createRouter({
     history: createWebHistory(),
     routes,
+})
+
+// Loading Indicator 
+router.beforeEach((To, From, next) => {
+    NProgress.start()
+    next()
+})
+router.afterEach(() => {
+    NProgress.done()
 })
 
 export default router;

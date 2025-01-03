@@ -86,7 +86,9 @@ class Video(Model):
 
     id = Column(Integer, primary_key=True, autoincrement=True, index=True)
     title = Column(String(80), nullable=False)
-    video_type = Column(String(20), default="long_video", nullable=False) # long_video - short_video
+    video_type = Column(
+        String(20), default="long_video", nullable=False
+    )  # long_video - short_video
     user_id = Column(
         Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
@@ -162,3 +164,20 @@ class Channel(Model):
 
     def __repr__(self):
         return f"{self.owner_id} Channel"
+
+
+class Like(Model):
+    __tablename__ = "likes"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    video_id = Column(
+        Integer, ForeignKey("videos.id", ondelete="CASCADE"), nullable=False
+    )
+    action_type = Column(Boolean, nullable=False)  # False is Dislike and True is Like
+    created_at = Column(DateTime, default=get_utc_now)
+
+    def __repr__(self):
+        return f"{self.user_id} - {self.video_id} - {self.action_type}"

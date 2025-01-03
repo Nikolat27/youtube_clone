@@ -1,20 +1,32 @@
-from fastapi import APIRouter, Path, status, Query
+from fastapi import APIRouter, Path, status, Query, Header
 from database.models.base import session
 from database.models.user import Video, User
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel
 from sqlalchemy import select
 from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
 from datetime import datetime
+from pymediainfo import MediaInfo
+from pathlib import Path
+import speedtest
 
 router = APIRouter(prefix="/videos", tags=["videos"])
+
+
+async def get_video_duration(file):  # Using pymediainfo (This is faster)
+    media_info = MediaInfo.parse(file)
+    return media_info.tracks[0].duration // 1000  # coverting Ms to S
 
 
 async def time_difference(created_time):
     current_time = datetime.now()
     time_difference = current_time.date() - created_time.date()
     return time_difference.days
+
+
+async def static_file(file_url):
+    return f"http://127.0.0.1:8000/static/{file_url}"
 
 
 @router.get("/generate/fake")
@@ -70,7 +82,7 @@ async def videos_list() -> Page:
                 {
                     "id": video.id,
                     "title": video.title,
-                    "thumbnail_url": f"http://127.0.0.1:8000/static/{video.thumbnail_url}",
+                    "thumbnail_url": await static_file(video.thumbnail_url),
                     "created_at": f"{await time_difference(video.created_at)} days",
                 }
                 for video in long_videos.items
@@ -80,7 +92,7 @@ async def videos_list() -> Page:
             {
                 "id": video.id,
                 "title": video.title,
-                "thumbnail_url": f"http://127.0.0.1:8000/static/{video.thumbnail_url}",
+                "thumbnail_url": await static_file(video.thumbnail_url),
             }
             for video in short_videos
         ],
@@ -102,8 +114,9 @@ def get_channel_profile(user_id):
 @router.get("/load-more")
 async def load_more_videos() -> Page:
     import time
+
     time.sleep(1)
-    
+
     long_videos = paginate(
         session,
         select(
@@ -126,7 +139,7 @@ async def load_more_videos() -> Page:
                 {
                     "id": video.id,
                     "title": video.title,
-                    "thumbnail_url": f"http://127.0.0.1:8000/static/{video.thumbnail_url}",
+                    "thumbnail_url": await static_file(video.thumbnail_url),
                     "created_at": f"{await time_difference(video.created_at)} days",
                     "channel_name": get_channel_name(video.user_id),
                     "channel_profile": get_channel_profile(video.user_id),
@@ -141,4 +154,60 @@ async def load_more_videos() -> Page:
 
 @router.get("/detail/{video_id}")
 async def video_detail(video_id: int = Path()):
-    video = Video.query.filter_by(id=video_id).first()
+    video = (
+        Video.query.with_entities(
+            Video.id,
+            Video.user_id,
+            Video.title,
+            Video.description,
+            Video.file_url,
+            Video.thumbnail_url,
+            Video.created_at,
+        )
+        .filter_by(id=video_id)
+        .first()
+    )
+
+    serializer = {
+        "id": video.id,
+        "title": video.title,
+        "user_id": video.user_id,
+        "description": video.description or "asdfasdfasdf",
+        "file_url": await static_file(video.file_url),
+        "thumbnail_url": await static_file(video.thumbnail_url),
+        "duration": await get_video_duration(video.file_url),
+        "created_at": f"{await time_difference(video.created_at)} days ",
+    }
+
+    return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)
+
+
+@router.get("/internet-speed")
+async def get_internet_speed():
+    users_speed = speedtest.Speedtest().download()
+    return round(users_speed / 1024 / 1024 / 8)
+
+
+CHUNK_SIZE = 1024 * 1024
+
+
+@router.get("/stream/{video_id}/")
+async def video_endpoint(video_id: int = Path(), range: str = Header(None)):
+    video = Video.query.with_entities(Video.file_url).filter_by(id=video_id).first()
+    video_path = Path(
+        r"C:\Users\Sam\Desktop\youtube_clone\backend\uploaded_videos\3\long_video\vue-ep-31.mp4"
+    )
+
+    start, end = range.replace("bytes=", "").split("-")
+    start = int(start)
+    end = int(end) if end else start + CHUNK_SIZE
+
+    with open(video_path, "rb") as video:
+        video.seek(start)
+        data = video.read(end - start)
+        filesize = str(video_path.stat().st_size)
+        headers = {
+            "Content-Range": f"bytes {str(start)}-{str(end)}/{filesize}",
+            "Accept-Ranges": "bytes",
+        }
+        return Response(data, status_code=206, headers=headers, media_type="video/mp4")
