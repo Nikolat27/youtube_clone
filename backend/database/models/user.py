@@ -197,3 +197,24 @@ class SaveVideos(Model):
 
     def __repr__(self):
         return f"{self.user_id} - {self.video_id} - {self.action_type}"
+
+
+class Comment(Model):
+    __tablename__ = "comments"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    video_id = Column(
+        Integer, ForeignKey("videos.id", ondelete="CASCADE"), nullable=False
+    )
+    text = Column(String(500), nullable=False)
+    parent_id = Column(
+        Integer, ForeignKey("comments.id", ondelete="CASCADE"), nullable=True
+    )
+    parent = relationship("Comment", backref='replies', remote_side=[id])
+    created_at = Column(DateTime, default=get_utc_now)
+
+    def __repr__(self):
+        return f"{self.user_id} - {self.video_id}"

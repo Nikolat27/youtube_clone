@@ -1,8 +1,16 @@
-from fastapi import APIRouter, Path as Path_parameter, status, Query, Header
+from fastapi import (
+    APIRouter,
+    Path as Path_parameter,
+    status,
+    Query,
+    Header,
+    Form,
+    HTTPException,
+)
 from database.models.base import session
-from database.models.user import Video, User, Like, SaveVideos, Channel
+from database.models.user import Video, User, Like, SaveVideos, Channel, Comment
 from fastapi.responses import JSONResponse, Response
-from sqlalchemy import select
+from sqlalchemy import select, desc
 from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
 from datetime import datetime
@@ -28,7 +36,15 @@ async def static_file(file_url):
     return f"http://127.0.0.1:8000/static/{file_url}"
 
 
-@router.get("/generate/fake")
+async def check_video_exist(video_id):
+    video = Video.query.filter_by(id=video_id).first()
+    if not video:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="This Video Doesnt Exist!"
+        )
+
+
+@router.get("/generate/fake")  # Usage: Generate testing and random data to our DB
 def generate_fake_data():
     title = "Hello world"
     video_type = "long_video"
@@ -98,6 +114,11 @@ async def videos_list() -> Page:
     }
 
     return JSONResponse({"data": response_data}, status_code=status.HTTP_200_OK)
+
+
+def get_username(user_id):
+    user = User.query.with_entities(User.username).filter_by(id=user_id).first()
+    return user.username
 
 
 def get_channel_name(user_id):
@@ -172,7 +193,6 @@ async def video_detail(
         .filter_by(owner_id=video.user_id)
         .first()
     )
-    print("Channel: ", channel.profile_picture_url)
 
     serializer = {
         "id": video.id,
@@ -258,12 +278,7 @@ async def save_video(
     video_id: int = Path_parameter(), user_session_id: str = Path_parameter()
 ):
     user_id = await get_current_user_id(user_session_id)
-
-    video_exist = Video.query.with_entities(Video.id).filter_by(id=video_id).first()
-    if not video_exist:
-        return JSONResponse(
-            {"error": "This video doesnt exist!"}, status_code=status.HTTP_404_NOT_FOUND
-        )
+    await check_video_exist(video_id)
 
     save_instance = SaveVideos.query.filter_by(
         video_id=video_id, user_id=user_id
@@ -285,12 +300,7 @@ async def is_video_saved(
     video_id: int = Path_parameter(), user_session_id: str = Path_parameter()
 ):
     user_id = await get_current_user_id(user_session_id)
-
-    video_exist = Video.query.with_entities(Video.id).filter_by(id=video_id).first()
-    if not video_exist:
-        return JSONResponse(
-            {"error": "This video doesnt exist!"}, status_code=status.HTTP_404_NOT_FOUND
-        )
+    await check_video_exist(video_id)
 
     is_video_saved = False
     save_instance = SaveVideos.query.filter_by(
@@ -300,3 +310,54 @@ async def is_video_saved(
         is_video_saved = True
 
     return JSONResponse({"data": is_video_saved}, status_code=status.HTTP_200_OK)
+
+
+@router.get("/comment/list/{video_id}")
+async def get_comments_list(video_id: int = Path_parameter()):
+    await check_video_exist(video_id)
+
+    User.query.filter_by()
+    comments = (
+        Comment.query.filter_by(video_id=video_id)
+        .order_by(desc(Comment.created_at))
+        .all()
+    )
+
+    serializer = [
+        {
+            "id": comment.id,
+            "user_id": comment.user_id,
+            "username": get_username(comment.user_id),
+            "text": comment.text,
+            "parent_id": comment.parent_id,
+            "created_at": await time_difference(comment.created_at),
+            "user_profile_picrure": get_channel_profile(comment.user_id),
+            "replies": [],
+        }
+        for comment in comments
+    ]
+    return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)
+
+
+@router.post("/comment/add")
+async def add_comment(
+    video_id: int = Form(),
+    user_session_id: str = Form(),
+    comment_text: str = Form(),
+    parent_id: int = Form(None),
+):
+    user_id = await get_current_user_id(user_session_id)
+    await check_video_exist(video_id)
+
+    comment = Comment(
+        video_id=video_id,
+        user_id=user_id,
+        text=comment_text,
+        parent_id=parent_id or None,
+    )
+    session.add(comment)
+    session.commit()
+
+    return JSONResponse(
+        {"data": "Comment added successfully!"}, status_code=status.HTTP_200_OK
+    )

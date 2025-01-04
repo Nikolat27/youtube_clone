@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, reactive } from 'vue';
+import { ref, computed, onMounted, reactive, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import axios from 'axios';
 import { useToast } from 'vue-toastification';
@@ -38,27 +38,31 @@ const truncatedDescription = computed(() => {
 });
 
 
-const comments = [
-    {
-        id: 1, text: "Hello World", replies: [
-            { id: 2, parent_id: 1, text: `Reply 1`, replies: [] },
-            {
-                id: 3, parent_id: 1, text: `Reply 2`, replies: [
-                    { parent_id: 3, id: 4, text: "Reply 3" },
-                ]
-            },
-            { id: 5, parent_id: 1, text: `Reply 4`, replies: [] },
-        ]
-    }
-]
+const comments = reactive([])
+const userCommentText = ref(null)
+watch(() => userCommentText.value, () => { })
+
+const retrieveVideoComments = (videoId) => {
+    axios.get(`http://127.0.0.1:8000/videos/comment/list/${videoId}`).then((response) => {
+        if (response.status == 200) {
+            Object.assign(comments, response.data.data)
+        }
+    }).catch((error) => {
+        toast.error(error)
+    })
+}
 
 // Video Comment Toggling
 const videoCommentButtonsShow = ref(false);
-const toggleVideoCommentButtons = () => {
-    videoCommentButtonsShow.value = !videoCommentButtonsShow.value;
-};
+const toggleVideoCommentButtons = () => videoCommentButtonsShow.value = !videoCommentButtonsShow.value
+const cancelUserComment = () => {
+    userCommentText.value = null;
+    videoCommentButtonsShow.value = false
+}
+
 const submitVideoComment = () => {
-    const commentText = document.getElementById("comment-text").value;
+    const commentText = userCommentText.value;
+    console.log(commentText);
 };
 
 
@@ -393,11 +397,7 @@ const videoSaveSituation = async (video_id, user_session_id) => {
     })
 }
 
-onMounted(() => {
-    // This 'timeupdate' invokes whenever timeCurrent of the video changes
-    videoRef.value.addEventListener('timeupdate', updateProgress);
-
-    const videoId = route.params.id
+const retrieveVideoDetail = (videoId) => {
     axios.get(`http://127.0.0.1:8000/videos/detail/${videoId}`, {
         params: {
             user_session_id: sessionStorage.getItem("user_session_id")
@@ -410,6 +410,15 @@ onMounted(() => {
     }).catch((error) => {
         console.log(error)
     })
+}
+
+onMounted(() => {
+    // This 'timeupdate' invokes whenever timeCurrent of the video changes
+    videoRef.value.addEventListener('timeupdate', updateProgress);
+
+    const videoId = route.params.id // Current Video Id
+    retrieveVideoDetail(videoId)
+    retrieveVideoComments(videoId)
 
     const user_session_id = sessionStorage.getItem("user_session_id")
     if (user_session_id) {
@@ -437,7 +446,7 @@ onMounted(() => {
         <div v-if="showAnnotation" :style="{ bottom: isControlBarVisible ? '64px' : '8px' }" class="annotation-div absolute right-3 w-10
          h-10 bg-transparent">
             <img @mouseenter="showAnnotationButton" @mouseleave="hideAnnotationButton"
-                class="annotation-img w-full h-full cursor-pointer" src="@/assets/img/Ruby.png" alt="">
+                class="annotation-img w-full h-full cursor-pointer" :src="videoInfo.channel_watermark_url" alt="">
             <div @mouseenter="showAnnotationButton" @mouseleave="hideAnnotationButton"
                 :style="{ opacity: annotationIsHovered ? '1' : '0', display: annotationIsHovered ? 'flex' : 'none' }"
                 class="annotation-btn bg-[#191919] bg-opacity-90 p-1 absolute right-[48px] -bottom-[2px] w-[124px] h-[75px] rounded-xl flex-col items-center
@@ -606,11 +615,11 @@ onMounted(() => {
         </div>
         <div class="comment-creation mt-6">
             <img class="user-profile-img" src="@/assets/img/Django.png" alt="">
-            <input @click="toggleVideoCommentButtons" class="add-comment-input" id="comment-text" type="text"
+            <input v-model="userCommentText" @click="toggleVideoCommentButtons" type="text"
                 placeholder="Add a Comment...">
         </div>
         <div v-if="videoCommentButtonsShow" class="comment-btns">
-            <button @click="toggleVideoCommentButtons" class="cancel-comment-btn">Cancel</button>
+            <button @click="cancelUserComment" class="cancel-comment-btn">Cancel</button>
             <button @click="submitVideoComment" class="add-comment-btn">Comment</button>
         </div>
     </div>
@@ -618,10 +627,10 @@ onMounted(() => {
     <div class="comment-container">
         <div v-for="comment in comments" :key="comment.id" class="comment flex flex-row">
             <div class="author-thumbnail">
-                <img src="@/assets/img/Django.png" alt="">
+                <img :src="comment.user_profile_picrure" alt="">
             </div>
             <div class="comment-detail">
-                <div class="author-info">@nikolat27 <span class="created_at">2 months ago</span></div>
+                <div class="author-info">@{{ comment.username ?? 'Anonymous User' }} <span class="created_at">{{ comment.created_at }} days ago</span></div>
                 <div class="comment-text -mt-2">{{ comment.text }}</div>
                 <div class="comment-container-button">
                     <button class="comment-like-button" style="outline: none;">
