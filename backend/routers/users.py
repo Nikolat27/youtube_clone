@@ -1,7 +1,6 @@
-from fastapi import APIRouter, Request, Body, Query, Depends, status
+from fastapi import APIRouter, Body, Query, status
 from fastapi.responses import JSONResponse
-from database.models.user import User, UserLogInfo
-from typing import Annotated
+from database.models.user import User, UserLogInfo, Channel
 from passlib.context import CryptContext
 from pydantic import BaseModel
 from database.models.base import session
@@ -128,7 +127,7 @@ async def login_user(
         return JSONResponse({"error": "Either your username or password is wrong!"})
 
     generate_new_session_id = random.randint(100000, 999999)
-    
+
     if user_session_id:  # If user is already logged in
         is_authenticated = await is_user_authenticated(user_session_id)
         if is_authenticated:
@@ -178,5 +177,25 @@ async def logout(user_session_id: str = Query()):
 
     return JSONResponse(
         {"data": "User logged out successfully!"},
+        status_code=status.HTTP_200_OK,
+    )
+
+
+@router.get("/profile-picture")
+async def get_user_profile(user_session_id: str = Query()):
+    user = (
+        UserLogInfo.query.with_entities(UserLogInfo.user_id)
+        .filter_by(session_id=user_session_id)
+        .first()
+    )
+
+    channel = (
+        Channel.query.with_entities(Channel.profile_picture_url)
+        .filter_by(owner_id=user.user_id)
+        .first()
+    )
+    profile_picture = f"http://127.0.0.1:8000/static/{channel.profile_picture_url}"
+    return JSONResponse(
+        {"profile_picture": profile_picture or "", "user_id": user.user_id},
         status_code=status.HTTP_200_OK,
     )

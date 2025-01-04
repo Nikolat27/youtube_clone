@@ -313,14 +313,13 @@ async def is_video_saved(
 
 
 @router.get("/comment/list/{video_id}")
-async def get_comments_list(video_id: int = Path_parameter()):
+async def get_comments_list(video_id: int = Path_parameter()) -> Page:
     await check_video_exist(video_id)
-
-    User.query.filter_by()
-    comments = (
-        Comment.query.filter_by(video_id=video_id)
-        .order_by(desc(Comment.created_at))
-        .all()
+    comments = paginate(
+        session,
+        select(Comment)
+        .where(Comment.video_id == video_id, Comment.parent_id == None)
+        .order_by(desc(Comment.created_at)),
     )
 
     serializer = [
@@ -332,9 +331,10 @@ async def get_comments_list(video_id: int = Path_parameter()):
             "parent_id": comment.parent_id,
             "created_at": await time_difference(comment.created_at),
             "user_profile_picrure": get_channel_profile(comment.user_id),
+            "replies_count": len(comment.replies),
             "replies": [],
         }
-        for comment in comments
+        for comment in comments.items
     ]
     return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)
 
@@ -359,5 +359,23 @@ async def add_comment(
     session.commit()
 
     return JSONResponse(
-        {"data": "Comment added successfully!"}, status_code=status.HTTP_200_OK
+        {"data": "Comment added successfully!"}, status_code=status.HTTP_201_CREATED
     )
+
+
+@router.get("/replies/list/{comment_id}")
+async def get_replies_list(comment_id: int = Path_parameter()):
+    comment = Comment.query.filter_by(id=comment_id).first()
+    serializer = [
+        {
+            "id": reply.id,
+            "user_id": reply.user_id,
+            "username": get_username(reply.user_id),
+            "text": reply.text,
+            "parent_id": reply.parent_id,
+            "created_at": await time_difference(reply.created_at),
+        }
+        for reply in comment.replies
+    ]
+
+    return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)

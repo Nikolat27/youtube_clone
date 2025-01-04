@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, reactive, watch } from 'vue';
+import ClipLoader from 'vue-spinner/src/ClipLoader.vue';
 import { useRoute } from 'vue-router';
 import axios from 'axios';
 import { useToast } from 'vue-toastification';
@@ -19,6 +20,7 @@ import emptyDislikeIcon from '/src/assets/icons/svg-icons/dislike-empty.svg'
 import fillDislikeIcon from '/src/assets/icons/svg-icons/dislike-fill.svg'
 import saveIcon from '/src/assets/icons/svg-icons/save-btn.svg'
 import unSaveIcon from '/src/assets/icons/svg-icons/unsave-btn.svg'
+import replyIcon from '/src/assets/icons/svg-icons/reply-icon.svg'
 
 const route = useRoute()
 
@@ -39,17 +41,40 @@ const truncatedDescription = computed(() => {
 
 
 const comments = reactive([])
+const commentScrollLoading = ref(false)
 const userCommentText = ref(null)
+const userReplyText = ref(null)
 watch(() => userCommentText.value, () => { })
 
-const retrieveVideoComments = (videoId) => {
-    axios.get(`http://127.0.0.1:8000/videos/comment/list/${videoId}`).then((response) => {
+const commentRetrievingLoading = ref(false)
+const retrieveVideoComments = async (videoId) => {
+    commentRetrievingLoading.value = true
+    await axios.get(`http://127.0.0.1:8000/videos/comment/list/${videoId}`).then((response) => {
         if (response.status == 200) {
             Object.assign(comments, response.data.data)
         }
     }).catch((error) => {
         toast.error(error)
-    })
+    }).finally(() => commentRetrievingLoading.value = false)
+}
+
+const replyRetrievingLoading = ref(false)
+const retrieveCommentReplies = async (commentId) => {
+    replyRetrievingLoading.value = true
+    toggleReplyContainer(commentId)
+
+    await axios.get(`http://127.0.0.1:8000/videos/replies/list/${commentId}`).then((response) => {
+        if (response.status == 200) {
+            comments.forEach(comment => {
+                if (comment.id === commentId) {
+                    comment.replies = response.data.data
+                    return;
+                }
+            })
+        }
+    }).catch((error) => {
+        toast.error(error)
+    }).finally(() => replyRetrievingLoading.value = false)
 }
 
 // Video Comment Toggling
@@ -60,16 +85,36 @@ const cancelUserComment = () => {
     videoCommentButtonsShow.value = false
 }
 
-const submitVideoComment = () => {
+const submitVideoComment = (parentId = null) => {
     const commentText = userCommentText.value;
-    console.log(commentText);
+    const replyText = userReplyText.value;
+
+    const user_session_id = sessionStorage.getItem("user_session_id")
+
+    const submitFormData = new FormData()
+    submitFormData.append("user_session_id", user_session_id)
+    submitFormData.append("comment_text", commentText ?? replyText) // We either use comment or reply text!
+    submitFormData.append("video_id", videoInfo.id)
+    if (parentId) {
+        submitFormData.append("parent_id", parentId)
+    }
+
+    axios.post("http://127.0.0.1:8000/videos/comment/add", submitFormData).then((response) => {
+        if (response.status == 201) {
+            retrieveVideoComments(videoInfo.id);
+            commentStates.value = {}; // Closing the opened Tabs (for replies)
+            toast.success("Your comment has been Posted!");
+        }
+    }).catch((error) => {
+        toast.error(error)
+    })
 };
 
 
 // Comment and Reply Toggling Management
 const commentStates = ref({});
 const toggleCommentState = (commentId, state) => {
-    if (!commentStates.value[commentId]) {
+    if (!commentStates.value[commentId]) { // This Id doesnt exists, Create one
         commentStates.value[commentId] = { repliesVisible: false, replyContainerVisible: false, replyCommentButtonVisible: false };
     }
     commentStates.value[commentId][state] = !commentStates.value[commentId][state];
@@ -79,6 +124,15 @@ const toggleUserCommentReplyButtons = (commentId) => toggleCommentState(commentI
 const toggleReplyContainer = (commentId) => toggleCommentState(commentId, 'replyContainerVisible');
 const toggleReplyCommentButtons = (commentId) => toggleCommentState(commentId, 'replyCommentButtonVisible');
 
+const cancelReplyBtn = () => {
+    commentStates.value = {}
+}
+
+watch(commentStates.value, () => {
+    videoCommentButtonsShow.value = false
+    userCommentText.value = null;
+    userReplyText.value = null;
+})
 
 // Playlist Toggling
 let playlistExpanded = ref(false);
@@ -387,6 +441,7 @@ const saveVideo = async () => {
         toast.error(error)
     })
 }
+
 const videoSaveSituation = async (video_id, user_session_id) => {
     await axios.get(`http://127.0.0.1:8000/videos/is-save/${video_id}/${user_session_id}`).then((response) => {
         if (response.status == 200) {
@@ -412,18 +467,54 @@ const retrieveVideoDetail = (videoId) => {
     })
 }
 
-onMounted(() => {
+const isUserAuthenticated = ref(false)
+const userAuthentication = async (user_session_id) => {
+    await axios.get("http://127.0.0.1:8000/users/is_authenticated", {
+        params: {
+            user_session_id: user_session_id
+        }
+    }).then((response) => {
+        if (response.status == 200) {
+            isUserAuthenticated.value = true
+        }
+    }).catch((error) => {
+        toast.error(error)
+    })
+}
+
+const userId = ref(null)
+const userProfileImgSrc = ref(null)
+const retrieveUserProfileImg = async (user_session_id) => {
+    await axios.get("http://127.0.0.1:8000/users/profile-picture", {
+        params: {
+            user_session_id: user_session_id
+        }
+    }).then((response) => {
+        if (response.status == 200) {
+            userProfileImgSrc.value = response.data.profile_picture
+            userId.value = response.data.user_id
+        }
+    }).catch((error) => {
+        toast.error(error)
+    })
+}
+
+onMounted(async () => {
     // This 'timeupdate' invokes whenever timeCurrent of the video changes
     videoRef.value.addEventListener('timeupdate', updateProgress);
 
     const videoId = route.params.id // Current Video Id
     retrieveVideoDetail(videoId)
-    retrieveVideoComments(videoId)
 
     const user_session_id = sessionStorage.getItem("user_session_id")
     if (user_session_id) {
-        userLikeSituation(videoId, user_session_id)
-        videoSaveSituation(videoId, user_session_id)
+        await userAuthentication(user_session_id)
+        if (isUserAuthenticated.value) {
+            userLikeSituation(videoId, user_session_id)
+            videoSaveSituation(videoId, user_session_id)
+            await retrieveUserProfileImg(user_session_id)
+            retrieveVideoComments(videoId)
+        }
     }
 });
 </script>
@@ -609,93 +700,93 @@ onMounted(() => {
         </button>
     </div>
 
-    <div class="comments-header mt-4">
-        <div class="comments-stats">
-            <p class="total-comments">{{ comments.length }} Comments</p>
-        </div>
-        <div class="comment-creation mt-6">
-            <img class="user-profile-img" src="@/assets/img/Django.png" alt="">
-            <input v-model="userCommentText" @click="toggleVideoCommentButtons" type="text"
-                placeholder="Add a Comment...">
-        </div>
-        <div v-if="videoCommentButtonsShow" class="comment-btns">
-            <button @click="cancelUserComment" class="cancel-comment-btn">Cancel</button>
-            <button @click="submitVideoComment" class="add-comment-btn">Comment</button>
-        </div>
-    </div>
-
-    <div class="comment-container">
-        <div v-for="comment in comments" :key="comment.id" class="comment flex flex-row">
-            <div class="author-thumbnail">
-                <img :src="comment.user_profile_picrure" alt="">
+    <div v-if="isUserAuthenticated && !commentRetrievingLoading">
+        <div class="comments-header mt-4">
+            <div class="comments-stats">
+                <p class="total-comments">{{ comments.length }} Comments</p>
             </div>
-            <div class="comment-detail">
-                <div class="author-info">@{{ comment.username ?? 'Anonymous User' }} <span class="created_at">{{ comment.created_at }} days ago</span></div>
-                <div class="comment-text -mt-2">{{ comment.text }}</div>
-                <div class="comment-container-button">
-                    <button class="comment-like-button" style="outline: none;">
-                        <img src="@/assets/icons/svg-icons/like-empty.svg">
-                    </button>
-                    <button class="comment-dislike-button" style="outline: none;">
-                        <img src="@/assets/icons/svg-icons/dislike-empty.svg">
-                    </button>
-                    <button @click="toggleUserCommentReplyButtons(comment.id)" class="user-comment-reply-button"
-                        style="outline: none;">
-                        <img class="image-y-z w-8 h-8" src="@/assets/icons/svg-icons/reply-icon.svg" alt="">
-                    </button>
+            <div class="comment-creation mt-6">
+                <img class="user-profile-img" :src="userProfileImgSrc ?? ''" alt="">
+                <input v-model="userCommentText" @click="toggleVideoCommentButtons" type="text"
+                    placeholder="Add a Comment...">
+            </div>
+            <div v-if="videoCommentButtonsShow" class="comment-btns">
+                <button @click="cancelUserComment" class="cancel-comment-btn">Cancel</button>
+                <button @click="submitVideoComment(null)" class="add-comment-btn">Comment</button>
+            </div>
+        </div>
+        <div class="comment-container gap-y-6">
+            <div v-for="comment in comments" :key="comment.id" class="comment flex flex-row">
+                <div class="author-thumbnail">
+                    <img :src="comment.user_profile_picrure" alt="">
                 </div>
-                <div v-if="commentStates[comment.id]?.repliesVisible"
-                    class="w-auto flex justify-start items-center relative">
-                    <div class="reply-creation">
-                        <img class="user-profile-img" src="@/assets/img/Django.png" alt="">
-                        <input class="add-reply-input" id="reply-text" type="text" placeholder="Add a Reply...">
+                <div class="comment-detail">
+                    <div class="author-info">@{{ comment.username ?? 'Anonymous User' }} <span class="created_at">{{
+                        comment.created_at }} days ago</span></div>
+                    <div class="comment-text -mt-2">{{ comment.text }}</div>
+                    <div class="comment-container-button">
+                        <button class="comment-like-button" style="outline: none;">
+                            <img :src="emptyLikeIcon">
+                        </button>
+                        <button class="comment-dislike-button" style="outline: none;">
+                            <img :src="emptyDislikeIcon">
+                        </button>
+                        <button @click="toggleUserCommentReplyButtons(comment.id)" class="user-comment-reply-button"
+                            style="outline: none;">
+                            <img class="w-8 h-8" :src="replyIcon" alt="">
+                        </button>
                     </div>
-                    <div class="reply-btns flex justify-center items-center">
-                        <button @click="toggleUserCommentReplyButtons(comment.id)" class="cancel-reply-btn"
-                            data-target="comment-id-1">Cancel</button>
-                        <button @click="submitUserCommentReply(comment.id)" class="submit-reply-btn"
-                            data-target="comment-id-1">Reply</button>
-                    </div>
-                </div>
-                <div @click="toggleReplyContainer(comment.id)" class="comment-reply-button" data-target="comment-id-1">
-                    <i
-                        :class="['arrow', commentStates[comment.id]?.replyContainerVisible ? 'button-reversed' : 'button']">
-                    </i><span class="reply-count">&nbsp;&nbsp;63&nbsp;</span>replies
-                </div>
-                <div v-if="commentStates[comment.id]?.replyContainerVisible" class="replies-container">
-                    <div v-for="(reply, index) in comment.replies" :key="index" class="reply">
-                        <div class="reply-author-img">
-                            <img src="@/assets/img/Django.png" alt="">
+                    <div v-if="commentStates[comment.id]?.repliesVisible"
+                        class="w-auto flex justify-start items-center relative">
+                        <div class="reply-creation">
+                            <img class="user-profile-img" :src="userProfileImgSrc" alt="">
+                            <input v-model="userReplyText" type="text" placeholder="Add a Reply...">
                         </div>
-                        <div class="reply-detail">
-                            <div class="reply-author-info">
-                                <p>@</p>
-                                <p>Nikolat27</p>
-                                <span>1 years </span>ago
+                        <div class="reply-btns flex justify-center items-center">
+                            <button @click="cancelReplyBtn" class="cancel-reply-btn">Cancel</button>
+                            <button @click="submitVideoComment(comment.id)" class="submit-reply-btn">Reply</button>
+                        </div>
+                    </div>
+                    <div v-if="comment.replies_count > 0" @click="retrieveCommentReplies(comment.id)"
+                        class="comment-reply-button">
+                        <i
+                            :class="['arrow', commentStates[comment.id]?.replyContainerVisible ? 'button-reversed' : 'button']">
+                        </i><span class="reply-count">&nbsp;&nbsp;{{ comment.replies_count }}&nbsp;</span>replies
+                    </div>
+                    <div v-if="commentStates[comment.id]?.replyContainerVisible" class="replies-container">
+                        <div v-for="reply in comment.replies" :key="reply.id" class="reply">
+                            <div class="reply-author-img">
+                                <img src="@/assets/img/Django.png" alt="">
                             </div>
-                            <p class="reply-value">{{ reply.text }} / {{ reply.parent_id }}</p>
-                            <div class="reply-toolbar">
-                                <button class="reply-like-button" style="outline: none;">
-                                    <img src="@/assets/icons/svg-icons/like-empty.svg">
-                                </button>
-                                <button class="reply-dislike-button" style="outline: none;">
-                                    <img src="@/assets/icons/svg-icons/dislike-empty.svg" alt="">
-                                </button>
-                                <button @click="toggleReplyCommentButtons(reply.id)" class="reply-comment-button"
-                                    style="outline: none;" data-target="reply-input-1">
-                                    Reply
-                                </button>
-                                <div v-if="commentStates[reply.id]?.replyCommentButtonVisible" class="reply-division"
-                                    id="reply-input-1">
-                                    <div class="reply-creation mt-3">
-                                        <img class="user-profile-img" src="@/assets/img/Django.png" alt="">
-                                        <input class="add-reply-input" id="reply-text" type="text"
-                                            placeholder="Add a Reply...">
-                                    </div>
-                                    <div class="reply-btns">
-                                        <button @click="toggleReplyCommentButtons(reply.id)" class="cancel-reply-btn"
-                                            data-target="reply-input-1">Cancel</button>
-                                        <button class="submit-reply-btn" data-target="reply-input-1">Reply</button>
+                            <div class="reply-detail">
+                                <div class="reply-author-info">
+                                    <p>@</p>
+                                    <p>{{ reply.username }}</p>
+                                    <span>&nbsp;{{ reply.created_at }} days </span>ago
+                                </div>
+                                <p class="reply-value">{{ reply.text }}</p>
+                                <div class="reply-toolbar">
+                                    <button class="reply-like-button" style="outline: none;">
+                                        <img :src="emptyLikeIcon">
+                                    </button>
+                                    <button class="reply-dislike-button" style="outline: none;">
+                                        <img :src="emptyDislikeIcon" alt="">
+                                    </button>
+                                    <button @click="toggleReplyCommentButtons(reply.id)" class="reply-comment-button"
+                                        style="outline: none;">
+                                        Reply
+                                    </button>
+                                    <div v-if="commentStates[reply.id]?.replyCommentButtonVisible"
+                                        class="reply-division">
+                                        <div class="reply-creation mt-3">
+                                            <img class="user-profile-img" src="@/assets/img/Django.png" alt="">
+                                            <input v-model="userReplyText" type="text" placeholder="Add a Reply...">
+                                        </div>
+                                        <div class="reply-btns">
+                                            <button @click="toggleReplyCommentButtons(reply.id)"
+                                                class="cancel-reply-btn">Cancel</button>
+                                            <button class="submit-reply-btn">Reply</button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -703,7 +794,19 @@ onMounted(() => {
                     </div>
                 </div>
             </div>
+            <div v-if="commentScrollLoading" class="w-[50%] my-10">
+                <ClipLoader color="red" size="45px"></ClipLoader>
+            </div>
         </div>
+    </div>
+    <div v-if="!isUserAuthenticated" class="w-[70%] flex justify-center items-center my-6">
+        <router-link to="/auth/">
+            <p class="font-medium text-[14px]">For seeing the Comments you have to be Logged in! <span
+                    class="underline text-blue-500">Click Here</span></p>
+        </router-link>
+    </div>
+    <div v-if="commentRetrievingLoading" class="w-[70%] my-10">
+        <ClipLoader color="red" size="45px"></ClipLoader>
     </div>
 
     <div class="right-side-container flex flex-col">
