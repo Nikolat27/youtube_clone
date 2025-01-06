@@ -8,7 +8,15 @@ from fastapi import (
     HTTPException,
 )
 from database.models.base import session
-from database.models.user import Video, User, Like, SaveVideos, Channel, Comment
+from database.models.user import (
+    Video,
+    User,
+    Like,
+    SaveVideos,
+    Channel,
+    Comment,
+    Notification,
+)
 from fastapi.responses import JSONResponse, Response
 from sqlalchemy import select, desc
 from fastapi_pagination import Page
@@ -116,7 +124,7 @@ async def videos_list() -> Page:
     return JSONResponse({"data": response_data}, status_code=status.HTTP_200_OK)
 
 
-def get_username(user_id):
+async def get_username(user_id):
     user = User.query.with_entities(User.username).filter_by(id=user_id).first()
     return user.username
 
@@ -207,7 +215,6 @@ async def video_detail(
         "channel_profile_url": await static_file(channel.profile_picture_url) or "",
         "channel_watermark_url": await static_file(channel.video_watermark_url) or "",
     }
-    print("File: ", serializer["channel_profile_url"])
     return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)
 
 
@@ -326,7 +333,7 @@ async def get_comments_list(video_id: int = Path_parameter()) -> Page:
         {
             "id": comment.id,
             "user_id": comment.user_id,
-            "username": get_username(comment.user_id),
+            "username": await get_username(comment.user_id),
             "text": comment.text,
             "parent_id": comment.parent_id,
             "created_at": await time_difference(comment.created_at),
@@ -337,6 +344,22 @@ async def get_comments_list(video_id: int = Path_parameter()) -> Page:
         for comment in comments.items
     ]
     return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)
+
+
+async def create_notification(
+    sender_id, receiver_id, video_id, channel_name, type, text, comment_id=None
+):
+    notification = Notification(
+        sender_id=sender_id,
+        receiver_id=receiver_id,
+        video_id=video_id,
+        channel_name=channel_name,
+        type=type,
+        text=text,
+        comment_id=comment_id,
+    )
+    session.add(notification)
+    session.commit()
 
 
 @router.post("/comment/add")
@@ -358,6 +381,24 @@ async def add_comment(
     session.add(comment)
     session.commit()
 
+    if parent_id:  # If you have parent_id it means that your replying to a comment.
+        receiver_id = (
+            Comment.query.with_entities(Comment.user_id).filter_by(id=parent_id).first()
+        )
+    else:  # If you dont, it means that your commenting on a video, So your receiver is the video owner
+        receiver_id = (
+            Video.query.with_entities(Video.user_id).filter_by(id=video_id).first()
+        )
+
+    await create_notification(
+        user_id,
+        receiver_id.user_id,
+        video_id,
+        await get_username(user_id),
+        "comment",
+        comment_text,
+        comment_id=comment.id,
+    )
     return JSONResponse(
         {"data": "Comment added successfully!"}, status_code=status.HTTP_201_CREATED
     )
@@ -369,8 +410,10 @@ async def get_replies_list(comment_id: int = Path_parameter()):
     serializer = [
         {
             "id": reply.id,
+            "parent_username": await get_username(reply.user_id),
             "user_id": reply.user_id,
-            "username": get_username(reply.user_id),
+            "username": await get_username(reply.user_id),
+            "user_profile_picrure": get_channel_profile(comment.user_id),
             "text": reply.text,
             "parent_id": reply.parent_id,
             "created_at": await time_difference(reply.created_at),

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Body, Query, status
 from fastapi.responses import JSONResponse
-from database.models.user import User, UserLogInfo, Channel
+from database.models.user import User, UserLogInfo, Channel, Notification
 from passlib.context import CryptContext
 from pydantic import BaseModel
 from database.models.base import session
@@ -183,19 +183,71 @@ async def logout(user_session_id: str = Query()):
 
 @router.get("/profile-picture")
 async def get_user_profile(user_session_id: str = Query()):
-    user = (
-        UserLogInfo.query.with_entities(UserLogInfo.user_id)
-        .filter_by(session_id=user_session_id)
-        .first()
-    )
+    from dependencies import get_current_user_id
+
+    user_id = await get_current_user_id(user_session_id)
 
     channel = (
         Channel.query.with_entities(Channel.profile_picture_url)
-        .filter_by(owner_id=user.user_id)
+        .filter_by(owner_id=user_id)
         .first()
     )
     profile_picture = f"http://127.0.0.1:8000/static/{channel.profile_picture_url}"
     return JSONResponse(
-        {"profile_picture": profile_picture or "", "user_id": user.user_id},
+        {"profile_picture": profile_picture or "", "user_id": user_id},
         status_code=status.HTTP_200_OK,
     )
+
+
+async def get_sender_profile(user_id):
+    channel = (
+        Channel.query.with_entities(Channel.profile_picture_url)
+        .filter_by(owner_id=user_id)
+        .first()
+    )
+    return f"http://127.0.0.1:8000/static/{channel.profile_picture_url}"
+
+
+async def get_video_thumbnail(video_id):
+    from database.models.user import Video
+
+    video = (
+        Video.query.with_entities(Video.thumbnail_url).filter_by(id=video_id).first()
+    )
+    return f"http://127.0.0.1:8000/static/{video.thumbnail_url}"
+
+
+async def time_difference(created_at):
+    current_time = datetime.now()
+    difference = created_at.date() - current_time.date()
+    return str(difference)
+
+
+@router.get("/notifications")
+async def get_user_notifications(user_session_id: str = Query()):
+    from dependencies import get_current_user_id  # Due to circular import
+    
+    user_id = await get_current_user_id(user_session_id)
+    notifications = Notification.query.filter_by(receiver_id=user_id).all()
+    unread_notifications = Notification.query.filter_by(
+        receiver_id=user_id, is_read=False
+    ).count()
+
+    serializer = {
+        "unread_notifications": unread_notifications,
+        "detail": [
+            {
+                "sender_profile_picture": await get_sender_profile(
+                    user_id=notification.sender_id
+                ),
+                "channel_name": notification.channel_name,
+                "video_id": notification.video_id,
+                "video_thumbnail": await get_video_thumbnail(notification.video_id),
+                "text": notification.text,
+                "is_read": notification.is_read,
+                "created_at": await time_difference(notification.created_at),
+            }
+            for notification in notifications
+        ],
+    }
+    return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)

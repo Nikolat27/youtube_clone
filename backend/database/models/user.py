@@ -213,8 +213,35 @@ class Comment(Model):
     parent_id = Column(
         Integer, ForeignKey("comments.id", ondelete="CASCADE"), nullable=True
     )
-    parent = relationship("Comment", backref='replies', remote_side=[id])
+    parent = relationship("Comment", backref="replies", remote_side=[id])
     created_at = Column(DateTime, default=get_utc_now)
 
     def __repr__(self):
         return f"{self.user_id} - {self.video_id}"
+
+
+class Notification(Model):
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    sender_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    receiver_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    video_id = Column(
+        Integer, ForeignKey("videos.id", ondelete="CASCADE"), nullable=False
+    )
+    comment_id = Column(Integer, nullable=True)
+    channel_name = Column(String(100), nullable=True)
+    # Notification Types: Like, Video Uploaded, Comment
+    type = Column(String(20), nullable=False)
+    text = Column(String(100), nullable=False)
+    is_read = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=get_utc_now)
+
+    def __repr__(self):
+        return (
+            f"Sender: {self.sender_id} / Receiver: {self.receiver_id} - {self.video_id}"
+        )

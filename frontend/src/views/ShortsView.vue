@@ -1,9 +1,14 @@
 <script setup>
 import { ref, reactive, computed } from 'vue';
-import { useShareLink } from "vue3-social-sharing";
+import socialShare from '@/components/socialShare.vue';
+import { sharedState } from '@/sharedState';
 
 
-const currentRoute = ref(window.location.href)
+
+// Toggling Sharing Tab
+const toggleSharingTab = () => {
+    sharedState.isSharingTabOpen = !sharedState.isSharingTabOpen
+}
 
 
 // Toggling Comment Container
@@ -39,15 +44,6 @@ const toggleUserComment = (commentId, state) => {
 const toggleReplyContainer = (comment_id) => toggleUserComment(comment_id, 'replyContainerVisible')
 const toggleUserReplyOptionsVisible = (comment_id) => toggleUserComment(comment_id, 'userReplyOptionsVisible')
 const toggleReplyOptions = (comment_id) => toggleUserComment(comment_id, 'replyOptionsVisible')
-
-
-// Toggling Sharing Tab
-const isSharingTabOpen = ref(false)
-const toggleSharingTab = () => {
-    isSharingTabOpen.value = !isSharingTabOpen.value;
-    const sharingTab = document.querySelector(".short-video-sharing-tab");
-    sharingTab.classList.toggle("visible");
-}
 
 
 // Handle video`s playing
@@ -100,44 +96,6 @@ const toggleVideoFullscreen = () => {
     video.requestFullscreen();
     isVideoFullscreen.value = !isVideoFullscreen.value;
 }
-
-
-// Share in social media
-const { shareLink } = useShareLink();
-const shareFacebook = (url) => {
-    shareLink({
-        network: "facebook",
-        url: url,
-    })
-}
-
-const shareTelegram = (url) => {
-    shareLink({
-        network: "telegram",
-        url: url,
-    })
-}
-
-const shareWhatsapp = (url) => {
-    shareLink({
-        network: "whatsapp",
-        url: url,
-    })
-}
-
-const shareTwitter = (url) => {
-    shareLink({
-        network: "twitter",
-        url: url,
-    })
-}
-
-const shareEmail = (url) => {
-    shareLink({
-        network: "email",
-        url: url,
-    })
-}
 </script>
 
 <template>
@@ -171,7 +129,6 @@ const shareEmail = (url) => {
                     </div>
                     <h2 class="text-[14px] font-normal mt-4">Short video title</h2>
                 </div>
-
                 <div class="flex flex-col gap-y-4 justify-center items-center
                  absolute right-[-65px] bottom-[30px]">
                     <button class="w-12 h-12 bg-[#f2f2f2] rounded-full hover:bg-[#e5e5e5]">
@@ -323,55 +280,7 @@ const shareEmail = (url) => {
         </div>
     </div>
 
-    <div v-show="isSharingTabOpen" class="short-video-sharing-tab flex flex-col absolute top-[29%] left-[33.5%] w-[518px] h-[264px]
-     bg-white z-40 rounded-2xl custom-shadow">
-        <div class='flex flex-row relative mt-4 ml-[22.5px]'>
-            <p>Share</p>
-            <button @click="toggleSharingTab" class="w-6 h-6 right-2 absolute">
-                <img class="w-[100%] h-[100%]" src="@/assets/icons/svg-icons/x-mark-icon.svg" alt="">
-            </button>
-        </div>
-        <div class="flex flex-row justify-center items-center gap-x-4 mt-4 flex-wrap">
-            <div @click="shareWhatsapp(currentRoute)" class="flex flex-col justify-center items-center">
-                <button class="w-[60px] h-[60px]">
-                    <img class="w-[100%] h-[100%] rounded-full" src="@/assets/icons/svg-icons/whatsapp-icon.svg" alt="">
-                </button>
-                <span class="text-center">Whatsapp</span>
-            </div>
-            <div @click="shareTwitter(currentRoute)" class="flex flex-col justify-center items-center">
-                <button class="w-[60px] h-[60px]">
-                    <img class="w-[100%] h-[100%] rounded-full" src="@/assets/icons/svg-icons/twitter-icon.svg" alt="">
-                </button>
-                <span>Twitter</span>
-            </div>
-            <div @click="shareFacebook(currentRoute)" class="flex flex-col justify-center items-center">
-                <button class="w-[60px] h-[60px]">
-                    <img class="w-[100%] h-[100%] rounded-full" src="@/assets/icons/svg-icons/facebook-icon.svg" alt="">
-                </button>
-                <span>Facebook</span>
-            </div>
-            <div @click="shareEmail(currentRoute)" class="flex flex-col justify-center items-center">
-                <button class="w-[60px] h-[60px]">
-                    <img class="w-[100%] h-[100%] rounded-full" src="@/assets/icons/svg-icons/email-round-icon.svg"
-                        alt="">
-                </button>
-                <span>Email</span>
-            </div>
-            <div @click="shareTelegram(currentRoute)" class="flex flex-col justify-center items-center">
-                <button class="w-[60px] h-[60px]">
-                    <img class="w-[100%] h-[100%] rounded-full" src="@/assets/icons/svg-icons/telegram-icon.svg" alt="">
-                </button>
-                <span>Telegram</span>
-            </div>
-        </div>
-        <div
-            class="share-bar flex flex-row mt-[35px] ml-[22.5px] w-[470px] h-[53.6px] pl-4 justify-start items-center rounded-lg border-black border-2">
-            <input id="textToCopy" readonly type="text" value="http://127.0.0.1:5500/templates/shorts.html"
-                class="bg-white min-w-[360px] h-[19.6px] outline-none">
-            <button id="copyButton" class="w-[63px] h-[36px] text-sm font-medium text-white
-             bg-[#065fd4] hover:bg-[#0556bf] rounded-3xl">Copy</button>
-        </div>
-    </div>
+    <socialShare></socialShare>
 
     <div class="flex flex-col gap-y-4 absolute right-4 top-[47%]">
         <div class="w-[56px] h-[56px] rounded-full bg-[#f2f2f2] hover:bg-[#d9d9d9] cursor-pointer">

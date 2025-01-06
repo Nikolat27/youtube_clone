@@ -1314,18 +1314,10 @@ a {
 .short-video-sharing-tab {
     opacity: 0;
     transition: opacity 0.3s ease;
-    pointer-events: none;
-    /* Prevent pointer events when invisible */
 }
-
-/* video {
-    pointer-events: none;
-} */
 
 .short-video-sharing-tab.visible {
     opacity: 1;
-    pointer-events: auto;
-    /* Enable pointer events when visible */
 }
 
 .video-duration {

@@ -1,9 +1,12 @@
 <script setup>
 import { ref, computed, onMounted, reactive, watch } from 'vue';
-import ClipLoader from 'vue-spinner/src/ClipLoader.vue';
+import { sharedState } from '@/sharedState';
 import { useRoute } from 'vue-router';
-import axios from 'axios';
 import { useToast } from 'vue-toastification';
+
+import socialShare from '@/components/socialShare.vue';
+import ClipLoader from 'vue-spinner/src/ClipLoader.vue';
+import axios from 'axios';
 
 // Icons
 import playIcon from '/src/assets/icons/video-player/play-icon.png'
@@ -44,6 +47,7 @@ const comments = reactive([])
 const commentScrollLoading = ref(false)
 const userCommentText = ref(null)
 const userReplyText = ref(null)
+
 watch(() => userCommentText.value, () => { })
 
 const commentRetrievingLoading = ref(false)
@@ -103,6 +107,8 @@ const submitVideoComment = (parentId = null) => {
         if (response.status == 201) {
             retrieveVideoComments(videoInfo.id);
             commentStates.value = {}; // Closing the opened Tabs (for replies)
+            userReplyText.value = null
+            userCommentText.value = null // Delete the comment text
             toast.success("Your comment has been Posted!");
         }
     }).catch((error) => {
@@ -123,10 +129,6 @@ const toggleCommentState = (commentId, state) => {
 const toggleUserCommentReplyButtons = (commentId) => toggleCommentState(commentId, 'repliesVisible');
 const toggleReplyContainer = (commentId) => toggleCommentState(commentId, 'replyContainerVisible');
 const toggleReplyCommentButtons = (commentId) => toggleCommentState(commentId, 'replyCommentButtonVisible');
-
-const cancelReplyBtn = () => {
-    commentStates.value = {}
-}
 
 watch(commentStates.value, () => {
     videoCommentButtonsShow.value = false
@@ -499,6 +501,22 @@ const retrieveUserProfileImg = async (user_session_id) => {
     })
 }
 
+// Toggling Sharing Tab
+const toggleSharingTab = () => {
+    sharedState.isSharingTabOpen = !sharedState.isSharingTabOpen
+}
+
+const downloadVideo = (videoId) => {
+    return; // Im gonna work on this function later
+    axios.get(`http://127.0.0.1:8000/videos/download/${videoId}`).then((response) => {
+        if (response.status == 200) {
+            toast.info("Your download is started!")
+        }
+    }).catch((error) => {
+        toast.error(error)
+    })
+}
+
 onMounted(async () => {
     // This 'timeupdate' invokes whenever timeCurrent of the video changes
     videoRef.value.addEventListener('timeupdate', updateProgress);
@@ -677,13 +695,15 @@ onMounted(async () => {
             </button>
             <button @click="likeVideo(false)" class="dislike-btn"><img
                     :src="likeSituation === false ? fillDislikeIcon : emptyDislikeIcon" alt=""></button>
-            <button class="share-btn"><img src="@/assets/icons/svg-icons/share-btn.svg" alt="">
+            <button @click="toggleSharingTab" class="share-btn"><img src="@/assets/icons/svg-icons/share-btn.svg"
+                    alt="">
                 <span>&nbsp;Share</span>
             </button>
             <button @click="saveVideo" class="save-btn"><img :src="saveSituation ? unSaveIcon : saveIcon">
                 <span>Save</span>
             </button>
-            <button class="download-btn"><img src="@/assets/icons/svg-icons/download-icon.svg" alt="">
+            <button @click="downloadVideo(videoInfo.id)" class="download-btn"><img
+                    src="@/assets/icons/svg-icons/download-icon.svg" alt="">
                 <span>Download</span>
             </button>
         </div>
@@ -743,7 +763,8 @@ onMounted(async () => {
                             <input v-model="userReplyText" type="text" placeholder="Add a Reply...">
                         </div>
                         <div class="reply-btns flex justify-center items-center">
-                            <button @click="cancelReplyBtn" class="cancel-reply-btn">Cancel</button>
+                            <button @click="toggleUserCommentReplyButtons(comment.id)"
+                                class="cancel-reply-btn">Cancel</button>
                             <button @click="submitVideoComment(comment.id)" class="submit-reply-btn">Reply</button>
                         </div>
                     </div>
@@ -756,7 +777,7 @@ onMounted(async () => {
                     <div v-if="commentStates[comment.id]?.replyContainerVisible" class="replies-container">
                         <div v-for="reply in comment.replies" :key="reply.id" class="reply">
                             <div class="reply-author-img">
-                                <img src="@/assets/img/Django.png" alt="">
+                                <img :src="reply.user_profile_picrure" alt="">
                             </div>
                             <div class="reply-detail">
                                 <div class="reply-author-info">
@@ -764,7 +785,9 @@ onMounted(async () => {
                                     <p>{{ reply.username }}</p>
                                     <span>&nbsp;{{ reply.created_at }} days </span>ago
                                 </div>
-                                <p class="reply-value">{{ reply.text }}</p>
+                                <p class="reply-value"><span class="text-blue-600 font-medium mr-2">@{{
+                                    reply.parent_username
+                                        }}</span>{{ reply.text }}</p>
                                 <div class="reply-toolbar">
                                     <button class="reply-like-button" style="outline: none;">
                                         <img :src="emptyLikeIcon">
@@ -779,13 +802,14 @@ onMounted(async () => {
                                     <div v-if="commentStates[reply.id]?.replyCommentButtonVisible"
                                         class="reply-division">
                                         <div class="reply-creation mt-3">
-                                            <img class="user-profile-img" src="@/assets/img/Django.png" alt="">
+                                            <img class="user-profile-img" :src="userProfileImgSrc" alt="">
                                             <input v-model="userReplyText" type="text" placeholder="Add a Reply...">
                                         </div>
                                         <div class="reply-btns">
                                             <button @click="toggleReplyCommentButtons(reply.id)"
                                                 class="cancel-reply-btn">Cancel</button>
-                                            <button class="submit-reply-btn">Reply</button>
+                                            <button @click="submitVideoComment(reply.id)"
+                                                class="submit-reply-btn">Reply</button>
                                         </div>
                                     </div>
                                 </div>
@@ -799,6 +823,9 @@ onMounted(async () => {
             </div>
         </div>
     </div>
+
+    <socialShare></socialShare>
+
     <div v-if="!isUserAuthenticated" class="w-[70%] flex justify-center items-center my-6">
         <router-link to="/auth/">
             <p class="font-medium text-[14px]">For seeing the Comments you have to be Logged in! <span

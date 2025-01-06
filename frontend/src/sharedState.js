@@ -7,4 +7,5 @@ export const sharedState = reactive({
     refreshRetrieveVideos: false,
     refreshRetrievePlaylists: false,
     thumbnailPictureSrc: null,
+    isSharingTabOpen: false, // For opening the Sharing Tab (social share)
 });
