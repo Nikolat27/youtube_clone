@@ -220,6 +220,23 @@ class Comment(Model):
         return f"{self.user_id} - {self.video_id}"
 
 
+class CommentLike(Model):
+    __tablename__ = "comments_like"
+
+    id = Column(Integer, autoincrement=True, primary_key=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    comment_id = Column(
+        Integer, ForeignKey("comments.id", ondelete="CASCADE"), nullable=False
+    )
+    action_type = Column(Boolean, nullable=True)  # True == Like, False == Dislike
+    created_at = Column(DateTime, default=get_utc_now)
+
+    def __repr__(self):
+        return f"{self.user_id} - {self.video_id} - {self.comment_id}"
+
+
 class Notification(Model):
     __tablename__ = "notifications"
 

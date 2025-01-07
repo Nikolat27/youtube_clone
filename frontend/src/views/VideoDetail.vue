@@ -53,7 +53,11 @@ watch(() => userCommentText.value, () => { })
 const commentRetrievingLoading = ref(false)
 const retrieveVideoComments = async (videoId) => {
     commentRetrievingLoading.value = true
-    await axios.get(`http://127.0.0.1:8000/videos/comment/list/${videoId}`).then((response) => {
+    await axios.get(`http://127.0.0.1:8000/videos/comment/list/${videoId}`, {
+        params: {
+            user_session_id: sessionStorage.getItem("user_session_id")
+        }
+    }).then((response) => {
         if (response.status == 200) {
             Object.assign(comments, response.data.data)
         }
@@ -427,7 +431,7 @@ const userLikeSituation = async (video_id, user_session_id) => {
 }
 
 const saveSituation = ref(null)
-const saveVideo = async () => {
+const saveVideoToPlaylist = async () => {
     const user_session_id = sessionStorage.getItem("user_session_id")
     if (!user_session_id) {
         toast.error("You have to be Logged in!")
@@ -699,7 +703,7 @@ onMounted(async () => {
                     alt="">
                 <span>&nbsp;Share</span>
             </button>
-            <button @click="saveVideo" class="save-btn"><img :src="saveSituation ? unSaveIcon : saveIcon">
+            <button @click="saveVideoToPlaylist" class="save-btn"><img :src="saveSituation ? unSaveIcon : saveIcon">
                 <span>Save</span>
             </button>
             <button @click="downloadVideo(videoInfo.id)" class="download-btn"><img
@@ -719,97 +723,103 @@ onMounted(async () => {
             {{ showFullDescription ? "Read less" : "Read more" }}
         </button>
     </div>
+    <socialShare></socialShare>
 
-    <div v-if="isUserAuthenticated && !commentRetrievingLoading">
-        <div class="comments-header mt-4">
-            <div class="comments-stats">
-                <p class="total-comments">{{ comments.length }} Comments</p>
-            </div>
-            <div class="comment-creation mt-6">
-                <img class="user-profile-img" :src="userProfileImgSrc ?? ''" alt="">
-                <input v-model="userCommentText" @click="toggleVideoCommentButtons" type="text"
-                    placeholder="Add a Comment...">
-            </div>
-            <div v-if="videoCommentButtonsShow" class="comment-btns">
-                <button @click="cancelUserComment" class="cancel-comment-btn">Cancel</button>
-                <button @click="submitVideoComment(null)" class="add-comment-btn">Comment</button>
-            </div>
-        </div>
-        <div class="comment-container gap-y-6">
-            <div v-for="comment in comments" :key="comment.id" class="comment flex flex-row">
-                <div class="author-thumbnail">
-                    <img :src="comment.user_profile_picrure" alt="">
+    <div class="mb-12">
+        <div v-if="isUserAuthenticated && !commentRetrievingLoading">
+            <div class="comments-header mt-4">
+                <div class="comments-stats">
+                    <p class="total-comments">{{ comments.length }} Comments</p>
                 </div>
-                <div class="comment-detail">
-                    <div class="author-info">@{{ comment.username ?? 'Anonymous User' }} <span class="created_at">{{
-                        comment.created_at }} days ago</span></div>
-                    <div class="comment-text -mt-2">{{ comment.text }}</div>
-                    <div class="comment-container-button">
-                        <button class="comment-like-button" style="outline: none;">
-                            <img :src="emptyLikeIcon">
-                        </button>
-                        <button class="comment-dislike-button" style="outline: none;">
-                            <img :src="emptyDislikeIcon">
-                        </button>
-                        <button @click="toggleUserCommentReplyButtons(comment.id)" class="user-comment-reply-button"
-                            style="outline: none;">
-                            <img class="w-8 h-8" :src="replyIcon" alt="">
-                        </button>
+                <div class="comment-creation mt-6">
+                    <img class="user-profile-img" :src="userProfileImgSrc ?? ''" alt="">
+                    <input v-model="userCommentText" @click="toggleVideoCommentButtons" type="text"
+                        placeholder="Add a Comment...">
+                </div>
+                <div v-if="videoCommentButtonsShow" class="comment-btns">
+                    <button @click="cancelUserComment" class="cancel-comment-btn">Cancel</button>
+                    <button @click="submitVideoComment(null)" class="add-comment-btn">Comment</button>
+                </div>
+            </div>
+            <div class="comment-container gap-y-6">
+                <div v-for="comment in comments" :key="comment.id" class="comment flex flex-row">
+                    <div class="author-thumbnail">
+                        <img :src="comment.user_profile_picrure" alt="">
                     </div>
-                    <div v-if="commentStates[comment.id]?.repliesVisible"
-                        class="w-auto flex justify-start items-center relative">
-                        <div class="reply-creation">
-                            <img class="user-profile-img" :src="userProfileImgSrc" alt="">
-                            <input v-model="userReplyText" type="text" placeholder="Add a Reply...">
+                    <div class="comment-detail">
+                        <div class="author-info">@{{ comment.username ?? 'Anonymous User' }}
+                            <span class="created_at">{{
+                                comment.created_at }} days ago</span>
                         </div>
-                        <div class="reply-btns flex justify-center items-center">
-                            <button @click="toggleUserCommentReplyButtons(comment.id)"
-                                class="cancel-reply-btn">Cancel</button>
-                            <button @click="submitVideoComment(comment.id)" class="submit-reply-btn">Reply</button>
+                        <div class="comment-text -mt-2">{{ comment.text }}</div>
+                        <div class="comment-container-button">
+                            <button class="comment-like-button" style="outline: none;">
+                                <img :src="comment.is_liked === true ? fillLikeIcon : emptyLikeIcon">
+                            </button>
+                            <button class="comment-dislike-button" style="outline: none;">
+                                <img :src="comment.is_liked === false ? fillDislikeIcon : emptyDislikeIcon">
+                            </button>
+                            <button @click="toggleUserCommentReplyButtons(comment.id)" class="user-comment-reply-button"
+                                style="outline: none;">
+                                <img class="w-8 h-8" :src="replyIcon" alt="">
+                            </button>
                         </div>
-                    </div>
-                    <div v-if="comment.replies_count > 0" @click="retrieveCommentReplies(comment.id)"
-                        class="comment-reply-button">
-                        <i
-                            :class="['arrow', commentStates[comment.id]?.replyContainerVisible ? 'button-reversed' : 'button']">
-                        </i><span class="reply-count">&nbsp;&nbsp;{{ comment.replies_count }}&nbsp;</span>replies
-                    </div>
-                    <div v-if="commentStates[comment.id]?.replyContainerVisible" class="replies-container">
-                        <div v-for="reply in comment.replies" :key="reply.id" class="reply">
-                            <div class="reply-author-img">
-                                <img :src="reply.user_profile_picrure" alt="">
+                        <div v-if="commentStates[comment.id]?.repliesVisible"
+                            class="w-auto flex justify-start items-center relative">
+                            <div class="reply-creation">
+                                <img class="user-profile-img" :src="userProfileImgSrc" alt="">
+                                <input v-model="userReplyText" type="text" placeholder="Add a Reply...">
                             </div>
-                            <div class="reply-detail">
-                                <div class="reply-author-info">
-                                    <p>@</p>
-                                    <p>{{ reply.username }}</p>
-                                    <span>&nbsp;{{ reply.created_at }} days </span>ago
+                            <div class="reply-btns flex justify-center items-center">
+                                <button @click="toggleUserCommentReplyButtons(comment.id)"
+                                    class="cancel-reply-btn">Cancel</button>
+                                <button @click="submitVideoComment(comment.id)" class="submit-reply-btn">Reply</button>
+                            </div>
+                        </div>
+                        <div v-if="comment.replies_count > 0" @click="retrieveCommentReplies(comment.id)"
+                            class="comment-reply-button">
+                            <i
+                                :class="['arrow', commentStates[comment.id]?.replyContainerVisible ? 'button-reversed' : 'button']">
+                            </i><span class="reply-count">&nbsp;&nbsp;{{ comment.replies_count }}&nbsp;</span>replies
+                        </div>
+                        <div v-if="commentStates[comment.id]?.replyContainerVisible" class="replies-container">
+                            <div v-for="reply in comment.replies" :key="reply.id" class="reply">
+                                <div class="reply-author-img">
+                                    <img :src="reply.user_profile_picrure" alt="">
                                 </div>
-                                <p class="reply-value"><span class="text-blue-600 font-medium mr-2">@{{
-                                    reply.parent_username
-                                        }}</span>{{ reply.text }}</p>
-                                <div class="reply-toolbar">
-                                    <button class="reply-like-button" style="outline: none;">
-                                        <img :src="emptyLikeIcon">
-                                    </button>
-                                    <button class="reply-dislike-button" style="outline: none;">
-                                        <img :src="emptyDislikeIcon" alt="">
-                                    </button>
-                                    <button @click="toggleReplyCommentButtons(reply.id)" class="reply-comment-button"
-                                        style="outline: none;">
-                                        Reply
-                                    </button>
-                                    <div v-if="commentStates[reply.id]?.replyCommentButtonVisible"
-                                        class="reply-division">
-                                        <div class="reply-creation mt-3">
-                                            <img class="user-profile-img" :src="userProfileImgSrc" alt="">
-                                            <input v-model="userReplyText" type="text" placeholder="Add a Reply...">
-                                        </div>
-                                        <div class="reply-btns">
-                                            <button @click="toggleReplyCommentButtons(reply.id)"
-                                                class="cancel-reply-btn">Cancel</button>
-                                            <button @click="submitVideoComment(reply.id)"
-                                                class="submit-reply-btn">Reply</button>
+                                <div class="reply-detail">
+                                    <div class="reply-author-info">
+                                        <p>@</p>
+                                        <p>{{ reply.username }}</p>
+                                        <span>&nbsp;{{ reply.created_at }} days </span>ago
+                                    </div>
+                                    <p class="reply-value"><span class="text-blue-600 font-medium mr-2">@{{
+                                        reply.parent_username
+                                            }}</span>{{ reply.text }}</p>
+                                    <div class="reply-toolbar">
+                                        <button class="reply-like-button" style="outline: none;">
+                                            <img :src="reply.is_liked === true ? fillLikeIcon : emptyLikeIcon">
+                                        </button>
+                                        <button class="reply-dislike-button" style="outline: none;">
+                                            <img :src="reply.is_liked === false ? fillDislikeIcon : emptyDislikeIcon"
+                                                alt="">
+                                        </button>
+                                        <button @click="toggleReplyCommentButtons(reply.id)"
+                                            class="reply-comment-button" style="outline: none;">
+                                            Reply
+                                        </button>
+                                        <div v-if="commentStates[reply.id]?.replyCommentButtonVisible"
+                                            class="reply-division">
+                                            <div class="reply-creation mt-3">
+                                                <img class="user-profile-img" :src="userProfileImgSrc" alt="">
+                                                <input v-model="userReplyText" type="text" placeholder="Add a Reply...">
+                                            </div>
+                                            <div class="reply-btns">
+                                                <button @click="toggleReplyCommentButtons(reply.id)"
+                                                    class="cancel-reply-btn">Cancel</button>
+                                                <button @click="submitVideoComment(reply.id)"
+                                                    class="submit-reply-btn">Reply</button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -817,23 +827,21 @@ onMounted(async () => {
                         </div>
                     </div>
                 </div>
-            </div>
-            <div v-if="commentScrollLoading" class="w-[50%] my-10">
-                <ClipLoader color="red" size="45px"></ClipLoader>
+                <div v-if="commentScrollLoading" class="w-[50%] my-10">
+                    <ClipLoader color="red" size="45px"></ClipLoader>
+                </div>
             </div>
         </div>
-    </div>
 
-    <socialShare></socialShare>
-
-    <div v-if="!isUserAuthenticated" class="w-[70%] flex justify-center items-center my-6">
-        <router-link to="/auth/">
-            <p class="font-medium text-[14px]">For seeing the Comments you have to be Logged in! <span
-                    class="underline text-blue-500">Click Here</span></p>
-        </router-link>
-    </div>
-    <div v-if="commentRetrievingLoading" class="w-[70%] my-10">
-        <ClipLoader color="red" size="45px"></ClipLoader>
+        <div v-if="!isUserAuthenticated" class="w-[70%] flex justify-center items-center my-6">
+            <router-link to="/auth/">
+                <p class="font-medium text-[14px]">For seeing the Comments you have to be Logged in! <span
+                        class="underline text-blue-500">Click Here</span></p>
+            </router-link>
+        </div>
+        <div v-if="commentRetrievingLoading" class="w-[70%] my-10">
+            <ClipLoader color="red" size="45px"></ClipLoader>
+        </div>
     </div>
 
     <div class="right-side-container flex flex-col">

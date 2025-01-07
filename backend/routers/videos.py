@@ -16,6 +16,7 @@ from database.models.user import (
     Channel,
     Comment,
     Notification,
+    CommentLike,
 )
 from fastapi.responses import JSONResponse, Response
 from sqlalchemy import select, desc
@@ -49,6 +50,14 @@ async def check_video_exist(video_id):
     if not video:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="This Video Doesnt Exist!"
+        )
+
+
+async def check_comment_exist(comment_id):
+    comment = Comment.query.filter_by(id=comment_id).first()
+    if not comment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Comment didnt find"
         )
 
 
@@ -320,7 +329,13 @@ async def is_video_saved(
 
 
 @router.get("/comment/list/{video_id}")
-async def get_comments_list(video_id: int = Path_parameter()) -> Page:
+async def get_comments_list(
+    video_id: int = Path_parameter(), user_session_id: str = Query(None)
+) -> Page:
+    user_id = None
+    if user_session_id:
+        user_id = await get_current_user_id(user_session_id)
+
     await check_video_exist(video_id)
     comments = paginate(
         session,
@@ -338,6 +353,7 @@ async def get_comments_list(video_id: int = Path_parameter()) -> Page:
             "parent_id": comment.parent_id,
             "created_at": await time_difference(comment.created_at),
             "user_profile_picrure": get_channel_profile(comment.user_id),
+            "is_liked": await is_comment_liked(comment.id, user_id),
             "replies_count": len(comment.replies),
             "replies": [],
         }
@@ -422,3 +438,62 @@ async def get_replies_list(comment_id: int = Path_parameter()):
     ]
 
     return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)
+
+
+@router.get("/comment/like/{comment_id}")
+async def like_comment(
+    comment_id: int = Path_parameter(),
+    user_session_id: str = Query(),
+    action_type: bool = Query(),
+):
+    user_id = await get_current_user_id(user_session_id)
+    await check_comment_exist(comment_id)
+
+    like_instance = CommentLike.query.filter_by(
+        user_id=user_id, comment_id=comment_id
+    ).first()
+
+    if like_instance and like_instance.action_type == action_type:
+        session.delete(like_instance)
+    elif like_instance and like_instance.action_type != action_type:
+        like_instance.action_type = not like_instance.action_type
+    else:
+        new_like = CommentLike(
+            user_id=user_id,
+            comment_id=comment_id,
+            action_type=action_type,
+        )
+        session.add(new_like)
+
+    session.commit()
+    return JSONResponse({"data": action_type}, status_code=status.HTTP_200_OK)
+
+
+async def is_comment_liked(comment_id, user_id=None):
+    if not user_id:
+        is_liked = None
+    else:
+        like_instance = (
+            CommentLike.query.with_entities(CommentLike.action_type)
+            .filter_by(user_id=user_id, comment_id=comment_id)
+            .first()
+        )
+        is_liked = like_instance.action_type if like_instance else None
+    return is_liked
+
+
+# @router.get("/comment/is-liked/{comment_id}")
+# async def is_comment_liked(
+#     comment_id: int = Path_parameter(), user_session_id: str = Query()
+# ):
+#     user_id = await get_current_user_id(user_session_id)
+#     await check_comment_exist(comment_id)
+
+#     like_instance = (
+#         CommentLike.query.with_entities(CommentLike.action_type)
+#         .filter_by(user_id=user_id, comment_id=comment_id)
+#         .first()
+#     )
+
+#     is_liked = like_instance.action_type if like_instance else None
+#     return JSONResponse({"data": is_liked}, status_code=status.HTTP_200_OK)
