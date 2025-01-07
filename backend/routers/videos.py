@@ -421,7 +421,13 @@ async def add_comment(
 
 
 @router.get("/replies/list/{comment_id}")
-async def get_replies_list(comment_id: int = Path_parameter()):
+async def get_replies_list(
+    comment_id: int = Path_parameter(), user_session_id: str = Query(None)
+):
+    user_id = None
+    if user_session_id:
+        user_id = await get_current_user_id(user_session_id)
+
     comment = Comment.query.filter_by(id=comment_id).first()
     serializer = [
         {
@@ -430,6 +436,7 @@ async def get_replies_list(comment_id: int = Path_parameter()):
             "user_id": reply.user_id,
             "username": await get_username(reply.user_id),
             "user_profile_picrure": get_channel_profile(comment.user_id),
+            "is_liked": await is_comment_liked(reply.id, user_id),
             "text": reply.text,
             "parent_id": reply.parent_id,
             "created_at": await time_difference(reply.created_at),
@@ -466,7 +473,7 @@ async def like_comment(
         session.add(new_like)
 
     session.commit()
-    return JSONResponse({"data": action_type}, status_code=status.HTTP_200_OK)
+    return JSONResponse({"data": "Successful!"}, status_code=status.HTTP_200_OK)
 
 
 async def is_comment_liked(comment_id, user_id=None):

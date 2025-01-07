@@ -71,7 +71,11 @@ const retrieveCommentReplies = async (commentId) => {
     replyRetrievingLoading.value = true
     toggleReplyContainer(commentId)
 
-    await axios.get(`http://127.0.0.1:8000/videos/replies/list/${commentId}`).then((response) => {
+    await axios.get(`http://127.0.0.1:8000/videos/replies/list/${commentId}`, {
+        params: {
+            user_session_id: sessionStorage.getItem("user_session_id")
+        }
+    }).then((response) => {
         if (response.status == 200) {
             comments.forEach(comment => {
                 if (comment.id === commentId) {
@@ -521,6 +525,30 @@ const downloadVideo = (videoId) => {
     })
 }
 
+
+const likeComment = (commentId, actionType, replyId = null) => {
+    axios.get(`http://127.0.0.1:8000/videos/comment/like/${replyId ? replyId : commentId}`, {
+        params: {
+            user_session_id: sessionStorage.getItem("user_session_id"),
+            action_type: actionType
+        }
+    }).then((response) => {
+        if (response.status == 200) {
+            const comment = comments.find(comment => comment.id === commentId)
+            if (replyId) {
+                const reply = comment.replies.find(reply => reply.id = replyId)
+                reply.is_liked = reply.is_liked === actionType ? null : actionType
+            } else {
+                comment.is_liked = comment.is_liked === actionType ? null : actionType
+            }
+        }
+    }).catch((error) => {
+        toast.error(error)
+    })
+
+}
+
+
 onMounted(async () => {
     // This 'timeupdate' invokes whenever timeCurrent of the video changes
     videoRef.value.addEventListener('timeupdate', updateProgress);
@@ -753,10 +781,12 @@ onMounted(async () => {
                         </div>
                         <div class="comment-text -mt-2">{{ comment.text }}</div>
                         <div class="comment-container-button">
-                            <button class="comment-like-button" style="outline: none;">
+                            <button @click="likeComment(comment.id, true)" class="comment-like-button"
+                                style="outline: none;">
                                 <img :src="comment.is_liked === true ? fillLikeIcon : emptyLikeIcon">
                             </button>
-                            <button class="comment-dislike-button" style="outline: none;">
+                            <button @click="likeComment(comment.id, false)" class="comment-dislike-button"
+                                style="outline: none;">
                                 <img :src="comment.is_liked === false ? fillDislikeIcon : emptyDislikeIcon">
                             </button>
                             <button @click="toggleUserCommentReplyButtons(comment.id)" class="user-comment-reply-button"
@@ -797,10 +827,12 @@ onMounted(async () => {
                                         reply.parent_username
                                             }}</span>{{ reply.text }}</p>
                                     <div class="reply-toolbar">
-                                        <button class="reply-like-button" style="outline: none;">
+                                        <button @click="likeComment(comment.id, true, reply.id)"
+                                            class="reply-like-button" style="outline: none;">
                                             <img :src="reply.is_liked === true ? fillLikeIcon : emptyLikeIcon">
                                         </button>
-                                        <button class="reply-dislike-button" style="outline: none;">
+                                        <button @click="likeComment(comment.id, false, reply.id)"
+                                            class="reply-dislike-button" style="outline: none;">
                                             <img :src="reply.is_liked === false ? fillDislikeIcon : emptyDislikeIcon"
                                                 alt="">
                                         </button>
