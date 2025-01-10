@@ -26,6 +26,9 @@ from datetime import datetime
 from pymediainfo import MediaInfo
 from pathlib import Path
 from dependencies import get_current_user_id
+import re
+import json
+import requests
 
 router = APIRouter(prefix="/videos", tags=["videos"])
 
@@ -504,3 +507,18 @@ async def is_comment_liked(comment_id, user_id=None):
 
 #     is_liked = like_instance.action_type if like_instance else None
 #     return JSONResponse({"data": is_liked}, status_code=status.HTTP_200_OK)
+
+
+@router.get("/search/autocomplete")
+def get_youtube_autocomplete_suggestions(query: str = Query()):
+    url = "https://suggestqueries.google.com/complete/search"
+    params = {
+        "client": "youtube",
+        "q": query,
+    }
+    response = requests.get(url, params=params)
+    if response.status_code == 200:
+        json_data = re.search(r"^[^(]*\((.*)\)\s*$", response.text).group(1)
+        parsed_data = json.loads(json_data)
+        suggestions = parsed_data[1]
+        return [suggest[0] for suggest in suggestions]

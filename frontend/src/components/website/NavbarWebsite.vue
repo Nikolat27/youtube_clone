@@ -1,9 +1,10 @@
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, onMounted, watch } from 'vue';
 import { useToast } from 'vue-toastification';
 
 import axios from 'axios';
 import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
+import ClipLoader from 'vue-spinner/src/ClipLoader.vue';
 
 import kebabMenuIcon from '@/assets/icons/svg-icons/kebab-menu.svg'
 
@@ -59,6 +60,28 @@ const retrieveNotifications = () => {
     }).finally(() => isLoading.value = false)
 }
 
+const searchBarText = ref('')
+const autoCompletes = reactive([])
+const isSearchLoading = ref(false)
+watch(() => searchBarText.value, () => {
+    if (searchBarText.value.length < 3) return;
+    isSearchLoading.value = true
+    axios.get("http://127.0.0.1:8000/videos/search/autocomplete", {
+        params: {
+            query: searchBarText.value
+        }
+    }).then((response) => {
+        Object.assign(autoCompletes, response.data)
+    }).catch((error) => toast.error(error)).finally(() => {
+        isSearchLoading.value = false
+    })
+
+})
+
+const searchVideos = (query) => {
+    console.log(query)
+}
+
 onMounted(async () => {
     const user_session_id = sessionStorage.getItem("user_session_id")
     if (user_session_id) {
@@ -76,14 +99,32 @@ onMounted(async () => {
             <img class="hamburger-img" src="@/assets/icons/header/hamburger-menu.svg" alt="">
             <img class="youtube-logo-img" src="@/assets/icons/header/youtube-logo.svg" alt="">
         </div>
-        <div class="search-div">
-            <input autocomplete="off" type="text" name="q" class="search-bar" placeholder="Search">
-            <button class="search-btn">
-                <img src="@/assets/icons/header/search.svg" alt="">
-            </button>
-            <button class="audio-search-btn">
-                <img src="@/assets/icons/header/voice-search-icon.svg" alt="">
-            </button>
+        <div class="flex flex-col w-[60%] h-full justify-center items-center relative top-1">
+            <div class="flex flex-row search-div">
+                <input v-model="searchBarText" autocomplete="off" type="text" class="search-bar" placeholder="Search">
+                <button class="search-btn">
+                    <img src="@/assets/icons/header/search.svg" alt="">
+                </button>
+                <button class="audio-search-btn">
+                    <img src="@/assets/icons/header/voice-search-icon.svg" alt="">
+                </button>
+            </div>
+            <div v-if="searchBarText.length >= 3"
+                class="autocomplete-bar absolute top-[50px] left-[118px] w-[543px] h-[540px] bg-white z-40 rounded-xl custom-shadow-inset">
+                <div v-if="!isSearchLoading" class="flex flex-col justify-center items-center gap-y-1 py-4 h-full">
+                    <div @click="searchVideos(text)" v-for="(text, index) in autoCompletes" :key="index" class="w-full h-[32px] px-2 flex flex-row justify-start items-center
+                    hover:bg-[#f2f2f2]">
+                        <img class="w-[20px] h-[20px] mr-2"
+                            src="@/assets/icons/header/search.svg" alt="">
+                        <p>{{ text }}</p>
+                        <span
+                            class="text-[13px] font-medium text-blue-600 justify-self-end ml-auto mr-2 cursor-pointer">Remove</span>
+                    </div>
+                </div>
+                <div v-if="isSearchLoading" class="flex h-full w-full justify-center items-center">
+                    <ClipLoader color="red" size="45px"></ClipLoader>
+                </div>
+            </div>
         </div>
         <div class="right-div">
             <div class="right-div-buttons">
@@ -152,3 +193,8 @@ onMounted(async () => {
         </div>
     </header>
 </template>
+<style scoped>
+.custom-shadow-inset {
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.15);
+}
+</style>
