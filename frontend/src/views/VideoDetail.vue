@@ -411,6 +411,7 @@ const likeVideo = (action_type) => { // true == 'like', false == 'dislike', null
 
 let videoInfo = reactive({
     id: '',
+    unique_id: '',
     user_id: '',
     title: '',
     description: '',
@@ -462,15 +463,19 @@ const videoSaveSituation = async (video_id, user_session_id) => {
     })
 }
 
+const youtubeVideoLink = ref(null)
 const retrieveVideoDetail = (videoId) => {
     axios.get(`http://127.0.0.1:8000/videos/detail/${videoId}`, {
         params: {
-            user_session_id: sessionStorage.getItem("user_session_id")
+            unique_id: route.query.unique_id,
         }
     }).then((response) => {
         if (response.status == 200) {
             Object.assign(videoInfo, response.data.data)
             videoDuration.value = calculateTime(videoInfo.duration)
+        } else {
+            youtubeVideoLink.value = response.data.data
+            console.log(youtubeVideoLink.value)
         }
     }).catch((error) => {
         console.log(error)
@@ -515,10 +520,10 @@ const toggleSharingTab = () => {
 }
 
 const downloadVideo = (videoId) => {
-    return; // Im gonna work on this function later
+    toast.info("Your download has Started!")
     axios.get(`http://127.0.0.1:8000/videos/download/${videoId}`).then((response) => {
         if (response.status == 200) {
-            toast.info("Your download is started!")
+            toast.success("Your Video downloaded Successfully!")
         }
     }).catch((error) => {
         toast.error(error)
@@ -571,7 +576,7 @@ onMounted(async () => {
 
 
 <template>
-    <div @mouseover="handleControlBar('open')" @mouseleave="handleControlBar('close')"
+    <div v-if="!youtubeVideoLink" @mouseover="handleControlBar('open')" @mouseleave="handleControlBar('close')"
         class="video-container top-14 left-12 relative overflow-hidden w-[920px] h-[480px] flex justify-center items-center rounded-2xl">
         <video ref="videoRef" :poster="videoInfo.thumbnail_url" :muted="videoMuted" volume="0.5"
             class="main-video cursor-pointer w-full h-full object-fill overflow-hidden">
@@ -708,8 +713,13 @@ onMounted(async () => {
             </div>
         </div>
     </div>
+    <div v-else class="video-container top-14 left-12 relative overflow-hidden w-[920px] h-[480px] flex
+     justify-center items-center rounded-2xl mb-20">
+        <iframe class="w-full h-full" :src="youtubeVideoLink">
+        </iframe>
+    </div>
 
-    <div class="mt-14">
+    <div class="mt-16">
         <h1 class="video-title cursor-pointer">{{ videoInfo.title }}</h1>
     </div>
 
@@ -734,7 +744,7 @@ onMounted(async () => {
             <button @click="saveVideoToPlaylist" class="save-btn"><img :src="saveSituation ? unSaveIcon : saveIcon">
                 <span>Save</span>
             </button>
-            <button @click="downloadVideo(videoInfo.id)" class="download-btn"><img
+            <button @click="downloadVideo($route.params.id)" class="download-btn"><img
                     src="@/assets/icons/svg-icons/download-icon.svg" alt="">
                 <span>Download</span>
             </button>

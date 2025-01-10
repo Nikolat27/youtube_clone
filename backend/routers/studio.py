@@ -19,6 +19,8 @@ import shutil
 import json
 from dependencies import get_current_user_id
 from datetime import datetime
+import string
+import random
 
 UPLOAD_DIR = Path("uploaded_videos")
 UPLOAD_DIR.mkdir(exist_ok=True)
@@ -56,18 +58,20 @@ async def upload_video(
     video_type: str = Form(),
 ):
     user_id = await get_current_user_id(user_session_id)
+    letters = string.ascii_letters + string.digits
+    unique_id = "".join([random.choice(letters) for i in range(12)])
 
     UPLOAD_DIR_USER = Path(UPLOAD_DIR / str(user_id) / video_type)
-    UPLOAD_DIR_USER.mkdir(exist_ok=True)
+    UPLOAD_DIR_USER.mkdir(parents=True, exist_ok=True)
 
     # Validating the File type (it must be video)
     if not file.content_type.startswith("video/"):
         return JSONResponse({"error": "Your file type is not video!"})
 
-    file_path = UPLOAD_DIR_USER / file.filename
-
+    file_path = Path(UPLOAD_DIR_USER / file.filename)
     created_video = Video(
         user_id=user_id,
+        unique_id=unique_id,
         title=file.filename,
         video_type=video_type,
         file_name=file.filename,
@@ -79,7 +83,6 @@ async def upload_video(
     with file_path.open("wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    duration = await get_video_duration(file_path)
     return JSONResponse(
         {"video_id": created_video.id},
         status_code=status.HTTP_201_CREATED,

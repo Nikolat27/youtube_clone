@@ -93,7 +93,6 @@ onMounted(() => {
     <div v-if="!isLoading" class="container mb-10">
         <div class="regular-videos">
             <b v-if="isLoadingNProgress" class="ml-2">{{ ((progress || 0) * 100).toFixed(0) }}%</b>
-
             <div v-for="video in longVideos.slice(0, 3)" :key="video.id" class="video-preview">
                 <div class="video-thumbnail">
                     <img loading="lazy" :src="video.thumbnail_url" alt="">
@@ -103,7 +102,7 @@ onMounted(() => {
                         <img loading="lazy" src="@/assets/img/Django.png" alt="">
                     </div>
                     <div class="video-title-div ml-2">
-                        <router-link :to="`/video/${video.id}`">
+                        <router-link :to="`/video/${video.unique_id}`">
                             <p class="video-title">{{ video.title }}</p>
                         </router-link>
                         <p class="video-channel-name">Channel name</p>
@@ -112,7 +111,6 @@ onMounted(() => {
                 </div>
             </div>
         </div>
-
         <div class="short-videos-div">
             <img class="youtube-short-icon-videos" src="@/assets/icons/side-bar/youtube-shorts.jpg" alt="">
             <button @click="handleScrollLeft"
@@ -157,7 +155,7 @@ onMounted(() => {
                     <img loading="lazy" src="@/assets/img/Django.png" alt="">
                 </div>
                 <div class="video-title-div">
-                    <router-link :to="`/video/${video.id}`">
+                    <router-link :to="`/video/${video.unique_id}`">
                         <p class="video-title">{{ video.title }}</p>
                     </router-link>
                     <p class="video-channel-name">Channel name</p>

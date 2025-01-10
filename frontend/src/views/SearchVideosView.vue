@@ -46,11 +46,14 @@ onMounted(() => {
     <div v-if="!isLoading" class="flex flex-col gap-y-6 relative top-24 left-[240px] font-roboto">
         <div v-for="video in videos" :key="video.id" class="max-w-[1231px] w-[1231px] h-[280px] flex gap-x-4 flex-row">
             <div class="min-w-[500px] w-[500px] h-[281px]">
-                <img loading="lazy" draggable="false" class="w-full h-full object-fit rounded-xl" :src="video.thumbnail" alt="">
+                <img loading="lazy" draggable="false" class="w-full h-full object-fit rounded-xl" :src="video.thumbnail"
+                    alt="">
             </div>
             <div class="flex flex-col w-full max-w-[1231px] pr-4 gap-y-2">
                 <div class="flex flex-row justify-start items-center">
-                    <p class="text-[18px] font-normal">{{ video.title }}</p>
+                    <router-link :to="`/video/${video.video_id}`">
+                        <p class="text-[18px] font-normal">{{ video.title }}</p>
+                    </router-link>
                     <div class="justify-self-end ml-auto mr-2 relative">
                         <button @click="toggleKebabMenu"
                             class="w-[40px] h-[40px] rounded-full hover:bg-[#e5e5e5] flex justify-center items-center">

@@ -55,8 +55,8 @@ playlist_video_association = Table(
     ),
     Column(
         "video_id",
-        Integer,
-        ForeignKey("videos.id", ondelete="CASCADE"),
+        String(30),
+        ForeignKey("videos.unique_id", ondelete="CASCADE"),
         primary_key=True,
     ),
 )
@@ -85,6 +85,7 @@ class Video(Model):
     __tablename__ = "videos"
 
     id = Column(Integer, primary_key=True, autoincrement=True, index=True)
+    unique_id = Column(String(50), nullable=True, unique=True)
     title = Column(String(80), nullable=False)
     video_type = Column(
         String(20), default="long_video", nullable=False
@@ -125,7 +126,7 @@ class Subtitle(Model):
     file_name = Column(String(40), nullable=False)
     file_url = Column(String(150), nullable=False)
     video_id = Column(
-        Integer, ForeignKey("videos.id", ondelete="CASCADE"), nullable=False
+        String(30), ForeignKey("videos.unique_id", ondelete="CASCADE"), nullable=False
     )
     video = relationship("Video", back_populates="subtitle")
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -174,7 +175,7 @@ class Like(Model):
         Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
     video_id = Column(
-        Integer, ForeignKey("videos.id", ondelete="CASCADE"), nullable=False
+        String(30), ForeignKey("videos.unique_id", ondelete="CASCADE"), nullable=False
     )
     action_type = Column(Boolean, nullable=False)  # False is Dislike and True is Like
     created_at = Column(DateTime, default=get_utc_now)
@@ -191,7 +192,7 @@ class SaveVideos(Model):
         Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
     video_id = Column(
-        Integer, ForeignKey("videos.id", ondelete="CASCADE"), nullable=False
+        String(30), ForeignKey("videos.unique_id", ondelete="CASCADE"), nullable=False
     )
     created_at = Column(DateTime, default=get_utc_now)
 
@@ -207,7 +208,7 @@ class Comment(Model):
         Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
     video_id = Column(
-        Integer, ForeignKey("videos.id", ondelete="CASCADE"), nullable=False
+        String(30), ForeignKey("videos.unique_id", ondelete="CASCADE"), nullable=False
     )
     text = Column(String(500), nullable=False)
     parent_id = Column(
@@ -248,7 +249,7 @@ class Notification(Model):
         Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
     video_id = Column(
-        Integer, ForeignKey("videos.id", ondelete="CASCADE"), nullable=False
+        String(30), ForeignKey("videos.unique_id", ondelete="CASCADE"), nullable=False
     )
     comment_id = Column(Integer, nullable=True)
     channel_name = Column(String(100), nullable=True)

@@ -30,13 +30,12 @@ import re
 import json
 import requests
 from googleapiclient.discovery import build
-
+import yt_dlp
 
 # Replace with your API key
 API_KEY = "AIzaSyD4tVMAI9kvBA7DghHz3QDrA3UJEe6u7as"
 YOUTUBE_API_SERVICE_NAME = "youtube"
 YOUTUBE_API_VERSION = "v3"
-
 
 router = APIRouter(prefix="/videos", tags=["videos"])
 
@@ -57,7 +56,7 @@ async def static_file(file_url):
 
 
 async def check_video_exist(video_id):
-    video = Video.query.filter_by(id=video_id).first()
+    video = Video.query.filter_by(unique_id=video_id).first()
     if not video:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="This Video Doesnt Exist!"
@@ -99,6 +98,7 @@ async def videos_list() -> Page:
         session,
         select(
             Video.id,
+            Video.unique_id,
             Video.title,
             Video.thumbnail_url,
             Video.created_at,
@@ -109,7 +109,9 @@ async def videos_list() -> Page:
     )
 
     short_videos = (
-        Video.query.with_entities(Video.id, Video.title, Video.thumbnail_url)
+        Video.query.with_entities(
+            Video.id, Video.unique_id, Video.title, Video.thumbnail_url
+        )
         .filter_by(video_type="short_video")
         .limit(12)
         .all()
@@ -124,6 +126,7 @@ async def videos_list() -> Page:
             "items": [
                 {
                     "id": video.id,
+                    "unique_id": video.unique_id,
                     "title": video.title,
                     "thumbnail_url": await static_file(video.thumbnail_url),
                     "created_at": f"{await time_difference(video.created_at)} days",
@@ -134,6 +137,7 @@ async def videos_list() -> Page:
         "short_videos": [
             {
                 "id": video.id,
+                "unique_id": video.unique_id,
                 "title": video.title,
                 "thumbnail_url": await static_file(video.thumbnail_url),
             }
@@ -181,7 +185,7 @@ async def load_more_videos() -> Page:
             "pages": long_videos.pages,
             "items": [
                 {
-                    "id": video.id,
+                    "id": video.unique_id,
                     "title": video.title,
                     "thumbnail_url": await static_file(video.thumbnail_url),
                     "created_at": f"{await time_difference(video.created_at)} days",
@@ -196,13 +200,12 @@ async def load_more_videos() -> Page:
     return JSONResponse({"data": response_data}, status_code=status.HTTP_200_OK)
 
 
-@router.get("/detail/{video_id}")
-async def video_detail(
-    video_id: int = Path_parameter(), user_session_id: str = Query(None)
-):
+@router.get("/detail/{unique_id}")
+async def video_detail(unique_id: str = Path_parameter()):
     video = (
         Video.query.with_entities(
             Video.id,
+            Video.unique_id,
             Video.user_id,
             Video.title,
             Video.description,
@@ -210,9 +213,15 @@ async def video_detail(
             Video.thumbnail_url,
             Video.created_at,
         )
-        .filter_by(id=video_id)
+        .filter_by(unique_id=unique_id)
         .first()
     )
+
+    if not video:
+        return JSONResponse(
+            {"data": f"https://www.youtube.com/embed/{unique_id}"},
+            status_code=status.HTTP_202_ACCEPTED,
+        )
 
     channel = (
         Channel.query.with_entities(
@@ -223,7 +232,7 @@ async def video_detail(
     )
 
     serializer = {
-        "id": video.id,
+        "id": video.unique_id,
         "title": video.title,
         "user_id": video.user_id,
         "description": video.description or "",
@@ -231,16 +240,18 @@ async def video_detail(
         "thumbnail_url": await static_file(video.thumbnail_url),
         "duration": await get_video_duration(video.file_url),
         "created_at": f"{await time_difference(video.created_at)} days ",
-        "channel_name": channel.name,
+        "channel_name": channel.name or "",
         "channel_profile_url": await static_file(channel.profile_picture_url) or "",
         "channel_watermark_url": await static_file(channel.video_watermark_url) or "",
     }
     return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)
 
 
-@router.get("/stream/{video_id}/")
-async def video_stream(video_id: int = Path_parameter(), range: str = Header(None)):
-    video = Video.query.with_entities(Video.file_url).filter_by(id=video_id).first()
+@router.get("/stream/{unique_id}/")
+async def video_stream(unique_id: str = Path_parameter(), range: str = Header(None)):
+    video = (
+        Video.query.with_entities(Video.file_url).filter_by(unique_id=unique_id).first()
+    )
     video_path = Path(f"{video.file_url}").resolve()
 
     start, end = range.replace("bytes=", "").split("-")
@@ -259,21 +270,23 @@ async def video_stream(video_id: int = Path_parameter(), range: str = Header(Non
         return Response(data, status_code=206, headers=headers, media_type="video/mp4")
 
 
-@router.get("/like/{video_id}/{action_type}/{user_session_id}")
+@router.get("/like/{unique_id}/{action_type}/{user_session_id}")
 async def like_video(
-    video_id: str = Path_parameter(),
+    unique_id: str = Path_parameter(),
     action_type: bool = Path_parameter(),
     user_session_id: str = Path_parameter(),
 ):  # True == Like, False == Dislike
     user_id = await get_current_user_id(user_session_id)
 
-    like = Like.query.filter_by(video_id=video_id, user_id=user_id).first()
+    like = Like.query.filter_by(video_unique_id=unique_id, user_id=user_id).first()
     if like and like.action_type == action_type:
         session.delete(like)
     elif like and like.action_type != action_type:
         like.action_type = action_type
     else:
-        new_like = Like(user_id=user_id, video_id=video_id, action_type=action_type)
+        new_like = Like(
+            user_id=user_id, video_unique_id=unique_id, action_type=action_type
+        )
         session.add(new_like)
 
     session.commit()
@@ -283,15 +296,15 @@ async def like_video(
     )
 
 
-@router.get("/like-situation/{video_id}/{user_session_id}")
+@router.get("/like-situation/{unique_id}/{user_session_id}")
 async def is_user_liked(
-    video_id: int = Path_parameter(), user_session_id: str = Path_parameter()
+    unique_id: str = Path_parameter(), user_session_id: str = Path_parameter()
 ):
     user_id = await get_current_user_id(user_session_id)
     like_situation = None
     like = (
         Like.query.with_entities(Like.action_type)
-        .filter_by(video_id=video_id, user_id=user_id)
+        .filter_by(unique_id=unique_id, user_id=user_id)
         .first()
     )
     if like:
@@ -300,20 +313,20 @@ async def is_user_liked(
     return JSONResponse({"data": like_situation}, status_code=status.HTTP_200_OK)
 
 
-@router.get("/save/{video_id}/{user_session_id}")
+@router.get("/save/{unique_id}/{user_session_id}")
 async def save_video(
-    video_id: int = Path_parameter(), user_session_id: str = Path_parameter()
+    unique_id: str = Path_parameter(), user_session_id: str = Path_parameter()
 ):
     user_id = await get_current_user_id(user_session_id)
-    await check_video_exist(video_id)
+    await check_video_exist(unique_id)
 
     save_instance = SaveVideos.query.filter_by(
-        video_id=video_id, user_id=user_id
+        video_id=unique_id, user_id=user_id
     ).first()
     if save_instance:  # If exists, just delete it (Unsave)
         session.delete(save_instance)
     else:  # If doesnt Exist, Create a new one (Save)
-        save_instance = SaveVideos(video_id=video_id, user_id=user_id)
+        save_instance = SaveVideos(video_id=unique_id, user_id=user_id)
         session.add(save_instance)
 
     session.commit()
@@ -322,16 +335,16 @@ async def save_video(
     )
 
 
-@router.get("/is-save/{video_id}/{user_session_id}")
+@router.get("/is-save/{unique_id}/{user_session_id}")
 async def is_video_saved(
-    video_id: int = Path_parameter(), user_session_id: str = Path_parameter()
+    unique_id: str = Path_parameter(), user_session_id: str = Path_parameter()
 ):
     user_id = await get_current_user_id(user_session_id)
-    await check_video_exist(video_id)
+    await check_video_exist(unique_id)
 
     is_video_saved = False
     save_instance = SaveVideos.query.filter_by(
-        video_id=video_id, user_id=user_id
+        video_id=unique_id, user_id=user_id
     ).first()
     if save_instance:
         is_video_saved = True
@@ -339,19 +352,19 @@ async def is_video_saved(
     return JSONResponse({"data": is_video_saved}, status_code=status.HTTP_200_OK)
 
 
-@router.get("/comment/list/{video_id}")
+@router.get("/comment/list/{unique_id}")
 async def get_comments_list(
-    video_id: int = Path_parameter(), user_session_id: str = Query(None)
+    unique_id: str = Path_parameter(), user_session_id: str = Query(None)
 ) -> Page:
     user_id = None
     if user_session_id:
         user_id = await get_current_user_id(user_session_id)
 
-    await check_video_exist(video_id)
+    await check_video_exist(unique_id)
     comments = paginate(
         session,
         select(Comment)
-        .where(Comment.video_id == video_id, Comment.parent_id == None)
+        .where(Comment.video_id == unique_id, Comment.parent_id == None)
         .order_by(desc(Comment.created_at)),
     )
 
@@ -554,3 +567,18 @@ def search_youtube(query: str = Query(), size: int = Query(None)):
         for search_result in search_response.get("items", [])
     ]
     return JSONResponse({"data": videos}, status_code=status.HTTP_200_OK)
+
+
+@router.get("/download/{video_id}")
+def download_video(video_id: str = Path_parameter()):
+    # The URL of the YouTube video
+    video_url = f"https://www.youtube.com/watch?v={video_id}"
+
+    # Options for the downloader
+    ydl_opts = {
+        "format": "bestvideo[ext=mp4][height<=480]+bestaudio[ext=m4a]/best[ext=mp4]",
+        "merge_output_format": "mp4",
+        "outtmpl": "%(title)s.%(ext)s", 
+    }
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        ydl.download([video_url])
