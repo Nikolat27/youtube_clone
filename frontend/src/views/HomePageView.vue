@@ -40,7 +40,6 @@ const checkScroll = () => {
     const endOfPage = window.innerHeight + window.pageYOffset >= document.documentElement.scrollHeight - 150
     const lastPage = page.value == totalPages.value
     if (!lastPage && endOfPage && !infiniteIsLoading.value) {
-        console.log("hi")
         loadMoreVideos()
     }
 }
@@ -79,8 +78,6 @@ const loadMoreVideos = async () => {
         longVideos.splice(longVideos.length, 0, ...response.data.data.long_videos.items)
     }).catch((error) => console.log(error))
         .finally(() => infiniteIsLoading.value = false)
-
-    console.log(page.value)
 }
 
 onMounted(() => {

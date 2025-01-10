@@ -31,10 +31,12 @@ import channelContentShortsView from "@/views/studioViews/channelContentViews/Sh
 import LiveView from "@/views/studioViews/channelContentViews/LiveView.vue";
 import PostsView from "@/views/studioViews/channelContentViews/PostsView.vue";
 import PlaylistsView from "@/views/studioViews/channelContentViews/PlaylistsView.vue";
+import SearchVideosView from "@/views/SearchVideosView.vue";
 
 const routes = [
     { path: "/", name: "home", component: HomePageView, },
     { path: "/video/:id", name: "video_detail", component: VideoDetail, },
+    { path: "/videos/results", name: "search_results", component: SearchVideosView, },
     { path: "/subscriptions", name: "subscriptions", component: SubscriptionsView, },
     { path: "/short/:id", name: "short_detail", component: ShortsView, },
     { path: "/auth", name: "auth", component: AuthView, },

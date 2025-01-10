@@ -29,6 +29,14 @@ from dependencies import get_current_user_id
 import re
 import json
 import requests
+from googleapiclient.discovery import build
+
+
+# Replace with your API key
+API_KEY = "AIzaSyD4tVMAI9kvBA7DghHz3QDrA3UJEe6u7as"
+YOUTUBE_API_SERVICE_NAME = "youtube"
+YOUTUBE_API_VERSION = "v3"
+
 
 router = APIRouter(prefix="/videos", tags=["videos"])
 
@@ -522,3 +530,27 @@ def get_youtube_autocomplete_suggestions(query: str = Query()):
         parsed_data = json.loads(json_data)
         suggestions = parsed_data[1]
         return [suggest[0] for suggest in suggestions]
+
+
+@router.get("/search")
+def search_youtube(query: str = Query(), size: int = Query(None)):
+    youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION, developerKey=API_KEY)
+
+    # Search the Query
+    search_response = (
+        youtube.search()
+        .list(q=query, part="id,snippet", maxResults=size or 1, type="video")
+        .execute()
+    )
+    videos = [
+        {
+            "title": search_result["snippet"]["title"],
+            "description": search_result["snippet"]["description"],
+            "thumbnail": search_result["snippet"]["thumbnails"]["high"]["url"],
+            "channel": search_result["snippet"]["channelTitle"],
+            "published_date": search_result["snippet"]["publishedAt"],
+            "video_id": search_result["id"]["videoId"],
+        }
+        for search_result in search_response.get("items", [])
+    ]
+    return JSONResponse({"data": videos}, status_code=status.HTTP_200_OK)
