@@ -184,6 +184,7 @@ class ChannelSubscription(Model):
     user_id = Column(
         Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
+    notification = Column(Boolean, default=False) # True means notifications are On
     created_at = Column(DateTime, default=get_utc_now)
 
     def __repr__(self):
