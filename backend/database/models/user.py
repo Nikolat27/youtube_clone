@@ -84,8 +84,8 @@ class Playlist(Model):
 class Video(Model):
     __tablename__ = "videos"
 
-    id = Column(Integer, primary_key=True, autoincrement=True, index=True)
-    unique_id = Column(String(50), nullable=True, unique=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    unique_id = Column(String(50), nullable=False, unique=True)
     title = Column(String(80), nullable=False)
     video_type = Column(
         String(20), default="long_video", nullable=False
@@ -162,9 +162,32 @@ class Channel(Model):
     unique_identifier = Column(String(100), nullable=True)
     description = Column(String(500), nullable=True)
     contact_email = Column(String(100), nullable=True)
+    channel_subscriptions = relationship(
+        "ChannelSubscription", back_populates="channel", passive_deletes=True
+    )
 
     def __repr__(self):
         return f"{self.owner_id} Channel"
+
+
+class ChannelSubscription(Model):
+    __tablename__ = "subscriptions"
+
+    id = Column(Integer, autoincrement=True, primary_key=True)
+    channel = relationship(
+        "Channel", back_populates="channel_subscriptions", single_parent=True
+    )
+
+    channel_id = Column(
+        Integer, ForeignKey("channels.id", ondelete="CASCADE"), nullable=False
+    )
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    created_at = Column(DateTime, default=get_utc_now)
+
+    def __repr__(self):
+        return f"Channel: {self.channel_id} - User: {self.user_id}"
 
 
 class Like(Model):

@@ -44,7 +44,7 @@ const routes = [
     { path: "/playlist", name: "playlist-videos", component: PlaylistVideosView, },
     { path: "/posts", name: "create-posts", component: createPostsView, },
     {
-        path: "/channel-page/", name: "channel_detail", component: ChannelPageView, children: [
+        path: "/channel-page/:id", name: "channel_detail", component: ChannelPageView, children: [
             { path: '', name: 'channel-home', component: Home, },
             { path: 'videos', name: 'videos', component: Video, },
             { path: 'playlists', name: 'playlists', component: Playlists, },

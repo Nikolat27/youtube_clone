@@ -71,6 +71,26 @@ async def check_comment_exist(comment_id):
         )
 
 
+async def get_username(user_id):
+    user = User.query.with_entities(User.username).filter_by(id=user_id).first()
+    return user.username
+
+
+def get_channel_name(user_id):
+    user = User.query.filter_by(id=user_id).first()
+    return user.channel.name or user.username
+
+
+def get_channel_profile(user_id):
+    user = User.query.filter_by(id=user_id).first()
+    return f"http://127.0.0.1:8000/static/{user.channel.profile_picture_url}"
+
+
+def get_channel_unique_identifier(user_id):
+    user = User.query.filter_by(id=user_id).first()
+    return user.channel.unique_identifier
+
+
 @router.get("/generate/fake")  # Usage: Generate testing and random data to our DB
 def generate_fake_data():
     title = "Hello world"
@@ -130,6 +150,11 @@ async def videos_list() -> Page:
                     "title": video.title,
                     "thumbnail_url": await static_file(video.thumbnail_url),
                     "created_at": f"{await time_difference(video.created_at)} days",
+                    "channel_profile_picture": get_channel_profile(video.user_id),
+                    "channel_name": get_channel_name(video.user_id),
+                    "channel_unique_identifier": get_channel_unique_identifier(
+                        video.user_id
+                    ),
                 }
                 for video in long_videos.items
             ],
@@ -146,21 +171,6 @@ async def videos_list() -> Page:
     }
 
     return JSONResponse({"data": response_data}, status_code=status.HTTP_200_OK)
-
-
-async def get_username(user_id):
-    user = User.query.with_entities(User.username).filter_by(id=user_id).first()
-    return user.username
-
-
-def get_channel_name(user_id):
-    user = User.query.filter_by(id=user_id).first()
-    return user.channel.name or user.username
-
-
-def get_channel_profile(user_id):
-    user = User.query.filter_by(id=user_id).first()
-    return f"http://127.0.0.1:8000/static/{user.channel.profile_picture_url}"
 
 
 @router.get("/load-more")
@@ -578,7 +588,7 @@ def download_video(video_id: str = Path_parameter()):
     ydl_opts = {
         "format": "bestvideo[ext=mp4][height<=480]+bestaudio[ext=m4a]/best[ext=mp4]",
         "merge_output_format": "mp4",
-        "outtmpl": "%(title)s.%(ext)s", 
+        "outtmpl": "%(title)s.%(ext)s",
     }
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         ydl.download([video_url])

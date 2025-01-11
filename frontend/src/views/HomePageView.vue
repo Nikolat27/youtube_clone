@@ -98,14 +98,16 @@ onMounted(() => {
                     <img loading="lazy" :src="video.thumbnail_url" alt="">
                 </div>
                 <div class="video-info">
-                    <div class="channel-logo">
-                        <img loading="lazy" src="@/assets/img/Django.png" alt="">
-                    </div>
+                    <router-link :to="`/channel-page/${video.channel_unique_identifier}`">
+                        <div class="channel-logo">
+                            <img loading="lazy" :src="video.channel_profile_picture" alt="">
+                        </div>
+                    </router-link>
                     <div class="video-title-div ml-2">
                         <router-link :to="`/video/${video.unique_id}`">
                             <p class="video-title">{{ video.title }}</p>
                         </router-link>
-                        <p class="video-channel-name">Channel name</p>
+                        <p class="video-channel-name">{{ video.channel_name }}</p>
                         <p class="video-stats">409K views . {{ video.created_at }}</p>
                     </div>
                 </div>
@@ -152,13 +154,13 @@ onMounted(() => {
             </div>
             <div class="video-info">
                 <div class="channel-logo">
-                    <img loading="lazy" src="@/assets/img/Django.png" alt="">
+                    <img loading="lazy" :src="video.channel_profile_picture" alt="">
                 </div>
                 <div class="video-title-div">
                     <router-link :to="`/video/${video.unique_id}`">
                         <p class="video-title">{{ video.title }}</p>
                     </router-link>
-                    <p class="video-channel-name">Channel name</p>
+                    <p class="video-channel-name">{{ video.channel_name }}</p>
                     <p class="video-stats">409K views . {{ video.created_at }}</p>
                 </div>
             </div>

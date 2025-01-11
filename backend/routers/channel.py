@@ -25,5 +25,4 @@ async def static_file(file_url):
 @router.get("/{unique_identifier}")
 async def channel_page(unique_identifier: str = Path_parameter()):
     channel = Channel.query.filter_by(unique_identifier=unique_identifier).first()
-
-    return JSONResponse({"data": "channel"}, status_code=status.HTTP_200_OK)
+    return JSONResponse({"data": channel.name}, status_code=status.HTTP_200_OK)

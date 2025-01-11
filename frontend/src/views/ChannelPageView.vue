@@ -1,8 +1,13 @@
 <script setup>
 import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
+import { useToast } from 'vue-toastification';
+import axios from 'axios';
 
-const router = useRouter()
+const toast = useToast()
+const router1 = useRoute()
+const router2 = useRouter()
+
 
 // Handle Channel`s options
 const isChannelSubscribed = ref(false)
@@ -24,7 +29,7 @@ const handleClickOutside = (event) => {
 const submitSearch = (event) => {
     if (event.key !== "Enter") return;
     const query = event.target.value;
-    router.push({ path: '/channel-page/search', query: { 'query': query } })
+    router2.push({ path: '/channel-page/search', query: { 'query': query } })
 }
 
 
@@ -36,7 +41,18 @@ const truncateChannelDescription = (description) => {
 const toggleDescription = () => isDescriptionOpen.value = !isDescriptionOpen.value;
 
 
+const retrieveChannelInfo = (uniqueIdentifier) => {
+    axios.get(`http://127.0.0.1:8000/channel/${uniqueIdentifier}`).then((response) => {
+        if (response.status == 200) {
+            console.log(response.data.data)
+        }
+    }).catch((error) => toast.error(error))
+}
+
 onMounted(() => {
+    const uniqueIdentifier = router1.params.id;
+    retrieveChannelInfo(uniqueIdentifier)
+
     document.addEventListener('click', handleClickOutside);
 });
 
