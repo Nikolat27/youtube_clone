@@ -475,7 +475,6 @@ const retrieveVideoDetail = (videoId) => {
             videoDuration.value = calculateTime(videoInfo.duration)
         } else {
             youtubeVideoLink.value = response.data.data
-            console.log(youtubeVideoLink.value)
         }
     }).catch((error) => {
         console.log(error)

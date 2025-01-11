@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, onMounted, watch } from 'vue';
 import axios from 'axios';
 import { useToast } from 'vue-toastification';
 import { useRoute } from 'vue-router';
@@ -19,9 +19,9 @@ const videos = reactive([])
 const isLoading = ref(false)
 let size = 5
 
-const retrieveSearchVideos = (searchQuery) => {
+const retrieveSearchVideos = async (searchQuery) => {
     isLoading.value = true
-    axios.get("http://127.0.0.1:8000/videos/search", {
+    await axios.get("http://127.0.0.1:8000/videos/search", {
         params: {
             "query": searchQuery,
             "size": size
@@ -34,6 +34,20 @@ const retrieveSearchVideos = (searchQuery) => {
         isLoading.value = false
     })
 }
+
+const downloadVideo = (videoId) => {
+    console.log(videoId)
+    axios.get(`http://127.0.0.1:8000/videos/download/${videoId}`).then((response) => {
+        console.log(response.data.data)
+    }).catch((error) => console.log(error))
+}
+
+watch(() => router.query.query, () => {
+    const searchQuery = router.query.query
+    if (searchQuery) {
+        retrieveSearchVideos(searchQuery)
+    }
+})
 
 onMounted(() => {
     const searchQuery = router.query.query
@@ -51,7 +65,7 @@ onMounted(() => {
             </div>
             <div class="flex flex-col w-full max-w-[1231px] pr-4 gap-y-2">
                 <div class="flex flex-row justify-start items-center">
-                    <router-link :to="`/video/${video.video_id}`">
+                    <router-link @click="downloadVideo(video.video_id)" :to="`/video/${video.video_id}`">
                         <p class="text-[18px] font-normal">{{ video.title }}</p>
                     </router-link>
                     <div class="justify-self-end ml-auto mr-2 relative">

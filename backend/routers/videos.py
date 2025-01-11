@@ -31,6 +31,7 @@ import json
 import requests
 from googleapiclient.discovery import build
 import yt_dlp
+import os
 
 # Replace with your API key
 API_KEY = "AIzaSyD4tVMAI9kvBA7DghHz3QDrA3UJEe6u7as"
@@ -228,10 +229,15 @@ async def video_detail(unique_id: str = Path_parameter()):
     )
 
     if not video:
-        return JSONResponse(
-            {"data": f"https://www.youtube.com/embed/{unique_id}"},
-            status_code=status.HTTP_202_ACCEPTED,
-        )
+        DIR = Path("youtube_videos")
+        FILE_PATH = Path(DIR / unique_id / f"{unique_id}.mp4")
+        if FILE_PATH.exists():
+            return JSONResponse({"data": str(FILE_PATH)}, status_code=status.HTTP_200_OK)
+        else:
+            return JSONResponse(
+                {"data": f"https://www.youtube.com/embed/{unique_id}"},
+                status_code=status.HTTP_202_ACCEPTED,
+            )
 
     channel = (
         Channel.query.with_entities(
@@ -262,8 +268,13 @@ async def video_stream(unique_id: str = Path_parameter(), range: str = Header(No
     video = (
         Video.query.with_entities(Video.file_url).filter_by(unique_id=unique_id).first()
     )
-    video_path = Path(f"{video.file_url}").resolve()
+    if video:
+        video_path = Path(f"{video.file_url}").resolve()
+    else:
+        DIR = Path("youtube_videos")
+        video_path = Path(DIR / unique_id / f"{unique_id}.mp4").resolve()
 
+        
     start, end = range.replace("bytes=", "").split("-")
     start = int(start)
     CHUNK_SIZE = 1024 * 1024
@@ -579,16 +590,29 @@ def search_youtube(query: str = Query(), size: int = Query(None)):
     return JSONResponse({"data": videos}, status_code=status.HTTP_200_OK)
 
 
+UPLOAD_DIR = Path("youtube_videos")
+UPLOAD_DIR.mkdir(exist_ok=True)
+
+
 @router.get("/download/{video_id}")
 def download_video(video_id: str = Path_parameter()):
     # The URL of the YouTube video
     video_url = f"https://www.youtube.com/watch?v={video_id}"
 
-    # Options for the downloader
-    ydl_opts = {
-        "format": "bestvideo[ext=mp4][height<=480]+bestaudio[ext=m4a]/best[ext=mp4]",
-        "merge_output_format": "mp4",
-        "outtmpl": "%(title)s.%(ext)s",
-    }
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        ydl.download([video_url])
+    UPLOAD_DIR_VIDEO = Path(UPLOAD_DIR / video_id)
+    check_video_exist = UPLOAD_DIR_VIDEO.exists()
+    if not check_video_exist:
+        UPLOAD_DIR_VIDEO.mkdir(exist_ok=True, parents=True)
+
+        # Options for the downloader
+        ydl_opts = {
+            "format": "bestvideo[ext=mp4][height<=480]+bestaudio[ext=m4a]/best[ext=mp4]",
+            "merge_output_format": "mp4",
+            "outtmpl": f"{str(UPLOAD_DIR_VIDEO)}/{video_id}.%(ext)s",
+        }
+
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([video_url])
+    return JSONResponse(
+        {"data": "This video have been downloaded"}, status_code=status.HTTP_200_OK
+    )

@@ -116,7 +116,7 @@ onMounted(async () => {
         <div class="flex flex-col w-[60%] h-full justify-center items-center relative top-1">
             <div class="flex flex-row search-div">
                 <input v-model="searchBarText" autocomplete="off" type="text" class="search-bar" placeholder="Search">
-                <button @click="searchVideo(searchBarText)" class="search-btn">
+                <button @click="searchVideo(searchBarText)" class="search-btn active:border-black active:border-2ث">
                     <img src="@/assets/icons/header/search.svg" alt="">
                 </button>
                 <button class="audio-search-btn">
