@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from database.models.base import session
 from datetime import datetime, timedelta
 import random
+import string
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -23,6 +24,20 @@ class UserRegister(BaseModel):
 class UserLogin(BaseModel):
     username: str
     password: str
+
+
+async def create_user_channel(user_id, email):
+    default_profile_src = r"\default_user_profile.png"
+    letters = string.ascii_letters + string.digits
+    random_string = "".join([random.choice(letters) for i in range(10)])
+    user_channel = Channel(
+        owner_id=user_id,
+        name=email,
+        unique_identifier=random_string,
+        profile_picture_url=default_profile_src,
+    )
+    session.add(user_channel)
+    session.commit()
 
 
 # Hashing
@@ -112,8 +127,10 @@ async def register_user(user: UserRegister):
     session.add(user_instance)
     session.commit()
 
+    await create_user_channel(user_instance.id, user.email)
+
     return JSONResponse(
-        {"message": "User created successfully!"}, status_code=status.HTTP_200_OK
+        {"message": "User created successfully!"}, status_code=status.HTTP_201_CREATED
     )
 
 
@@ -226,7 +243,7 @@ async def time_difference(created_at):
 @router.get("/notifications")
 async def get_user_notifications(user_session_id: str = Query()):
     from dependencies import get_current_user_id  # Due to circular import
-    
+
     user_id = await get_current_user_id(user_session_id)
     notifications = Notification.query.filter_by(receiver_id=user_id).all()
     unread_notifications = Notification.query.filter_by(

@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 import uvicorn
-from routers import studio, users, videos
+from routers import studio, users, videos, channel
 from fastapi_pagination import add_pagination
 
 app = FastAPI()
@@ -26,6 +26,8 @@ app.add_middleware(
 app.include_router(users.router)
 app.include_router(studio.router)
 app.include_router(videos.router)
+app.include_router(channel.router)
+
 add_pagination(app)
 app.mount(
     "/static", StaticFiles(directory="C:/Users/Sam/Desktop/youtube_clone/backend")

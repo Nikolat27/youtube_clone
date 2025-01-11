@@ -2,7 +2,9 @@
 import { ref, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from "axios";
+import { useToast } from 'vue-toastification';
 
+const toast = useToast()
 const router1 = useRoute();
 const router2 = useRouter();
 const isRegisterShown = ref(router1.query.mode === 'register' || !router1.query.mode);
@@ -45,7 +47,9 @@ const submitRegisterForm = async (event) => {
         password1: registerPassword.value,
         password2: registerPassword2.value,
     }).then((response) => {
-        console.log(response.data)
+        if (response.status == 201) {
+            toast.success("User account successfully created!")
+        }
     }, (error) => console.log(error));
 }
 
@@ -62,7 +66,7 @@ onMounted(() => {
 <template>
     <form v-if="!isRegisterShown" @submit="submitLoginForm">
         <div class="mx-auto mt-20 shadow-inner flex flex-col h-[600px] w-[300px] justify-center items-center
-     gap-y-4 sign-up-container border-2 rounded-lg">
+        gap-y-4 sign-up-container border-2 rounded-lg">
             <img draggable="false" src="@/assets/icons/svg-icons/youtube-tv-icon.svg" class="w-30 h-20 mb-7 mt-[-100px]"
                 alt="">
             <p class="mb-7 mt-[-15px] text-2xl">Sign in</p>

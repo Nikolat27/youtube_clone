@@ -12,31 +12,16 @@ import kebabMenuIcon from '@/assets/icons/svg-icons/kebab-menu.svg'
 import downloadIcon from '@/assets/icons/svg-icons/download-icon2.svg'
 import uninstallIcon from '@/assets/icons/svg-icons/uninstall-icon.svg'
 import { useToast } from 'vue-toastification';
-import x from 'C:/Users/Sam/Desktop/youtube_clone/backend/uploaded_videos/3/thumbnail/benchmark.png'
 
 
 // Edit Video Title Management
 const videoTitle = ref('')
-const videoTitleLength = computed(() => videoTitle.value.length)
 
 const toggleVideoCreationVisibility = (video_id) => {
     sharedState.isVideoCreationOpen.open = !sharedState.isVideoCreationOpen.open;
     sharedState.isVideoCreationOpen.video_id = video_id
 }
 
-const videoTitleEdit = (event) => {
-    videoTitle.value = event.target.value;
-}
-const userAbleToSave = computed(() => { // User can only save the information if the title`s length is equal or greater than 0
-    return (videoTitle.value.length > 0 ? true : false)
-})
-
-// Edit Video Description Management
-const videoDescription = ref('')
-const videoDescriptionLength = computed(() => (videoDescription.value?.length ?? 0));
-const videoDescriptionEdit = (event) => {
-    videoDescription.value = event.target.value;
-}
 
 // Opening closing video options 
 const videoOptionStates = ref({});
