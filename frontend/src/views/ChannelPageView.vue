@@ -15,7 +15,6 @@ import emptyBellSrc from '/src/assets/icons/svg-icons/bell-line-icon.svg'
 
 
 // Handle Channel`s options
-const isChannelSubscribed = ref(false)
 const isChannelOptionsOpen = ref(false)
 const toggleChannelOptions = () => isChannelOptionsOpen.value = !isChannelOptionsOpen.value
 
@@ -46,7 +45,8 @@ const truncateChannelDescription = (description) => {
 const toggleDescription = () => isDescriptionOpen.value = !isDescriptionOpen.value;
 
 
-const isChannelSubscibed = ref(null)
+const isUserAuthenticated = ref(false)
+const isChannelSubscribed = ref(null)
 const channelNotification = ref(null)
 
 const channelInfo = reactive({})
@@ -57,15 +57,18 @@ const retrieveChannelInfo = (uniqueIdentifier) => {
         }
     }).then((response) => {
         if (response.status == 200) {
-            Object.assign(channelInfo, response.data.data)
-            isChannelSubscibed.value = response.data.data.is_sub
+            Object.assign(channelInfo, response.data.data.details)
+            isChannelSubscribed.value = response.data.data.is_sub
             channelNotification.value = response.data.data.channel_notification
         }
-    }).catch((error) => toast.error(error)).finally(() => {
-    })
+    }).catch((error) => toast.error(error))
 }
 
 const channelSubscribe = (channelId) => {
+    if (!isUserAuthenticated.value) {
+        toast.error("You have Login to subscribe a channel!")
+        return;
+    }
     axios.get(`http://127.0.0.1:8000/channel/subscribe/${channelId}`, {
         params: {
             user_session_id: sessionStorage.getItem("user_session_id")
@@ -73,8 +76,9 @@ const channelSubscribe = (channelId) => {
     }).then((response) => {
         if (response.status == 200) {
             toast.success(response.data.data)
+            isChannelSubscribed.value = !isChannelSubscribed.value
         }
-    }).catch((error) => toast.error(error)).finally(() => isChannelSubscibed.value = !isChannelSubscibed.value)
+    }).catch((error) => toast.error(error))
 }
 
 const toggleChannelNotification = (channelId, notification) => {
@@ -95,9 +99,26 @@ const toggleChannelNotification = (channelId, notification) => {
     })
 }
 
+const checkUserAuthentication = (user_session_id) => {
+    axios.get("http://127.0.0.1:8000/users/is_authenticated", {
+        params: {
+            user_session_id: user_session_id
+        }
+    }).then((response) => {
+        if (response.status == 200) {
+            isUserAuthenticated.value = true
+        }
+    }).catch((error) => console.error)
+}
+
 onMounted(() => {
     const uniqueIdentifier = router1.params.id;
     retrieveChannelInfo(uniqueIdentifier)
+
+    const user_session_id = sessionStorage.getItem("user_session_id")
+    if (user_session_id) {
+        checkUserAuthentication(user_session_id)
+    }
 
     document.addEventListener('click', handleClickOutside);
 });
@@ -121,7 +142,7 @@ onMounted(() => {
                             @click="toggleDescription" class="text-black font-bold cursor-pointer ml-2">{{
                                 isDescriptionOpen ? "Show Less" : "Show More" }}</span></span>
                 </div>
-                <button v-if="isChannelSubscibed" @click="toggleChannelOptions" class="w-[150px] h-[36px] rounded-2xl bg-[#f2f2f2] hover:bg-[#e5e5e5]
+                <button v-if="isChannelSubscribed" @click="toggleChannelOptions" class="w-[150px] h-[36px] rounded-2xl bg-[#f2f2f2] hover:bg-[#e5e5e5]
                  flex justify-center items-center">
                     <img class="w-5 h-6" :src="channelNotification ? fillBellSrc : emptyBellSrc" alt="">
                     <span class="text-black text-sm font-medium ml-2">Subscribed</span>
@@ -132,7 +153,7 @@ onMounted(() => {
                     <span class="text-sm font-medium text-white">Subscribe</span>
                 </button>
 
-                <div v-if="isChannelSubscibed && isChannelOptionsOpen" class="channel-options w-[256px]
+                <div v-if="isChannelSubscribed && isChannelOptionsOpen" class="channel-options w-[256px]
                  h-auto flex flex-col my-shadow rounded-xl text-sm font-normal -mt-3">
                     <button @click="toggleChannelNotification(channelInfo.id, 'all')" class="w-[100%] h-[40px] mt-2">
                         <img :src="fillBellSrc" alt="">
@@ -155,16 +176,16 @@ onMounted(() => {
         </div>
         <div class="tabs-inner-container w-[1280px] h-[48px] bg-white ml-[-115px] mt-3 border-b">
             <div class="flex flex-row ml-[130px] items-center">
-                <router-link to="/channel-page/"
+                <router-link :to="`/channel-page/${$route.params.id}`"
                     :class="[$route.name == 'channel-home' ? 'active' : '', 'tab', 'w-[48px]']">Home</router-link>
-                <router-link to="/channel-page/videos"
-                    :class="[$route.name == 'videos' ? 'active' : '', 'tab', 'w-[48px]']">Videos</router-link>
-                <router-link to="/channel-page/shorts"
-                    :class="[$route.name == 'shorts' ? 'active' : '', 'tab', 'w-[48px]']">Shorts</router-link>
-                <router-link to="/channel-page/playlists"
-                    :class="[$route.name == 'playlists' ? 'active' : '', 'tab', 'w-[50px]']">Playlists</router-link>
-                <router-link to="/channel-page/community"
-                    :class="[$route.name == 'community' ? 'active' : '', 'tab', 'w-[73px]']">Community</router-link>
+                <router-link :to="{ name: 'channel-videos', params: { id: $route.params.id } }"
+                    :class="[$route.name == 'channel-videos' ? 'active' : '', 'tab', 'w-[48px]']">Videos</router-link>
+                <router-link :to="{ name: 'channel-shorts', params: { id: $route.params.id } }"
+                    :class="[$route.name == 'channel-shorts' ? 'active' : '', 'tab', 'w-[48px]']">Shorts</router-link>
+                <router-link :to="{ name: 'channel-playlists', params: { id: $route.params.id } }"
+                    :class="[$route.name == 'channel-playlists' ? 'active' : '', 'tab', 'w-[50px]']">Playlists</router-link>
+                <router-link :to="{ name: 'channel-community', params: { id: $route.params.id } }"
+                    :class="[$route.name == 'channel-community' ? 'active' : '', 'tab', 'w-[73px]']">Community</router-link>
                 <div class="flex flex-row h-[28px] gap-x-6 items-center">
                     <button id="search-button" @click="toggleSearchBar"
                         class="mr-0 w-10 h-10 flex justify-center items-center">

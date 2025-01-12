@@ -31,7 +31,6 @@ import json
 import requests
 from googleapiclient.discovery import build
 import yt_dlp
-import os
 
 # Replace with your API key
 API_KEY = "AIzaSyD4tVMAI9kvBA7DghHz3QDrA3UJEe6u7as"

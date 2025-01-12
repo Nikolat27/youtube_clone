@@ -1,14 +1,9 @@
 <script setup>
-import { ref, reactive } from 'vue';
+import { ref, reactive, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
+import axios from 'axios';
 
-// Factory function to create video objects
-const createVideo = (title, index) => ({
-    title,
-    created_at: `${index + 1} days ago`,
-    currentSrc: '/src/assets/img/Django.png',
-    thumbnail: '/src/assets/img/Django.png',
-    gif: "/src/assets/img/gif-image1.webp",
-});
+const router = useRoute();
 
 // Pinned Video
 const pinnedVideo = reactive({
@@ -23,14 +18,11 @@ const pinnedVideo = reactive({
     gif: "/src/assets/img/gif-image1.webp",
 });
 
-// Generate video arrays
-const generateVideos = (prefix) => Array.from({ length: 15 }, (_, index) => createVideo(`${prefix} ${index + 1}`, index));
-
 // Video arrays
-const regularVideos = reactive(generateVideos('Regular Videos'));
-const popularVideos = reactive(generateVideos('Popular Videos'));
-const famousPlaylistVideos1 = reactive(generateVideos('Famous Playlist Videos 1'));
-const famousPlaylistVideos2 = reactive(generateVideos('Famous Playlist Videos 2'));
+const regularVideos = reactive([]);
+const popularVideos = reactive([]);
+const famousPlaylistVideos1 = reactive([]);
+const famousPlaylistVideos2 = reactive([]);
 
 // Slider Functions
 const updateSliderButtons = (container_id) => {
@@ -64,6 +56,8 @@ const resetImage = (video) => {
     video.currentSrc = video.thumbnail;
 };
 
+
+
 // Reusable Slider Component (to be used in template)
 const VideoSlider = {
     props: ['videos', 'sliderId', 'title', 'hoverImage', 'resetImage'],
@@ -76,14 +70,14 @@ const VideoSlider = {
             </button>
             <div :id="sliderId" class="flex flex-row h-[204px] max-w-[1284px] gap-x-1 overflow-hidden">
                 <div v-for="(video, index) in videos" :key="index" class="grow-0 shrink-0 basis-auto">
-                    <a href="#" class="flex flex-col gap-y-2">
-                        <img @mouseover="hoverImage(video)" @mouseleave="resetImage(video)" class="w-[210px] h-[118px] rounded-lg" :src="video.currentSrc" alt="">
+                    <router-link :to="'/video/' + video.unique_id" class="flex flex-col gap-y-2">
+                        <img @mouseover="hoverImage(video)" @mouseleave="resetImage(video)" class="w-[210px] h-[118px] rounded-lg" :src="video.thumbnail_url" alt="">
                         <a href="#" class="text-sm font-medium text-black">{{ video.title }}</a>
                         <div class="flex flex-row text-xs font-normal text-[#69696a]">
                             <span>73K views&nbsp;</span>
                             <span>{{ video.created_at }}</span>
                         </div>
-                    </a>
+                    </router-link>
                 </div>
             </div>
             <button @click="$emit('slide', sliderId, 'next')" :id="\`\${sliderId}-next-btn\`" class="w-9 h-9 absolute top-[91px] right-[-18px] shadow-lg bg-white hover:bg-[#e5e5e5] rounded-full">
@@ -92,6 +86,18 @@ const VideoSlider = {
         </div>
     `
 };
+
+
+onMounted(() => {
+    const channelId = router.params.id
+    if (channelId) {
+        axios.get(`http://127.0.0.1:8000/channel/${channelId}/home-videos`).then((response) => {
+            if (response.status == 200) {
+                Object.assign(regularVideos, response.data.data)
+            }
+        }).catch((error) => console.log(error))
+    }
+})
 </script>
 
 <template>

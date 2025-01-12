@@ -1,31 +1,45 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
+import axios from 'axios';
 import PacmanLoader from 'vue-spinner/src/PacmanLoader.vue';
 
+const router = useRoute()
 
 const isPlaylistSortOpen = ref(false)
 const togglePlaylistSort = () => isPlaylistSortOpen.value = !isPlaylistSortOpen.value
 
 // Handle infinite scrolling
-let page = ref(1)
+let page = 1
+let size = 12
 let isLoading = ref(false)
-const playlists = reactive([])
+let playlists = reactive([])
+let total_pages = ref(0)
 
-const generateTestPlaylists = (page_number) => {
-    for (let i = page_number * 10 - 9; i <= page_number * 10; i++) {
-        playlists.push({ id: i, title: `${i} Playlist title` })
-    }
+const retrievePlaylists = (channelId, page, sortBy) => {
+    isLoading.value = true
+    axios.get(`http://127.0.0.1:8000/channel/${channelId}/playlists/`, {
+        params: {
+            page: page,
+            size: size,
+            sortBy: sortBy ?? null
+        }
+    }).then((response) => {
+        if (response.status == 200) {
+            if (!sortBy) {
+                playlists = [...playlists, ...response.data.data]
+            } else {
+                Object.assign(playlists, response.data.data)
+            }
+            total_pages.value = response.data.total_pages
+        }
+    }).catch((error) => console.log(error)).finally(() => isLoading.value = false)
 }
+
 
 const scrollMore = () => {
-    isLoading.value = true
-    setTimeout(() => {
-        page.value += 1
-        generateTestPlaylists(page.value)
-        isLoading.value = false
-    }, 2000)
-}
 
+}
 const checkScroll = () => {
     const endOfPage = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 200
     if (endOfPage && !isLoading.value) {
@@ -33,8 +47,14 @@ const checkScroll = () => {
     }
 }
 
+const filterPlaylists = (channelId, sortBy) => {
+    retrievePlaylists(channelId, 1, sortBy);
+}
+
 onMounted(() => {
-    generateTestPlaylists(page.value);
+    const channelId = router.params.id
+    retrievePlaylists(channelId, page)
+
     document.addEventListener("scroll", checkScroll);
 })
 </script>
@@ -48,17 +68,17 @@ onMounted(() => {
                 <span class="ml-2">Sort by</span>
             </button>
             <div v-if="isPlaylistSortOpen" class="playlistSortingDiv my-shadow absolute right-0 top-10 w-[164px] h-[112px]
-                 flex flex-col rounded-xl font-normal text-sm pt-2">
-                <router-link :to="'/channel-page/playlists?sortBy=latest'"
+                 flex flex-col rounded-xl font-normal text-sm pt-2 bg-white">
+                <button @click="filterPlaylists($route.params.id, 'latest')"
                     :class="[!$route.query.sortBy || $route.query.sortBy == 'latest' ? 'active' : '']"
                     class="w-[164px] h-[48px] flex flex-row justify-start items-center hover:bg-[#e5e5e5]">
                     <span class="pl-3">Date added (Newest)</span>
-                </router-link>
-                <router-link :to="'/channel-page/playlists?sortBy=oldest'"
+                </button>
+                <button @click="filterPlaylists($route.params.id, 'oldest')"
                     :class="[$route.query.sortBy == 'oldest' ? 'active' : '']"
                     class="w-[164px] h-[48px] flex flex-row justify-start items-center hover:bg-[#e5e5e5]">
                     <span class="pl-3">Oldest</span>
-                </router-link>
+                </button>
             </div>
         </div>
 

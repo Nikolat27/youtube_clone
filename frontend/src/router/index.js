@@ -12,7 +12,7 @@ import TestView from "@/views/TestView.vue";
 
 // Channel-page Children routes
 import Home from "@/views/channelViews/Home.vue";
-import Video from "@/views/channelViews/Videos.vue";
+import Videos from "@/views/channelViews/Videos.vue";
 import Shorts from "@/views/channelViews/Shorts.vue";
 import Playlists from "@/views/channelViews/Playlists.vue";
 import Community from "@/views/channelViews/Community.vue";
@@ -44,12 +44,13 @@ const routes = [
     { path: "/playlist", name: "playlist-videos", component: PlaylistVideosView, },
     { path: "/posts", name: "create-posts", component: createPostsView, },
     {
-        path: "/channel-page/:id", name: "channel_detail", component: ChannelPageView, children: [
-            { path: '', name: 'channel-home', component: Home, },
-            { path: 'videos', name: 'videos', component: Video, },
-            { path: 'playlists', name: 'playlists', component: Playlists, },
-            { path: 'community', name: 'community', component: Community, },
-            { path: 'search', name: 'search', component: Search, },
+        path: "/channel-page/:id/", name: "channel_detail", component: ChannelPageView, children: [
+            { path: '', name: 'channel-home', component: Home },
+            { path: 'videos', name: 'channel-videos', component: Videos, },
+            { path: 'shorts', name: 'channel-shorts', component: Shorts, },
+            { path: 'playlists', name: 'channel-playlists', component: Playlists, },
+            { path: 'community', name: 'channel-community', component: Community, },
+            { path: 'search', name: 'channel-search', component: Search, },
         ]
     },
     {
