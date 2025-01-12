@@ -49,7 +49,7 @@ const routes = [
             { path: 'videos', name: 'channel-videos', component: Videos, },
             { path: 'shorts', name: 'channel-shorts', component: Shorts, },
             { path: 'playlists', name: 'channel-playlists', component: Playlists, },
-            { path: 'community', name: 'channel-community', component: Community, },
+            { path: 'community', name: 'channel-community', component: Community },
             { path: 'search', name: 'channel-search', component: Search, },
         ]
     },

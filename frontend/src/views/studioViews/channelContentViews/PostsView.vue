@@ -65,7 +65,7 @@ const submitFormData = (community_id) => {
     newFormData.append("community_id", community_id)
     newFormData.append("community_text", communityText.value)
 
-    axios.post("http://127.0.0.1:8000/videos/community/edit", newFormData).then((response) => {
+    axios.post("http://127.0.0.1:8000/studio/community/edit", newFormData).then((response) => {
         if (response.status == 200) {
             toast.success("Community updated successfully!");
             toggleCommunityEdit(community_id, communityText.value);

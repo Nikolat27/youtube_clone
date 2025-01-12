@@ -1,62 +1,80 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
+import { useToast } from 'vue-toastification';
+import axios from 'axios';
 import ClipLoader from 'vue-spinner/src/ClipLoader.vue';
 
-let page = ref(1)
+const toast = useToast()
+const props = defineProps({
+    channelInfo: Object
+})
+
+// Icons
+import fillLikeIcon from '/src/assets/icons/svg-icons/like-fill.svg';
+import emptyLikeIcon from '/src/assets/icons/svg-icons/like-empty.svg';
+
+import fillDislikeIcon from '/src/assets/icons/svg-icons/dislike-fill.svg';
+import emptyDislikeIcon from '/src/assets/icons/svg-icons/dislike-empty.svg';
+
+
 let isLoading = ref(false)
 const communities = reactive([])
 
-const generateTestCommunities = (page_number) => {
-    // 5 here indicates the total shown items in a single page
-    for (let i = page_number * 5 - 4; i <= page_number * 5; i++) {
-        communities.push({ id: i, title: `${i} Community title` })
-    }
+const retrieveCommunities = (channelId) => {
+    axios.get(`http://127.0.0.1:8000/channel/${channelId}/communities`, {
+        params: {
+            user_session_id: sessionStorage.getItem("user_session_id")
+        }
+    }).then((response) => {
+        if (response.status == 200) {
+            communities.push(...response.data.data)
+        }
+    }).catch((error) => console.log(error))
 }
 
-const scrollMore = () => {
-    isLoading.value = true
-    setTimeout(() => {
-        page.value += 1
-        generateTestCommunities(page.value)
-        isLoading.value = false
-    }, 2000)
+
+const likeCommunity = (communityId, action) => {
+    let action_type = action === "like" ? true : false
+    let user_session_id = sessionStorage.getItem("user_session_id")
+    axios.get(`http://127.0.0.1:8000/channel/${communityId}/${action_type}/${user_session_id}`).then((response) => {
+        if (response.status == 201) {
+            console.log(response.data.data)
+        }
+    }).catch((error) => toast.error(error))
 }
 
-const checkScroll = () => {
-    const endOfPage = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 200
-    if (endOfPage && !isLoading.value) {
-        scrollMore()
-    }
-}
-
+const router = useRoute()
 onMounted(() => {
-    generateTestCommunities(page.value)
-    document.addEventListener("scroll", checkScroll);
+    const channelId = router.params.id
+    retrieveCommunities(channelId)
 })
 </script>
 
 <template>
     <div id="communityDivision">
         <div class="flex flex-col mt-20 gap-y-4">
-            <div v-for="community in communities" :key="community.id" class="w-[852px] h-[777px] rounded-2xl flex flex-row pt-4 pl-4
+            <div v-for="(community, index) in communities" :key="index" class="w-[852px] h-[777px] rounded-2xl flex flex-row pt-4 pl-4
                  border-[1px] border-[#ebebeb]">
                 <a href="#" class="mr-4">
-                    <img class="w-10 h-10 rounded-full" src="@/assets/img/Django.png" alt="">
+                    <img class="w-10 h-10 rounded-full" :src="props.channelInfo.profile_url" alt="">
                 </a>
                 <div class="flex flex-col">
                     <div class="flex flex-row gap-x-2 text-[13px]">
-                        <a href="#" class="font-medium">Django Tutorial Channel</a>
-                        <span class="font-normal">10 hours ago</span>
+                        <a href="#" class="font-medium">{{ channelInfo.name }}</a>
+                        <span class="font-normal">1 days ago</span>
                     </div>
                     <p class="text-lg font-normal">{{ community.title }}</p>
-                    <img class="w-[638px] h-[638px] rounded-xl mt-1" src="@/assets/img/Django.png" alt="">
+                    <img class="w-[638px] h-[638px] rounded-xl mt-1" :src="community.image_url" alt="">
                     <div class="flex flex-row mt-3 items-center">
-                        <button class="w-8 h-8 rounded-full hover:bg-[#e5e5e5] flex justify-center items-center">
-                            <img class="w-[75%] h-[75%]" src="@/assets/icons/svg-icons/like-empty.svg" alt="">
+                        <button @click="likeCommunity(community.id, 'like')"
+                            class="w-8 h-8 rounded-full hover:bg-[#e5e5e5] flex justify-center items-center">
+                            <img class="w-[75%] h-[75%]" :src="fillLikeIcon" alt="">
                         </button>
                         <span class="text-xs font-normal">385</span>
-                        <button class="ml-2 w-8 h-8 rounded-full hover:bg-[#e5e5e5] flex justify-center items-center">
-                            <img class="w-[75%] h-[75%]" src="@/assets/icons/svg-icons/dislike-empty.svg" alt="">
+                        <button @click="likeCommunity(community.id, 'dislike')"
+                            class="ml-2 w-8 h-8 rounded-full hover:bg-[#e5e5e5] flex justify-center items-center">
+                            <img class="w-[75%] h-[75%]" :src="emptyDislikeIcon" alt="">
                         </button>
                     </div>
                 </div>

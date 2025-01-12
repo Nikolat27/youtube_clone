@@ -198,7 +198,7 @@ onMounted(() => {
             </div>
         </div>
         <div id="content-container" class="mb-20">
-            <router-view></router-view>
+            <router-view :channelInfo=channelInfo></router-view>
         </div>
     </div>
 </template>

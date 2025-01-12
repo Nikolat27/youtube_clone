@@ -14,6 +14,7 @@ const uploadBannerImage = (event) => {
     channelInfo.banner_img = file;
     bannerImgPreview.value = URL.createObjectURL(file)
 }
+
 const removeBannerImg = async () => {
     if (!confirm("Delete your banner image?")) {
         return;
@@ -66,6 +67,7 @@ const uploadChannelWatermark = (event) => {
     channelInfo.video_watermark = file;
     watermarkImgPreview.value = URL.createObjectURL(file)
 }
+
 const removeChannelWatermark = async () => {
     if (!confirm("Delete your watermark image?")) {
         return;

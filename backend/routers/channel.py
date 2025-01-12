@@ -6,6 +6,8 @@ from database.models.user import (
     Channel,
     ChannelSubscription,
     Playlist,
+    Community,
+    CommunityLike,
 )
 from dependencies import get_current_user_id
 from fastapi import APIRouter
@@ -291,3 +293,72 @@ async def channel_playlists(
         {"data": serializer, "total_pages": math.ceil(total_playlists / size)},
         status_code=status.HTTP_200_OK,
     )
+
+
+@router.get("/{channel_id}/communities")
+async def channel_communities(
+    channel_id: str = Path_parameter(), user_session_id: str = Query(None)
+):
+    channel = (
+        Channel.query.with_entities(Channel.owner_id)
+        .filter_by(unique_identifier=channel_id)
+        .first()
+    )
+
+    communities = Community.query.filter_by(user_id=channel.owner_id).all()
+
+    serializer = [
+        {
+            "id": community.id,
+            "text": community.community_text,
+            "image_url": await static_file(community.image_url),
+            "created_at": await time_difference(community.created_at),
+            "is_liked": True,
+        }
+        for community in communities
+    ]
+
+    return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)
+
+
+@router.get("/like/{community_id}/{action_type}/{user_session_id}")
+async def like_video(
+    community_id: int = Path_parameter(),
+    action_type: bool = Path_parameter(),
+    user_session_id: str = Path_parameter(),
+):  # True == Like, False == Dislike
+    user_id = await get_current_user_id(user_session_id)
+
+    like = CommunityLike.query.filter_by(
+        community_id=community_id, user_id=user_id
+    ).first()
+    if like and like.action_type == action_type:
+        session.delete(like)
+    elif like and like.action_type != action_type:
+        like.action_type = action_type
+    else:
+        new_like = CommunityLike(
+            user_id=user_id, community_id=community_id, action_type=action_type
+        )
+        session.add(new_like)
+
+    session.commit()
+    return JSONResponse(
+        {"data": action_type},
+        status_code=status.HTTP_200_OK,
+    )
+
+
+async def has_user_liked(id: int, user_session_id: str) -> JSONResponse:
+    user_id = await get_current_user_id(user_session_id)
+    like = (
+        CommunityLike.query.with_entities(CommunityLike.action_type)
+        .filter_by(community_id=id, user_id=user_id)
+        .first()
+    )
+
+    like_situation = None
+    if like:
+        like_situation = like.action_type
+
+    return JSONResponse({"data": like_situation}, status_code=status.HTTP_200_OK)

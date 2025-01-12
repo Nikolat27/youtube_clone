@@ -145,9 +145,28 @@ class Community(Model):
     community_text = Column(String(200), nullable=False)
     image_name = Column(String(200), nullable=True)
     image_url = Column(String(400), nullable=True)
+    created_at = Column(DateTime, default=get_utc_now, nullable=True)
+    # Remeber to add a created_at field
 
     def __repr__(self):
         return self.community_text
+
+
+class CommunityLike(Model):
+    __tablename__ = "community_likes"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    community_id = Column(
+        Integer, ForeignKey("communities.id", ondelete="CASCADE"), nullable=False
+    )
+    action_type = Column(Boolean, nullable=True)  # False means dislike
+    created_at = Column(DateTime, default=get_utc_now)
+
+    def __repr__(self):
+        return f"{self.user_id} - {self.community_id}"
 
 
 class Channel(Model):
@@ -184,7 +203,7 @@ class ChannelSubscription(Model):
     user_id = Column(
         Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
-    notification = Column(Boolean, default=False) # True means notifications are On
+    notification = Column(Boolean, default=False)  # True means notifications are On
     created_at = Column(DateTime, default=get_utc_now)
 
     def __repr__(self):

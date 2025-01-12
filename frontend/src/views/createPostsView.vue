@@ -36,7 +36,7 @@ const submitFormData = async () => {
     if (formData.image_file) {
         newFormData.append("image_file", formData.image_file)
     }
-    axios.post("http://127.0.0.1:8000/videos/community/create", newFormData).then((response) => {
+    axios.post("http://127.0.0.1:8000/studio/community/create", newFormData).then(() => {
         toast.success("Your community Created successfully!")
     }).catch((error) => console.log(error))
 }

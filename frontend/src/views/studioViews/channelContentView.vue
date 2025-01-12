@@ -4,7 +4,6 @@ import { useRouter, useRoute } from 'vue-router';
 
 // Icons
 import arrowBottomIcon from '@/assets/icons/svg-icons/arrow-bottom-icon.svg'
-import router from '@/router';
 
 // Router
 const router1 = useRoute()
