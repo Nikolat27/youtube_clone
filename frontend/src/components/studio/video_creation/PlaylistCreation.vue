@@ -39,12 +39,10 @@ const retrievePlaylist = async () => {
         formData.playlist_title = response.data.data.title;
         formData.playlist_description = response.data.data.description;
         formData.playlist_visibility = response.data.data.visibility;
-
-        console.log(formData.playlist_visibility);
     }).catch((error) => {
         console.log(error)
     }).finally(() => {
-
+        sharedState.refreshRetrievePlaylists = false
     })
 }
 
