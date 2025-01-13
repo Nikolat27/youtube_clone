@@ -2,6 +2,7 @@
 import { ref, reactive, onMounted, watch, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import ScaleLoader from 'vue-spinner/src/ScaleLoader.vue';
+import axios from 'axios';
 
 const router = useRoute();
 const router2 = useRouter();
@@ -52,47 +53,6 @@ const generateTestData = (type, page_number) => {
     }
 }
 
-
-// Generating Test videos for 'all, videos and shorts'
-// const all_videos = reactive([])
-// const generateTestAllVideos = (page_number) => {
-//     let totalItemShown = 20
-//     // Minus 1 for starting from the index 1
-//     let startIndex = page_number * totalItemShown - (totalItemShown - 1)
-//     let lastIndex = page_number * totalItemShown
-
-//     for (let i = startIndex; i <= lastIndex; i++) {
-//         if (i % 2 == 0) {
-//             all_videos.push({ id: i, title: `${i} Regular Video title` })
-//         } else {
-//             all_videos.push({ id: i, title: `${i} Short Video title` })
-//         }
-//     }
-// }
-
-// const videos = reactive([])
-// const generateTestVideos = (page_number) => {
-//     let totalItemShown = 20
-//     // Minus 1 for starting from the index 1
-//     let startIndex = page_number * totalItemShown - (totalItemShown - 1)
-//     let lastIndex = page_number * totalItemShown
-//     for (let i = startIndex; i <= lastIndex; i++) {
-//         videos.push({ id: i, title: `${i} Video title` })
-//     }
-// }
-
-// const shorts = reactive([])
-// const generateTestShorts = (page_number) => {
-//     let totalItemShown = 12
-//     // Minus 1 for starting from the index 1
-//     let startIndex = page_number * totalItemShown - (totalItemShown - 1)
-//     let lastIndex = page_number * totalItemShown
-//     for (let i = startIndex; i <= lastIndex; i++) {
-//         shorts.push({ id: i, title: `${i} Short Video title` })
-//     }
-// }
-
-// Handle infinite scrolling
 const scrollMore = (type) => {
     isLoading.value = true
     setTimeout(() => {
@@ -109,6 +69,14 @@ const checkScroll = () => {
     }
 }
 
+const playlistInfo = reactive([])
+const retrievePlaylist = (playlistId) => {
+    axios.get(`http://127.0.0.1:8000/playlist/${playlistId}`).then((response) => {
+        if (response.status == 200) {
+            Object.assign(playlistInfo, response.data.data)
+        }
+    }).catch((error) => console.log(error))
+}
 
 // Handle filtering
 watch(() => router.query.type, () => {
@@ -120,25 +88,30 @@ watch(() => router.query.type, () => {
 })
 
 onMounted(() => {
+    const playlistId = router.params.id
+    if (playlistId) {
+        retrievePlaylist(playlistId)
+    }
+
     document.addEventListener("scroll", checkScroll)
     generateTestData(router.query.type || 'all', page.value) // Default 'type' handling
 })
 </script>
 
 <template>
-    <div class="flex flex-row">
-        <div class="w-[360px] h-[650px] ml-[240px] mt-[55px] flex flex-col bg-[#846957] bg-opacity-80
+    <div class="flex flex-row font-roboto">
+        <div class="w-[360px] h-[650px] ml-[240px] mt-[55px] flex flex-col bg-[#967b69] bg-opacity-80
          pt-5 pl-5 rounded-2xl">
-            <img class="w-[312px] h-[175px] rounded-2xl" src="@/assets/img/Django.png" alt="">
-            <p class="text-[28px] font-bold mt-3 text-white" style="font-family: 'YouTube Sans', sans-serif;">Liked
+            <img class="w-[312px] h-[175px] rounded-2xl" :src="playlistInfo.last_video_thumbnail" alt="">
+            <p class="text-[28px] font-bold mt-3 text-white">Liked
                 videos</p>
-            <p class="text-sm font-medium mt-4 text-white">Username</p>
-            <p class="text-gray-700 text-xs mt-2">625 videos</p>
+            <p class="text-sm font-medium mt-4 text-white">{{ playlistInfo.username }}</p>
+            <p class="text-gray-700 text-[12px] mt-2">{{ playlistInfo.total_videos }} videos</p>
             <div class="flex flex-row mt-6 gap-x-2 ml-1">
                 <button class="w-[152px] h-[36px] flex flex-row justify-center items-center
                  bg-white rounded-2xl hover:bg-[#e6e6e6]">
                     <img class="w-[40px] h-[20px] ml-[-10px]" src="@/assets/icons/svg-icons/play-icon.svg" alt="">
-                    <p class="text-sm font-medium">Play&nbsp;all</p>
+                    <p class="text-sm font-medium">Play all</p>
                 </button>
                 <button
                     class="w-[152px] h-[36px] flex flex-row justify-center items-center bg-[#766d65] bg-opacity-65 rounded-2xl">
@@ -161,17 +134,17 @@ onMounted(() => {
             </div>
 
             <div v-if="!$route.query.type || $route.query.type === 'all'" id="all" class="content-section">
-                <div v-for="video in videosData.all" :key="video.id" class="z-auto pl-4 h-[129px] w-[827px] flex flex-row items-center
+                <div v-for="video in playlistInfo.videos" :key="video.id" class="z-auto pl-4 h-[129px] w-[827px] flex flex-row items-center
                  ml-[-36px] mt-4 gap-x-4 hover:bg-[#f2f2f2] hover:z-auto rounded-lg relative">
                     <a href="#" class="w-full h-full flex items-center">
                         <p class="text-[#796966] font-medium text-sm justify-self-start ml-[-5px]">{{ video.id }}</p>
-                        <img class="w-[200px] h-[113px] rounded-lg ml-4" src="@/assets/img/Django.png" alt="">
+                        <img class="w-[200px] h-[113px] rounded-lg ml-4" :src="video.thumbnail_url" alt="">
                         <div class="flex flex-col mt-[-67px] relative ml-4">
                             <p class="font-medium text-base mt-2 mb-2">{{ video.title }}</p>
                             <div class="flex flex-row text-[#898f90] text-xs font-normal">
-                                <p class="hover:text-[#182c61]">Channel name .&nbsp;</p>
+                                <p class="hover:text-[#182c61]">{{ video.channel_name }} .&nbsp;</p>
                                 <p class="hover:text-[#182c61]">25K views .&nbsp;</p>
-                                <p class="hover:text-[#182c61]">2 days ago</p>
+                                <p class="hover:text-[#182c61]">{{ video.created_at }} days ago</p>
                             </div>
                         </div>
                     </a>

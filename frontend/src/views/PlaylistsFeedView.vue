@@ -27,6 +27,10 @@ const togglePlaylistOption = (playlistId) => {
     }
 }
 
+const playPlaylist = (playlistId) => {
+    router2.push({ name: 'playlist-videos', params: { id: playlistId } })
+}
+
 const deletePlaylist = (playlistId) => {
     axios.delete(`http://127.0.0.1:8000/playlist/delete/${playlistId}`).then((response) => {
         if (response.status == 202) {
@@ -131,7 +135,8 @@ onMounted(() => {
             <div v-for="playlist in playlists" :key="playlist.id" class="playlist">
                 <div class="playlist-thumbnail relative z-0 w-[295px] h-[166px]" :id="playlist.id">
                     <img class="w-full h-full object-fill rounded-lg z-0" :src="playlist.last_video_thumbnail" alt="">
-                    <div class="cursor-pointer play-buttons hidden bg-black w-auto p-2 rounded-lg flex-row gap-x-4 absolute top-1/2 left-[83px]">
+                    <div @click="playPlaylist(playlist.id)"
+                        class="cursor-pointer play-buttons hidden bg-black w-auto p-2 rounded-lg flex-row gap-x-4 absolute top-1/2 left-[83px]">
                         <img class="w-[20px] h-[20px]" :src="playIcon" alt="">
                         <span class="text-[14px] font-medium text-white">Play all</span>
                     </div>

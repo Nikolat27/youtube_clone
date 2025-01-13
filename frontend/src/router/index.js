@@ -43,7 +43,7 @@ const routes = [
     { path: "/auth", name: "auth", component: AuthView, },
     { path: "/history", name: "history", component: HistoryView, },
     { path: "/feed/playlists", name: "playlists-feed", component: PlaylistFeedVideosView, },
-    { path: "/playlist", name: "playlist-videos", component: PlaylistVideosView, },
+    { path: "/playlist/:id", name: "playlist-videos", component: PlaylistVideosView, },
     { path: "/posts", name: "create-posts", component: createPostsView, },
     {
         path: "/channel-page/:id/", name: "channel_detail", component: ChannelPageView, children: [

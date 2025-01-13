@@ -1,8 +1,9 @@
-from database.models.user import Playlist, User, Video
+from database.models.user import Playlist, User, Video, Channel
 from sqlalchemy import desc, asc
 from fastapi import APIRouter, Query, status, Path as Path_parameter
 from dependencies import get_current_user_id
 from fastapi.responses import JSONResponse
+from datetime import datetime
 
 router = APIRouter(prefix="/playlist", tags=["playlists"])
 
@@ -50,3 +51,49 @@ async def playlist_last_video_unique_id(video):
 
 async def playlist_last_video_thumbnail_url(video):
     return video.thumbnail_url
+
+
+async def get_username(user_id):
+    return (
+        User.query.with_entities(User.username).filter_by(id=user_id).first()
+    ).username
+
+
+async def time_difference(created_at):
+    difference = datetime.now().date() - created_at.date()
+    return str(difference.days)
+
+
+async def video_channel(user_id):
+    return (
+        Channel.query.with_entities(Channel.name).filter_by(owner_id=user_id).first()
+    ).name
+
+
+@router.get("/{playlist_id}")
+async def get_playlist(playlist_id: int = Path_parameter()):
+    playlist = Playlist.query.filter_by(id=playlist_id).first()
+
+    serializer = {
+        "id": playlist.id,
+        "title": playlist.title,
+        "username": await get_username(playlist.owner_id),
+        "videos": [
+            {
+                "id": video.id,
+                "unique_id": video.unique_id,
+                "title": video.title,
+                "created_at": await time_difference(video.created_at),
+                "thumbnail_url": f"http://127.0.0.1:8000/static/{video.thumbnail_url}",
+                "channel_name": await video_channel(video.user_id),
+            }
+            for video in playlist.video
+        ],
+        "last_video_thumbnail": await playlist_last_video_thumbnail_url(
+            playlist.video[-1]
+        ),
+        "total_videos": len(playlist.video),
+    }
+
+    print("Serializer: ", serializer)
+    return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)
