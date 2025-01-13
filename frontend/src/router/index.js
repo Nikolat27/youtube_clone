@@ -9,15 +9,16 @@ import AuthView from "@/views/AuthView.vue";
 import HistoryView from "@/views/HistoryView.vue";
 import NotFoundView from "@/views/NotFoundView.vue";
 import TestView from "@/views/TestView.vue";
+import PlaylistFeedVideosView from "@/views/PlaylistsFeedView.vue";
+import PlaylistVideosView from "@/views/PlaylistVideosView.vue";
 
 // Channel-page Children routes
 import Home from "@/views/channelViews/Home.vue";
 import Videos from "@/views/channelViews/Videos.vue";
 import Shorts from "@/views/channelViews/Shorts.vue";
-import Playlists from "@/views/channelViews/Playlists.vue";
 import Community from "@/views/channelViews/Community.vue";
 import Search from "@/views/channelViews/Search.vue";
-import PlaylistVideosView from "@/views/PlaylistVideosView.vue";
+import Playlists from "@/views/channelViews/Playlists.vue";
 import createPostsView from "@/views/createPostsView.vue";
 
 // Studio Children routes
@@ -41,6 +42,7 @@ const routes = [
     { path: "/short/:id", name: "short_detail", component: ShortsView, },
     { path: "/auth", name: "auth", component: AuthView, },
     { path: "/history", name: "history", component: HistoryView, },
+    { path: "/feed/playlists", name: "playlists-feed", component: PlaylistFeedVideosView, },
     { path: "/playlist", name: "playlist-videos", component: PlaylistVideosView, },
     { path: "/posts", name: "create-posts", component: createPostsView, },
     {

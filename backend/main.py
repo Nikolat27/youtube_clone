@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 import uvicorn
-from routers import studio, users, videos, channel
+from routers import studio, users, videos, channel, playlist
 from fastapi_pagination import add_pagination
 
 app = FastAPI()
@@ -27,6 +27,7 @@ app.include_router(users.router)
 app.include_router(studio.router)
 app.include_router(videos.router)
 app.include_router(channel.router)
+app.include_router(playlist.router)
 
 add_pagination(app)
 app.mount(

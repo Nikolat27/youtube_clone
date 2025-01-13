@@ -313,11 +313,11 @@ async def channel_communities(
             "text": community.community_text,
             "image_url": await static_file(community.image_url),
             "created_at": await time_difference(community.created_at),
-            "is_liked": True,
+            "is_liked": await has_user_liked(community.id, user_session_id),
+            "total_likes": await total_community_likes(community.id),
         }
         for community in communities
     ]
-
     return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)
 
 
@@ -327,8 +327,10 @@ async def like_video(
     action_type: bool = Path_parameter(),
     user_session_id: str = Path_parameter(),
 ):  # True == Like, False == Dislike
-    user_id = await get_current_user_id(user_session_id)
+    if user_session_id:
+        user_id = await get_current_user_id(user_session_id)
 
+    like_situation = None
     like = CommunityLike.query.filter_by(
         community_id=community_id, user_id=user_id
     ).first()
@@ -336,24 +338,26 @@ async def like_video(
         session.delete(like)
     elif like and like.action_type != action_type:
         like.action_type = action_type
+        like_situation = action_type
     else:
         new_like = CommunityLike(
             user_id=user_id, community_id=community_id, action_type=action_type
         )
+        like_situation = action_type
         session.add(new_like)
 
     session.commit()
     return JSONResponse(
-        {"data": action_type},
-        status_code=status.HTTP_200_OK,
+        {"data": like_situation, "total_likes": await total_community_likes(community_id)},
+        status_code=status.HTTP_201_CREATED,
     )
 
 
-async def has_user_liked(id: int, user_session_id: str) -> JSONResponse:
+async def has_user_liked(community_id: int, user_session_id: str) -> JSONResponse:
     user_id = await get_current_user_id(user_session_id)
     like = (
         CommunityLike.query.with_entities(CommunityLike.action_type)
-        .filter_by(community_id=id, user_id=user_id)
+        .filter_by(community_id=community_id, user_id=user_id)
         .first()
     )
 
@@ -361,4 +365,10 @@ async def has_user_liked(id: int, user_session_id: str) -> JSONResponse:
     if like:
         like_situation = like.action_type
 
-    return JSONResponse({"data": like_situation}, status_code=status.HTTP_200_OK)
+    return like_situation
+
+
+async def total_community_likes(community_id: int) -> int:
+    return CommunityLike.query.filter_by(
+        community_id=community_id, action_type=True
+    ).count()

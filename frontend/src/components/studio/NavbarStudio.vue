@@ -149,14 +149,19 @@ const submitForm = async () => {
     const formDataToSend = new FormData();
     formDataToSend.append('video_type', formData.video_type);
     formDataToSend.append('user_session_id', formData.user_session_id);
+
     if (formData.thumbnailFile) {
         formDataToSend.append('thumbnailFile', formData.thumbnailFile);
     }
+
     if (formData.subtitleFile) {
         formDataToSend.append('subtitleFile', formData.subtitleFile);
     }
     formDataToSend.append('details', JSON.stringify(formData.details));
+
     formDataToSend.append('visibility', JSON.stringify(formData.visibility));
+
+
     await axios.post("http://127.0.0.1:8000/studio/update", formDataToSend, {
         headers: {
             'Content-Type': 'multipart/form-data' // Important for file uploads
@@ -165,8 +170,8 @@ const submitForm = async () => {
         toast.success("Your video Updated Successfully!")
         sharedState.refreshRetrieveVideos = true;
         sharedState.isVideoCreationOpen.open = false;
-    }).catch((error) => {
-        toast.error("Error!")
+    }).catch(() => {
+        toast.error("Error")
     }).finally(() => isLoading.value = false);
 }
 

@@ -37,9 +37,10 @@ const retrieveCommunities = (channelId) => {
 const likeCommunity = (communityId, action) => {
     let action_type = action === "like" ? true : false
     let user_session_id = sessionStorage.getItem("user_session_id")
-    axios.get(`http://127.0.0.1:8000/channel/${communityId}/${action_type}/${user_session_id}`).then((response) => {
-        if (response.status == 201) {
-            console.log(response.data.data)
+    axios.get(`http://127.0.0.1:8000/channel/like/${communityId}/${action_type}/${user_session_id}`).then((response) => {
+        if (response.status == 201) { // true, false, null
+            communities.find(community => community.id === communityId).total_likes = response.data.total_likes
+            communities.find(community => community.id === communityId).is_liked = response.data.data
         }
     }).catch((error) => toast.error(error))
 }
@@ -69,12 +70,14 @@ onMounted(() => {
                     <div class="flex flex-row mt-3 items-center">
                         <button @click="likeCommunity(community.id, 'like')"
                             class="w-8 h-8 rounded-full hover:bg-[#e5e5e5] flex justify-center items-center">
-                            <img class="w-[75%] h-[75%]" :src="fillLikeIcon" alt="">
+                            <img class="w-[75%] h-[75%]"
+                                :src="community.is_liked === true ? fillLikeIcon : emptyLikeIcon" alt="">
                         </button>
-                        <span class="text-xs font-normal">385</span>
+                        <span class="text-xs font-normal">{{ community.total_likes }}</span>
                         <button @click="likeCommunity(community.id, 'dislike')"
                             class="ml-2 w-8 h-8 rounded-full hover:bg-[#e5e5e5] flex justify-center items-center">
-                            <img class="w-[75%] h-[75%]" :src="emptyDislikeIcon" alt="">
+                            <img class="w-[75%] h-[75%]"
+                                :src="community.is_liked === false ? fillDislikeIcon : emptyDislikeIcon" alt="">
                         </button>
                     </div>
                 </div>

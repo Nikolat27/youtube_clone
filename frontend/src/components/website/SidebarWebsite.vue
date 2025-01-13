@@ -13,10 +13,12 @@ const toggleSubscriptionChannels = () => {
 
 <template>
     <aside class="side-bar-div">
-        <div class="side-bar-links">
-            <img src="@/assets/icons/svg-icons/home-icon.svg" alt="">
-            <p>Home</p>
-        </div>
+        <router-link to="/">
+            <div class="side-bar-links">
+                <img src="@/assets/icons/svg-icons/home-icon.svg" alt="">
+                <p>Home</p>
+            </div>
+        </router-link>
         <div class="side-bar-links">
             <img src="@/assets/icons/svg-icons/youtube-shorts-icon.svg" alt="">
             <p>Shorts</p>
@@ -25,19 +27,21 @@ const toggleSubscriptionChannels = () => {
             <img src="@/assets/icons/svg-icons/video-playlist-icon.svg" alt="">
             <p>Subscriptions</p>
         </div>
-
         <div class="side-bar-links">
             <p class="text-[16px] font-medium" style="margin-left: 0;">You</p>
-            <img class="rotate-90" style="width: 14px; height: 14px; margin-left: 8px;" src="@/assets/icons/svg-icons/line-angle-up-icon.svg" alt="">
+            <img class="rotate-90" style="width: 14px; height: 14px; margin-left: 8px;"
+                src="@/assets/icons/svg-icons/line-angle-up-icon.svg" alt="">
         </div>
         <div class="side-bar-links">
             <img src="@/assets/icons/svg-icons/clockwise-icon.svg" alt="">
             <p>History</p>
         </div>
-        <div class="side-bar-links">
-            <img src="@/assets/icons/svg-icons/playlist-videos-icon.svg" alt="">
-            <p>Playlists</p>
-        </div>
+        <router-link to="/feed/playlists">
+            <div class="side-bar-links">
+                <img src="@/assets/icons/svg-icons/playlist-videos-icon.svg" alt="">
+                <p>Playlists</p>
+            </div>
+        </router-link>
         <div class="side-bar-links">
             <img src="@/assets/icons/svg-icons/youtube-color-icon.svg" alt="">
             <p>Your videos</p>
@@ -64,8 +68,8 @@ const toggleSubscriptionChannels = () => {
         </transition-group>
 
         <div class="side-bar-links">
-            <img style="width: 18px; height: 18px;" :class="[isCollapsed ? 'rotate-180' : '']" src="@/assets/icons/svg-icons/line-angle-up-icon.svg"
-                alt="">
+            <img style="width: 18px; height: 18px;" :class="[isCollapsed ? 'rotate-180' : '']"
+                src="@/assets/icons/svg-icons/line-angle-up-icon.svg" alt="">
             <button @click="toggleSubscriptionChannels" id="show-more-btn">{{ isCollapsed ? 'Show more' : 'Show less'
                 }}</button>
         </div>
