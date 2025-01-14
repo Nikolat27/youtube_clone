@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, reactive, watch } from 'vue';
 import { sharedState } from '@/sharedState';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 
 import socialShare from '@/components/socialShare.vue';
@@ -24,8 +24,10 @@ import fillDislikeIcon from '/src/assets/icons/svg-icons/dislike-fill.svg'
 import saveIcon from '/src/assets/icons/svg-icons/save-btn.svg'
 import unSaveIcon from '/src/assets/icons/svg-icons/unsave-btn.svg'
 import replyIcon from '/src/assets/icons/svg-icons/reply-icon.svg'
+import router from '@/router';
 
 const route = useRoute()
+const router2 = useRouter()
 
 // Description Toggling
 const showFullDescription = ref(false);
@@ -154,9 +156,10 @@ const playListExpandingToggle = () => {
 const relatedVideosStyle = computed(() => ({
     position: 'absolute',
     right: '107px',
-    top: playlistExpanded.value ? '575px' : '130px', // Collapsing and Uncollapsing the playlist (Expanding also)
+    top: !route.query.playlist_id ? '56px' : (playlistExpanded.value ? '575px' : '130px'), // Collapsing and Uncollapsing the playlist (Expanding also)
     transition: 'top 0.1s ease-in-out'
 }));
+
 
 // Slider for short related videos (Right side container)
 const scrollHorizontally = (direction) => {
@@ -395,6 +398,7 @@ const hideAnnotationButton = () => {
     }, 1000);
 };
 
+const totalLikes = ref(null)
 const toast = useToast()
 const likeVideo = (action_type) => { // true == 'like', false == 'dislike', null == 'None'
     const user_session_id = sessionStorage.getItem("user_session_id")
@@ -412,6 +416,7 @@ const likeVideo = (action_type) => { // true == 'like', false == 'dislike', null
 let videoInfo = reactive({
     id: '',
     unique_id: '',
+    total_likes: '',
     user_id: '',
     title: '',
     description: '',
@@ -429,6 +434,7 @@ const userLikeSituation = async (video_id, user_session_id) => {
     await axios.get(`http://127.0.0.1:8000/videos/like-situation/${video_id}/${user_session_id}`).then((response) => {
         if (response.status == 200) {
             likeSituation.value = response.data.data
+            totalLikes.value = response.data.total_likes
         }
     }).catch((error) => {
         console.log(error)
@@ -529,7 +535,6 @@ const downloadVideo = (videoId) => {
     })
 }
 
-
 const likeComment = (commentId, actionType, replyId = null) => {
     axios.get(`http://127.0.0.1:8000/videos/comment/like/${replyId ? replyId : commentId}`, {
         params: {
@@ -552,13 +557,52 @@ const likeComment = (commentId, actionType, replyId = null) => {
 
 }
 
+const playlistInfo = reactive([])
+const retrievePlaylist = (playlistId, filter) => {
+    axios.get(`http://127.0.0.1:8000/playlist/${playlistId}`, {
+        params: {
+            filter: filter
+        }
+    }).then((response) => {
+        if (response.status == 200) {
+            Object.assign(playlistInfo, response.data.data)
+        }
+    }).catch((error) => console.log(error))
+}
 
-onMounted(async () => {
-    // This 'timeupdate' invokes whenever timeCurrent of the video changes
-    videoRef.value.addEventListener('timeupdate', updateProgress);
 
+const playPlaylistVideo = (videoId, playlistId) => {
+    router2.push({ name: "video_detail", params: { id: videoId }, query: { playlist_id: playlistId } })
+}
+
+// This function is used for getting the current video index in playlist and the next video title
+const currentVideoIndex = ref(null)
+const nextVideoTitle = ref(null)
+const retrievePlaylistVideoInfo = (videoId, playlistId) => {
+    axios.get(`http://127.0.0.1:8000/playlist/video-info/${playlistId}/${videoId}`).then((response) => {
+        if (response.status == 200) {
+            currentVideoIndex.value = response.data.current_video_index;
+            nextVideoTitle.value = response.data.next_video_title
+
+            console.log(currentVideoIndex.value)
+            console.log(nextVideoTitle.value)
+        }
+    }).catch((error) => console.log(error))
+}
+
+watch(() => route.params.id, () => {
+    MountPage()
+})
+
+const MountPage = async () => {
     const videoId = route.params.id // Current Video Id
     retrieveVideoDetail(videoId)
+
+    const playlistId = route.query.playlist_id
+    if (playlistId) {
+        retrievePlaylist(playlistId, 'all')
+        retrievePlaylistVideoInfo(videoId, playlistId)
+    }
 
     const user_session_id = sessionStorage.getItem("user_session_id")
     if (user_session_id) {
@@ -570,6 +614,12 @@ onMounted(async () => {
             retrieveVideoComments(videoId)
         }
     }
+}
+
+onMounted(async () => {
+    // This 'timeupdate' invokes whenever timeCurrent of the video changes
+    videoRef.value.addEventListener('timeupdate', updateProgress);
+    MountPage()
 });
 </script>
 
@@ -732,7 +782,7 @@ onMounted(async () => {
         <div class="video-detail-other-btn">
             <button @click="likeVideo(true)" class="like-btn"><img
                     :src="likeSituation === true ? fillLikeIcon : emptyLikeIcon" alt="">
-                <span class="like-amount">1K</span>
+                <span class="like-amount">{{ totalLikes }}</span>
             </button>
             <button @click="likeVideo(false)" class="dislike-btn"><img
                     :src="likeSituation === false ? fillDislikeIcon : emptyDislikeIcon" alt=""></button>
@@ -886,29 +936,32 @@ onMounted(async () => {
     </div>
 
     <div class="right-side-container flex flex-col">
-        <div class="top-14 w-[400px] h-[66px] bg-[#e4dfec] hover:bg-[#d1c2e9] flex flex-col justify-center
+        <div v-if="$route.query.playlist_id" class="top-14 w-[400px] h-[66px] bg-[#e4dfec] hover:bg-[#d1c2e9] flex flex-col justify-center
          absolute right-[110px] rounded-xl pl-3 transition-all duration-300 ease-in-out">
-            <div class="flex flex-row items-center text-base">
+            <div v-if="currentVideoIndex + 1 < playlistInfo.total_videos" class="flex flex-row items-center text-base">
                 <p class="font-semibold">Next:&nbsp;</p>
-                <p class="font-normal">Video title</p>
+                <p class="font-normal">{{ nextVideoTitle }}</p>
+            </div>
+            <div v-else class="flex flex-row items-center text-base">
+                <p class="font-semibold">End of video list</p>
             </div>
             <div class="flex flex-row font-normal text-xs">
-                <a href="#">Playlist name -&nbsp;</a>
-                <p>1&nbsp;/&nbsp;367</p>
+                <a href="#">{{ playlistInfo.title }} -&nbsp;</a>
+                <p>{{ currentVideoIndex + 1 }}&nbsp;/&nbsp;{{ playlistInfo.total_videos }}</p>
             </div>
-            <button @click="playListExpandingToggle" class="absolute right-0 top-1/2 transform -translate-y-1/2 w-10 h-10 rounded-full bg-inherit hover:bg-[#cdc8d4]
-                     flex justify-center items-center">
+            <button @click="playListExpandingToggle" class="absolute right-0 top-1/2 transform -translate-y-1/2 w-10 h-10
+             rounded-full bg-inherit hover:bg-[#cdc8d4] flex justify-center items-center">
                 <img class="w-3 h-3" src="@/assets/icons/svg-icons/thin-chevron-arrow-bottom-icon.svg" alt="">
             </button>
         </div>
 
         <div v-if="playlistExpanded" class="bg-white z-20 flex flex-col w-[400px] h-[500px] border-[#ededed] border-[1px]
-                mb-10 absolute right-[110px] top-12 rounded-xl transition-all duration-300 ease-in-out">
+            mb-10 absolute right-[110px] top-14 rounded-xl transition-all duration-300 ease-in-out">
             <div class="pl-3 pt-2">
-                <a href="#" class="font-bold text-xl pt-2 mb-2">Playlist title</a>
+                <a href="#" class="font-bold text-xl pt-2 mb-2">{{ playlistInfo.title }}</a>
                 <div class="flex flex-row text-xs font-normal">
-                    <a href="#" class="text-[#304354]">Playlist title -&nbsp;</a>
-                    <span class="text-[#858c9c]">1/312</span>
+                    <a href="#" class="text-[#304354]">{{ playlistInfo.title }} -&nbsp;</a>
+                    <span class="text-[#858c9c]">{{ currentVideoIndex + 1 }}/{{ playlistInfo.total_videos }}</span>
                 </div>
                 <button @click="playListExpandingToggle"
                     class="absolute right-1 top-3 w-10 h-10 rounded-full hover:bg-[#e5e5e5] flex justify-center items-center">
@@ -933,31 +986,20 @@ onMounted(async () => {
 
             <div class="playlist-videos-container overflow-x-hidden overflow-y-auto flex flex-col
                     gap-y-2 max-h-[422px]">
-                <div class="playlist-video active pl-4 cursor-pointer hover:bg-[#f2f2f2] hover:shadow-2xl pt-2 pb-2">
-                    <a href="#" class="flex flex-row">
-                        <span class="ml-[-18px] flex justify-center items-center text-gray-500 text-sm">
-                            1
+                <div @click="playPlaylistVideo(video.unique_id, $route.query.playlist_id)"
+                    v-for="(video, index) in playlistInfo.videos" :key="video.id" class="playlist-video pl-4 cursor-pointer
+                 hover:bg-[#f2f2f2] py-2" :class="[video.unique_id === $route.params.id ? 'active' : '']">
+                    <div class="flex flex-row">
+                        <span class="ml-[-10px] flex justify-center items-center text-gray-500 text-sm">
+                            {{ index + 1 }}
                         </span>
-                        <img class="flex-shrink-0 w-[100px] h-[56px] rounded-xl ml-2" src="@/assets/img/Django.png"
-                            alt="">
+                        <img class="flex-shrink-0 w-[100px] h-[56px] rounded-xl ml-2" :src="video.thumbnail_url" alt="">
                         <div class="flex flex-col ml-2">
-                            <p class="font-semibold text-sm mb-2">Video title</p>
-                            <p class="font-normal text-xs text-gray-600">channel name</p>
+                            <p class="font-semibold text-sm mb-2">{{ video.title }}</p>
+                            <p class="font-normal text-xs text-gray-600">{{ video.channel_name }}</p>
                         </div>
-                    </a>
-                </div>
-                <div class="playlist-video pl-4 cursor-pointer hover:bg-[#f2f2f2] hover:shadow-2xl pt-2 pb-2">
-                    <a href="#" class="flex flex-row">
-                        <span class="ml-[-18px] flex justify-center items-center text-gray-500 text-sm">
-                            1
-                        </span>
-                        <img class="flex-shrink-0 w-[100px] h-[56px] rounded-xl ml-2" src="@/assets/img/Django.png"
-                            alt="">
-                        <div class="flex flex-col ml-2">
-                            <p class="font-semibold text-sm mb-2">Video title</p>
-                            <p class="font-normal text-xs text-gray-600">channel name</p>
-                        </div>
-                    </a>
+                    </div>
+
                 </div>
             </div>
         </div>

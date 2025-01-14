@@ -68,7 +68,10 @@ const currentFilter = ref('all')
 const filterPlaylist = (playlistId, filter) => {
     currentFilter.value = filter
     retrievePlaylist(playlistId, currentFilter.value)
+}
 
+const playPlaylistVideo = (playlistId, uniqueId) => {
+    router2.push({ name: 'video_detail', params: { id: uniqueId }, query: { 'playlist_id': playlistId } })
 }
 
 
@@ -92,7 +95,7 @@ onMounted(() => {
             <p class="text-sm font-medium mt-4 text-white">{{ playlistInfo.username }}</p>
             <p class="text-gray-700 text-[12px] mt-2">{{ playlistInfo.total_videos }} videos</p>
             <div class="flex flex-row mt-6 gap-x-2 ml-1">
-                <button class="w-[152px] h-[36px] flex flex-row justify-center items-center
+                <button @click="playPlaylistVideo($route.params.id, playlistInfo.last_video_unique_id)" class="w-[152px] h-[36px] flex flex-row justify-center items-center
                  bg-white rounded-2xl hover:bg-[#e6e6e6]">
                     <img class="w-[40px] h-[20px] ml-[-10px]" src="@/assets/icons/svg-icons/play-icon.svg" alt="">
                     <p class="text-sm font-medium">Play all</p>
@@ -120,11 +123,11 @@ onMounted(() => {
             <div v-if="!isLoading" class="content-section">
                 <div v-for="(video, index) in playlistInfo.videos" :key="index" class="z-auto pl-4 h-[129px] w-[827px] flex flex-row items-center
                  ml-[-36px] mt-4 gap-x-4 hover:bg-[#f2f2f2] hover:z-auto rounded-lg relative">
-                    <a href="#" class="w-full h-full flex items-center">
+                    <div class="w-full h-full flex items-center">
                         <p class="text-[#796966] font-medium text-sm justify-self-start ml-[-5px]">{{ index + 1 }}</p>
                         <img class="w-[200px] h-[113px] rounded-lg ml-4" :src="video.thumbnail_url" alt="">
                         <div class="flex flex-col mt-[-67px] relative ml-4">
-                            <router-link :to="`/video/${video.unique_id}`">
+                            <router-link :to="`/video/${video.unique_id}?playlist_id=${$route.params.id}`">
                                 <p class="font-medium text-base mt-2 mb-2">{{ video.title }}</p>
                             </router-link>
                             <div class="flex flex-row text-[#898f90] text-xs font-normal">
@@ -133,7 +136,7 @@ onMounted(() => {
                                 <p class="hover:text-[#182c61]">{{ video.created_at }} days ago</p>
                             </div>
                         </div>
-                    </a>
+                    </div>
                     <button @click="toggleVideoOptions(video.id)" class="absolute right-0 top-1/2 transform -translate-y-1/2 
                         w-10 h-10 rounded-full bg-transparent hover:bg-[#e5e5e5] flex justify-center items-center">
                         <img class="w-4 h-4" src="@/assets/icons/svg-icons/kebab-menu.svg" alt="">

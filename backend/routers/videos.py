@@ -231,7 +231,9 @@ async def video_detail(unique_id: str = Path_parameter()):
         DIR = Path("youtube_videos")
         FILE_PATH = Path(DIR / unique_id / f"{unique_id}.mp4")
         if FILE_PATH.exists():
-            return JSONResponse({"data": str(FILE_PATH)}, status_code=status.HTTP_200_OK)
+            return JSONResponse(
+                {"data": str(FILE_PATH)}, status_code=status.HTTP_200_OK
+            )
         else:
             return JSONResponse(
                 {"data": f"https://www.youtube.com/embed/{unique_id}"},
@@ -258,6 +260,7 @@ async def video_detail(unique_id: str = Path_parameter()):
         "channel_name": channel.name or "",
         "channel_profile_url": await static_file(channel.profile_picture_url) or "",
         "channel_watermark_url": await static_file(channel.video_watermark_url) or "",
+        "total_likes": await total_video_likes(video.unique_id),
     }
     return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)
 
@@ -273,7 +276,6 @@ async def video_stream(unique_id: str = Path_parameter(), range: str = Header(No
         DIR = Path("youtube_videos")
         video_path = Path(DIR / unique_id / f"{unique_id}.mp4").resolve()
 
-        
     start, end = range.replace("bytes=", "").split("-")
     start = int(start)
     CHUNK_SIZE = 1024 * 1024
@@ -298,22 +300,24 @@ async def like_video(
 ):  # True == Like, False == Dislike
     user_id = await get_current_user_id(user_session_id)
 
-    like = Like.query.filter_by(video_unique_id=unique_id, user_id=user_id).first()
+    like = Like.query.filter_by(video_id=unique_id, user_id=user_id).first()
     if like and like.action_type == action_type:
         session.delete(like)
     elif like and like.action_type != action_type:
         like.action_type = action_type
     else:
-        new_like = Like(
-            user_id=user_id, video_unique_id=unique_id, action_type=action_type
-        )
+        new_like = Like(user_id=user_id, video_id=unique_id, action_type=action_type)
         session.add(new_like)
 
     session.commit()
     return JSONResponse(
-        {"data": action_type},
+        {"data": action_type, "total_likes": await total_video_likes(unique_id)},
         status_code=status.HTTP_200_OK,
     )
+
+
+async def total_video_likes(video_unique_id):
+    return Like.query.filter_by(video_id=video_unique_id, action_type=True).count()
 
 
 @router.get("/like-situation/{unique_id}/{user_session_id}")
@@ -324,13 +328,16 @@ async def is_user_liked(
     like_situation = None
     like = (
         Like.query.with_entities(Like.action_type)
-        .filter_by(unique_id=unique_id, user_id=user_id)
+        .filter_by(video_id=unique_id, user_id=user_id)
         .first()
     )
     if like:
         like_situation = like.action_type
 
-    return JSONResponse({"data": like_situation}, status_code=status.HTTP_200_OK)
+    return JSONResponse(
+        {"data": like_situation, "total_likes": await total_video_likes(unique_id)},
+        status_code=status.HTTP_200_OK,
+    )
 
 
 @router.get("/save/{unique_id}/{user_session_id}")

@@ -74,12 +74,13 @@ async def get_playlist(playlist_id: int = Path_parameter(), filter: str = Query(
     playlist = Playlist.query.filter_by(id=playlist_id).first()
 
     videos = playlist.video
-    if filter and filter == "all":
-        videos = videos
-    elif filter and filter == "videos":
-        videos = videos.filter(Video.video_type == "long_video")
-    elif filter and filter == "shorts":
-        videos = videos.filter(Video.video_type == "short_video")
+    match filter:
+        case "all":
+            videos = videos
+        case "videos":
+            videos = videos.filter(Video.video_type == "long_video")
+        case "shorts":
+            videos = videos.filter(Video.video_type == "short_video")
 
     serializer = {
         "id": playlist.id,
@@ -96,6 +97,9 @@ async def get_playlist(playlist_id: int = Path_parameter(), filter: str = Query(
             }
             for video in videos.order_by(desc(Video.created_at))
         ],
+        "last_video_unique_id": await playlist_last_video_unique_id(
+            list(playlist.video)[-1]
+        ),
         "last_video_thumbnail": await playlist_last_video_thumbnail_url(
             list(playlist.video)[-1]
         ),
@@ -103,3 +107,28 @@ async def get_playlist(playlist_id: int = Path_parameter(), filter: str = Query(
     }
 
     return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)
+
+
+@router.get(
+    "/video-info/{playlist_id}/{video_id}"
+)  # receive current video Id and next video title
+async def get_current_video_playlist_info(
+    playlist_id: int = Path_parameter(), video_id: str = Path_parameter()
+):
+    playlist = Playlist.query.filter_by(id=playlist_id).first()
+    videos = list(playlist.video)
+
+    indexes = [video.unique_id for video in videos]
+    current_video_index = indexes.index(video_id)
+
+    next_video_title = None
+    if current_video_index + 1 < len(videos):
+        next_video_title = videos[current_video_index + 1].title
+
+    return JSONResponse(
+        {
+            "current_video_index": current_video_index,
+            "next_video_title": next_video_title,
+        },
+        status_code=status.HTTP_200_OK,
+    )
