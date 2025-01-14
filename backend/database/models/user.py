@@ -73,7 +73,10 @@ class Playlist(Model):
         Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
     video = relationship(
-        "Video", secondary=playlist_video_association, back_populates="playlists"
+        "Video",
+        secondary=playlist_video_association,
+        back_populates="playlists",
+        lazy="dynamic",
     )
     created_at = Column(DateTime, default=datetime.utcnow)
 

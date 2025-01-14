@@ -23,17 +23,16 @@ async def get_user_playlists(user_session_id: str = Query(), sortBy: str = Query
             "id": playlist.id,
             "title": playlist.title,
             "visibility": playlist.visibility,
-            "total_videos": len(playlist.video),
+            "total_videos": playlist.video.count(),
             "last_video_unique_id": await playlist_last_video_unique_id(
-                playlist.video[-1]
+                list(playlist.video)[-1]
             ),  # Sending the last index video
             "last_video_thumbnail": await playlist_last_video_thumbnail_url(
-                playlist.video[-1]
+                list(playlist.video)[-1]
             ),  # Sending the last index video again
         }
         for playlist in playlists
     ]
-
     return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)
 
 
@@ -50,7 +49,7 @@ async def playlist_last_video_unique_id(video):
 
 
 async def playlist_last_video_thumbnail_url(video):
-    return video.thumbnail_url
+    return f"http://127.0.0.1:8000/static/{video.thumbnail_url}"
 
 
 async def get_username(user_id):
@@ -71,8 +70,16 @@ async def video_channel(user_id):
 
 
 @router.get("/{playlist_id}")
-async def get_playlist(playlist_id: int = Path_parameter()):
+async def get_playlist(playlist_id: int = Path_parameter(), filter: str = Query()):
     playlist = Playlist.query.filter_by(id=playlist_id).first()
+
+    videos = playlist.video
+    if filter and filter == "all":
+        videos = videos
+    elif filter and filter == "videos":
+        videos = videos.filter(Video.video_type == "long_video")
+    elif filter and filter == "shorts":
+        videos = videos.filter(Video.video_type == "short_video")
 
     serializer = {
         "id": playlist.id,
@@ -87,13 +94,12 @@ async def get_playlist(playlist_id: int = Path_parameter()):
                 "thumbnail_url": f"http://127.0.0.1:8000/static/{video.thumbnail_url}",
                 "channel_name": await video_channel(video.user_id),
             }
-            for video in playlist.video
+            for video in videos.order_by(desc(Video.created_at))
         ],
         "last_video_thumbnail": await playlist_last_video_thumbnail_url(
-            playlist.video[-1]
+            list(playlist.video)[-1]
         ),
-        "total_videos": len(playlist.video),
+        "total_videos": playlist.video.count(),
     }
 
-    print("Serializer: ", serializer)
     return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)

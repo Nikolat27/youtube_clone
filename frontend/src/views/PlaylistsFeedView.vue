@@ -81,17 +81,6 @@ const retrievePlaylists = (user_session_id, sortBy) => {
     }).catch((error) => toast.error(error)).finally(() => isLoading.value = false)
 }
 
-
-const backgroundChange = (playlistId) => {
-    const playlist = document.getElementById(playlistId)
-
-}
-
-const backgroundDelete = (playlistId) => {
-    const playlist = document.getElementById(playlistId)
-    playlist.style.backgroundColor = 'black';
-}
-
 onMounted(() => {
     const user_session_id = sessionStorage.getItem("user_session_id")
     if (user_session_id) {
@@ -164,7 +153,9 @@ onMounted(() => {
                         </div>
                     </div>
                     <p class="text-[14px] font-normal text-gray-600">{{ playlist.visibility }}</p>
-                    <p class="text-[14px] font-normal text-gray-700">View full playlist</p>
+                    <p @click="playPlaylist(playlist.id)" class="cursor-pointer text-[14px] font-normal text-gray-700">
+                        View full
+                        playlist</p>
                 </div>
             </div>
         </div>
