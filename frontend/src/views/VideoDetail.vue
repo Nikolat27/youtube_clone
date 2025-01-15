@@ -269,6 +269,12 @@ const updateProgress = () => {
         videoProgress.value = (videoRef.value.currentTime / videoRef.value.duration) * 100
         currentVideoTime.value = calculateTime(videoRef.value.currentTime)
         videoDuration.value = calculateTime(videoRef.value.duration)
+
+        axios.get(`http://127.0.0.1:8000/videos/stream/current-time/${route.params.id}`, {
+            params: {
+                current_time: videoRef.value.currentTime
+            }
+        })
     }
 }
 
@@ -527,6 +533,8 @@ const retrieveVideoDetail = (videoId, user_session_id) => {
         } else {
             youtubeVideoLink.value = response.data.data
         }
+
+        if (videoRef.value) { videoRef.value.currentTime = response.data.data.current_time }
         isChannelSubscribed.value = videoInfo.is_channel_subed
     }).catch((error) => {
         console.log(error)
@@ -708,7 +716,7 @@ onMounted(async () => {
          items-center flex-row bg-gray-200 bg-opacity-80">
             <div class="video-progress-bar w-[906px] h-[8px] absolute bottom-14">
                 <div class="video-img-tracker z-10 overflow-hidden w-[225px] h-[130px] rounded-lg border-[3px] border-white
-                        absolute bottom-12" :style="{ left: `${position}px`, display: `${canvasDisplay}`, }">
+                    absolute bottom-12" :style="{ left: `${position}px`, display: `${canvasDisplay}`, }">
                     <img class="w-full h-full" id="video-frame-img" loading="lazy" alt="">
                 </div>
                 <p class="text-[13px] text-white absolute bottom-4 font-medium"

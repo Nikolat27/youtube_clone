@@ -4,7 +4,6 @@ from fastapi import APIRouter, Query, status, Path as Path_parameter
 from dependencies import get_current_user_id
 from fastapi.responses import JSONResponse
 from datetime import datetime
-import random
 import secrets
 
 router = APIRouter(prefix="/playlist", tags=["playlists"])

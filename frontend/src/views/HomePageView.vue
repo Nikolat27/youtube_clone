@@ -94,8 +94,9 @@ onMounted(() => {
         <div class="regular-videos">
             <b v-if="isLoadingNProgress" class="ml-2">{{ ((progress || 0) * 100).toFixed(0) }}%</b>
             <div v-for="video in longVideos.slice(0, 3)" :key="video.id" class="video-preview">
-                <div class="video-thumbnail">
+                <div class="video-thumbnail relative">
                     <img loading="lazy" :src="video.thumbnail_url" alt="">
+                    <input type="range" disabled class="watch-progress-tracking w-[400px] red absolute -bottom-1">
                 </div>
                 <div class="video-info">
                     <router-link :to="`/channel-page/${video.channel_unique_identifier}`">
@@ -218,3 +219,22 @@ onMounted(() => {
         <PulseLoader color="red" size="20px"></PulseLoader>
     </div>
 </template>
+<style scoped>
+.watch-progress-tracking {
+    cursor: default;
+}
+
+.watch-progress-tracking::-moz-range-progress {
+    height: 4px;
+    background: red;
+}
+
+.watch-progress-tracking::-moz-range-thumb {
+    visibility: hidden;
+}
+
+.watch-progress-tracking::-moz-range-track {
+    height: 4px;
+    background: #909090;
+}
+</style>

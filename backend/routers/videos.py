@@ -32,6 +32,9 @@ import json
 import requests
 from googleapiclient.discovery import build
 import yt_dlp
+import redis
+import socket
+
 
 # Replace with your API key
 API_KEY = "AIzaSyD4tVMAI9kvBA7DghHz3QDrA3UJEe6u7as"
@@ -39,6 +42,8 @@ YOUTUBE_API_SERVICE_NAME = "youtube"
 YOUTUBE_API_VERSION = "v3"
 
 router = APIRouter(prefix="/videos", tags=["videos"])
+
+redis_client = redis.Redis(host="127.0.0.1", port=6379, db=0)
 
 
 async def get_video_duration(file):  # Using pymediainfo (This is faster)
@@ -102,6 +107,11 @@ def is_channel_subed(channel_id, user_id):
             channel_id=channel_id, user_id=user_id
         ).first()
     )
+
+
+async def get_users_ip():
+    hostname = socket.gethostname()
+    return socket.gethostbyname(hostname)
 
 
 @router.get("/generate/fake")  # Usage: Generate testing and random data to our DB
@@ -270,6 +280,13 @@ async def video_detail(
         .first()
     )
 
+    user_ip = await get_users_ip()
+
+    current_time = redis_client.get(
+        f"{video.unique_id}-{user_ip}-current_time"
+    )  # this one is in bytes
+    decode_current_time = float(current_time.decode("utf-8"))
+
     serializer = {
         "id": video.unique_id,
         "title": video.title,
@@ -277,6 +294,7 @@ async def video_detail(
         "description": video.description or "",
         "file_url": await static_file(video.file_url),
         "thumbnail_url": await static_file(video.thumbnail_url),
+        "current_time": decode_current_time,
         "duration": await get_video_duration(video.file_url),
         "created_at": f"{await time_difference(video.created_at)} days ",
         "channel_id": channel.id,
@@ -314,7 +332,18 @@ async def video_stream(unique_id: str = Path_parameter(), range: str = Header(No
             "Content-Range": f"bytes {str(start)}-{str(end)}/{filesize}",
             "Accept-Ranges": "bytes",
         }
+
+        redis_client.set("filesize", filesize)
         return Response(data, status_code=206, headers=headers, media_type="video/mp4")
+
+
+@router.get("/stream/current-time/{unique_id}")
+async def get_current_video_time(
+    unique_id: str = Path_parameter, current_time: float = Query()
+):
+    user_ip = await get_users_ip()
+    current_time = round(current_time, 1)
+    redis_client.set(f"{unique_id}-{user_ip}-current_time", current_time)
 
 
 @router.get("/like/{unique_id}/{action_type}/{user_session_id}")
