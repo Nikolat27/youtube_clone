@@ -4,6 +4,8 @@ from fastapi import APIRouter, Query, status, Path as Path_parameter
 from dependencies import get_current_user_id
 from fastapi.responses import JSONResponse
 from datetime import datetime
+import random
+import secrets
 
 router = APIRouter(prefix="/playlist", tags=["playlists"])
 
@@ -107,6 +109,16 @@ async def get_playlist(playlist_id: int = Path_parameter(), filter: str = Query(
     }
 
     return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)
+
+
+@router.get("/shuffle/{playlist_id}")
+async def shuffle_playlist(playlist_id: int = Path_parameter()):
+    playlist_videos = Playlist.query.filter_by(id=playlist_id).first()
+    total_videos = playlist_videos.video.count()
+    random_video_index = secrets.randbelow(total_videos)  # 0, total - 1
+    videos = list(playlist_videos.video)
+    unique_id = videos[random_video_index].unique_id
+    return JSONResponse({"data": unique_id}, status_code=status.HTTP_200_OK)
 
 
 @router.get(

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, onMounted, watch, computed } from 'vue';
+import { ref, reactive, onMounted } from 'vue';
 import { useToast } from 'vue-toastification';
 import { useRoute, useRouter } from 'vue-router';
 import ScaleLoader from 'vue-spinner/src/ScaleLoader.vue';
@@ -19,17 +19,6 @@ const toggleVideoOptions = (video_id) => {
     }
 }
 
-
-const isShortVideoOptionsOpen = ref([])
-const toggleShortVideoOptions = (short_id) => {
-    if (!isShortVideoOptionsOpen.value.includes(short_id)) {
-        isShortVideoOptionsOpen.value.pop()
-        isShortVideoOptionsOpen.value.push(short_id)
-    } else {
-        isShortVideoOptionsOpen.value.pop()
-    }
-}
-
 let page = ref(1)
 let isLoading = ref(false)
 
@@ -38,7 +27,6 @@ const scrollMore = (type) => {
     isLoading.value = true
     setTimeout(() => {
         page.value += 1
-        generateTestData(type, page.value)
         isLoading.value = false
     }, 1500)
 }
@@ -46,7 +34,7 @@ const scrollMore = (type) => {
 const checkScroll = () => {
     const endOfPage = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 200
     if (endOfPage && !isLoading.value) {
-        scrollMore(router.query.type || 'all')
+        // scrollMore(router.query.type || 'all')
     }
 }
 
@@ -74,6 +62,13 @@ const playPlaylistVideo = (playlistId, uniqueId) => {
     router2.push({ name: 'video_detail', params: { id: uniqueId }, query: { 'playlist_id': playlistId } })
 }
 
+const shufflePlaylistVideo = (playlistId) => {
+    axios.get(`http://127.0.0.1:8000/playlist/shuffle/${playlistId}`).then((response) => {
+        if (response.status == 200) {
+            playPlaylistVideo(playlistId, response.data.data);
+        }
+    }).catch((error) => toast.error("Error!"))
+}
 
 onMounted(() => {
     const playlistId = router.params.id
@@ -100,7 +95,7 @@ onMounted(() => {
                     <img class="w-[40px] h-[20px] ml-[-10px]" src="@/assets/icons/svg-icons/play-icon.svg" alt="">
                     <p class="text-sm font-medium">Play all</p>
                 </button>
-                <button
+                <button @click="shufflePlaylistVideo($route.params.id)"
                     class="w-[152px] h-[36px] flex flex-row justify-center items-center bg-[#766d65] bg-opacity-65 rounded-2xl">
                     <img class="w-[40px] h-[20px] ml-[-20px]" src="@/assets/icons/svg-icons/shuffle-icon.svg" alt="">
                     <p class="text-sm font-medium text-white">Shuffle</p>

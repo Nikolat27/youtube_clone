@@ -242,6 +242,7 @@ async def list_video(
 
     videos = Video.query.with_entities(
         Video.id,
+        Video.unique_id,
         Video.video_type,
         Video.title,
         Video.description,
@@ -269,6 +270,7 @@ async def list_video(
         serializer.append(
             {
                 "id": video.id,
+                "unique_id": video.unique_id,
                 "title": video.title,
                 "video_type": video_type,
                 "description": video.description,

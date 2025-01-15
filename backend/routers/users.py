@@ -229,7 +229,7 @@ async def get_video_thumbnail(video_id):
     from database.models.user import Video
 
     video = (
-        Video.query.with_entities(Video.thumbnail_url).filter_by(id=video_id).first()
+        Video.query.with_entities(Video.thumbnail_url).filter_by(unique_id=video_id).first()
     )
     return f"http://127.0.0.1:8000/static/{video.thumbnail_url}"
 

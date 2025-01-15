@@ -17,6 +17,7 @@ from database.models.user import (
     Comment,
     Notification,
     CommentLike,
+    ChannelSubscription,
 )
 from fastapi.responses import JSONResponse, Response
 from sqlalchemy import select, desc
@@ -89,6 +90,18 @@ def get_channel_profile(user_id):
 def get_channel_unique_identifier(user_id):
     user = User.query.filter_by(id=user_id).first()
     return user.channel.unique_identifier
+
+
+def get_channel_total_subs(channel_id):
+    return ChannelSubscription.query.filter_by(channel_id=channel_id).count()
+
+
+def is_channel_subed(channel_id, user_id):
+    return bool(
+        ChannelSubscription.query.filter_by(
+            channel_id=channel_id, user_id=user_id
+        ).first()
+    )
 
 
 @router.get("/generate/fake")  # Usage: Generate testing and random data to our DB
@@ -211,7 +224,13 @@ async def load_more_videos() -> Page:
 
 
 @router.get("/detail/{unique_id}")
-async def video_detail(unique_id: str = Path_parameter()):
+async def video_detail(
+    unique_id: str = Path_parameter(), user_session_id: str = Query(None)
+):
+    user_id = None
+    if user_session_id:
+        user_id = await get_current_user_id(user_session_id)
+
     video = (
         Video.query.with_entities(
             Video.id,
@@ -242,7 +261,10 @@ async def video_detail(unique_id: str = Path_parameter()):
 
     channel = (
         Channel.query.with_entities(
-            Channel.name, Channel.profile_picture_url, Channel.video_watermark_url
+            Channel.id,
+            Channel.name,
+            Channel.profile_picture_url,
+            Channel.video_watermark_url,
         )
         .filter_by(owner_id=video.user_id)
         .first()
@@ -257,9 +279,12 @@ async def video_detail(unique_id: str = Path_parameter()):
         "thumbnail_url": await static_file(video.thumbnail_url),
         "duration": await get_video_duration(video.file_url),
         "created_at": f"{await time_difference(video.created_at)} days ",
+        "channel_id": channel.id,
         "channel_name": channel.name or "",
         "channel_profile_url": await static_file(channel.profile_picture_url) or "",
         "channel_watermark_url": await static_file(channel.video_watermark_url) or "",
+        "channel_total_subs": get_channel_total_subs(channel.id),
+        "is_channel_subed": is_channel_subed(channel.id, user_id),
         "total_likes": await total_video_likes(video.unique_id),
     }
     return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)
@@ -431,7 +456,7 @@ async def create_notification(
 
 @router.post("/comment/add")
 async def add_comment(
-    video_id: int = Form(),
+    video_id: str = Form(),
     user_session_id: str = Form(),
     comment_text: str = Form(),
     parent_id: int = Form(None),
@@ -454,7 +479,9 @@ async def add_comment(
         )
     else:  # If you dont, it means that your commenting on a video, So your receiver is the video owner
         receiver_id = (
-            Video.query.with_entities(Video.user_id).filter_by(id=video_id).first()
+            Video.query.with_entities(Video.user_id)
+            .filter_by(unique_id=video_id)
+            .first()
         )
 
     await create_notification(
@@ -538,23 +565,6 @@ async def is_comment_liked(comment_id, user_id=None):
         )
         is_liked = like_instance.action_type if like_instance else None
     return is_liked
-
-
-# @router.get("/comment/is-liked/{comment_id}")
-# async def is_comment_liked(
-#     comment_id: int = Path_parameter(), user_session_id: str = Query()
-# ):
-#     user_id = await get_current_user_id(user_session_id)
-#     await check_comment_exist(comment_id)
-
-#     like_instance = (
-#         CommentLike.query.with_entities(CommentLike.action_type)
-#         .filter_by(user_id=user_id, comment_id=comment_id)
-#         .first()
-#     )
-
-#     is_liked = like_instance.action_type if like_instance else None
-#     return JSONResponse({"data": is_liked}, status_code=status.HTTP_200_OK)
 
 
 @router.get("/search/autocomplete")

@@ -24,7 +24,8 @@ import fillDislikeIcon from '/src/assets/icons/svg-icons/dislike-fill.svg'
 import saveIcon from '/src/assets/icons/svg-icons/save-btn.svg'
 import unSaveIcon from '/src/assets/icons/svg-icons/unsave-btn.svg'
 import replyIcon from '/src/assets/icons/svg-icons/reply-icon.svg'
-import router from '@/router';
+import fillBellSrc from '/src/assets/icons/svg-icons/notification-alert-icon.svg'
+import emptyBellSrc from '/src/assets/icons/svg-icons/bell-line-icon.svg'
 
 const route = useRoute()
 const router2 = useRouter()
@@ -469,11 +470,55 @@ const videoSaveSituation = async (video_id, user_session_id) => {
     })
 }
 
+// Handle Channel`s options
+const isChannelOptionsOpen = ref(false)
+const toggleChannelOptions = () => isChannelOptionsOpen.value = !isChannelOptionsOpen.value
+
+const isChannelSubscribed = ref(null)
+const channelNotification = ref(null)
+const toggleChannelNotification = (channelId, notification) => {
+    axios.get(`http://127.0.0.1:8000/channel/notification/${channelId}`, {
+        params: {
+            user_session_id: sessionStorage.getItem("user_session_id"),
+            notification: notification
+        }
+    }).then((response) => {
+        if (response.status == 200) {
+            toast.info(response.data.data)
+        }
+    }).catch((error) => {
+        toast.error(error)
+    }).finally(() => {
+        channelNotification.value = !channelNotification.value
+        toggleChannelOptions()
+    })
+}
+
+const subscribeChannel = (channelId) => {
+    if (!isUserAuthenticated.value) {
+        toast.error("You have Login to subscribe a channel!")
+        return;
+    }
+    axios.get(`http://127.0.0.1:8000/channel/subscribe/${channelId}`, {
+        params: {
+            user_session_id: sessionStorage.getItem("user_session_id")
+        }
+    }).then((response) => {
+        if (response.status == 200) {
+            toast.success(response.data.data)
+            isChannelSubscribed.value = !isChannelSubscribed.value
+        }
+    }).catch((error) => toast.error(error))
+}
+
+
+
 const youtubeVideoLink = ref(null)
-const retrieveVideoDetail = (videoId) => {
+const retrieveVideoDetail = (videoId, user_session_id) => {
     axios.get(`http://127.0.0.1:8000/videos/detail/${videoId}`, {
         params: {
             unique_id: route.query.unique_id,
+            user_session_id: user_session_id
         }
     }).then((response) => {
         if (response.status == 200) {
@@ -482,6 +527,7 @@ const retrieveVideoDetail = (videoId) => {
         } else {
             youtubeVideoLink.value = response.data.data
         }
+        isChannelSubscribed.value = videoInfo.is_channel_subed
     }).catch((error) => {
         console.log(error)
     })
@@ -575,6 +621,15 @@ const playPlaylistVideo = (videoId, playlistId) => {
     router2.push({ name: "video_detail", params: { id: videoId }, query: { playlist_id: playlistId } })
 }
 
+const shufflePlaylistVideo = (playlistId) => {
+    axios.get(`http://127.0.0.1:8000/playlist/shuffle/${playlistId}`).then((response) => {
+        if (response.status == 200) {
+            playPlaylistVideo(response.data.data, playlistId);
+        }
+    }).catch(() => toast.error("Error!"))
+}
+
+
 // This function is used for getting the current video index in playlist and the next video title
 const currentVideoIndex = ref(null)
 const nextVideoTitle = ref(null)
@@ -583,9 +638,6 @@ const retrievePlaylistVideoInfo = (videoId, playlistId) => {
         if (response.status == 200) {
             currentVideoIndex.value = response.data.current_video_index;
             nextVideoTitle.value = response.data.next_video_title
-
-            console.log(currentVideoIndex.value)
-            console.log(nextVideoTitle.value)
         }
     }).catch((error) => console.log(error))
 }
@@ -595,8 +647,9 @@ watch(() => route.params.id, () => {
 })
 
 const MountPage = async () => {
+    const user_session_id = sessionStorage.getItem("user_session_id")
     const videoId = route.params.id // Current Video Id
-    retrieveVideoDetail(videoId)
+    retrieveVideoDetail(videoId, user_session_id)
 
     const playlistId = route.query.playlist_id
     if (playlistId) {
@@ -604,7 +657,6 @@ const MountPage = async () => {
         retrievePlaylistVideoInfo(videoId, playlistId)
     }
 
-    const user_session_id = sessionStorage.getItem("user_session_id")
     if (user_session_id) {
         await userAuthentication(user_session_id)
         if (isUserAuthenticated.value) {
@@ -646,7 +698,7 @@ onMounted(async () => {
                 :style="{ opacity: annotationIsHovered ? '1' : '0', display: annotationIsHovered ? 'flex' : 'none' }"
                 class="annotation-btn bg-[#191919] bg-opacity-90 p-1 absolute right-[48px] -bottom-[2px] w-[124px] h-[75px] rounded-xl flex-col items-center
              justify-center text-white">
-                <span class="text-[11px] font-normal text-left self-start ml-3 mb-1">channel name</span>
+                <span class="text-[11px] font-normal text-left self-start ml-3 mb-1">{{ videoInfo.channel_name }}</span>
                 <button class="w-[94.5px] h-[36px] rounded-3xl bg-white cursor-pointer">
                     <span class="text-[14px] font-medium text-black">Subscribe</span>
                 </button>
@@ -776,9 +828,32 @@ onMounted(async () => {
         <img class="video-detail-channel-logo" loading="eager" :src="videoInfo.channel_profile_url" alt="">
         <div class="video-detail-upload-info">
             <p class="video-detail-channel-name">{{ videoInfo.channel_name }}</p>
-            <p class="video-detail-channel-sub-count">2.5K subscribers</p>
+            <p class="video-detail-channel-sub-count">{{ videoInfo.channel_total_subs }} subscribers</p>
         </div>
-        <button class="video-detail-channel-sub-btn">Subscribe</button>
+        <button v-if="isChannelSubscribed" @click="toggleChannelOptions" class="w-[150px] h-[36px] rounded-2xl bg-[#f2f2f2] hover:bg-[#e5e5e5]
+            flex justify-center items-center">
+            <img class="w-5 h-6" :src="channelNotification ? fillBellSrc : emptyBellSrc" alt="">
+            <span class="text-black text-sm font-medium ml-2">Subscribed</span>
+            <img class="w-3 h-3 ml-5" src="@/assets/icons/svg-icons/thin-chevron-arrow-bottom-icon.svg" alt="">
+        </button>
+        <button v-else @click="subscribeChannel(videoInfo.channel_id)" class="w-[94px] h-[36px] rounded-3xl bg-black">
+            <span class="text-sm font-medium text-white">Subscribe</span>
+        </button>
+        <div v-if="isChannelSubscribed && isChannelOptionsOpen" class="channel-options w-[256px]
+            h-[140px] flex flex-col my-shadow rounded-xl text-sm font-normal z-40 bg-white -mt-3">
+            <button @click="toggleChannelNotification(videoInfo.channel_id, 'all')" class="w-[100%] h-[40px] mt-2">
+                <img :src="fillBellSrc" alt="">
+                <span>All</span>
+            </button>
+            <button @click="toggleChannelNotification(videoInfo.channel_id, 'none')" class="w-[100%] h-[40px]">
+                <img src="@/assets/icons/svg-icons/remove-bell-notification-icon.svg" alt="">
+                <span>None</span>
+            </button>
+            <button @click="subscribeChannel(videoInfo.channel_id)" class="w-[100%] h-[40px] mb-2">
+                <img src="@/assets/icons/svg-icons/remove-male-user-icon.svg" alt="">
+                <span>Unsubscribe</span>
+            </button>
+        </div>
         <div class="video-detail-other-btn">
             <button @click="likeVideo(true)" class="like-btn"><img
                     :src="likeSituation === true ? fillLikeIcon : emptyLikeIcon" alt="">
@@ -967,7 +1042,8 @@ onMounted(async () => {
                     class="absolute right-1 top-3 w-10 h-10 rounded-full hover:bg-[#e5e5e5] flex justify-center items-center">
                     <img class="w-4 h-4" src="@/assets/icons/svg-icons/x-mark-icon.svg" alt="">
                 </button>
-                <button class="w-10 h-10 rounded-full hover:bg-[#e5e5e5] flex justify-center items-center">
+                <button @click="shufflePlaylistVideo($route.query.playlist_id)"
+                    class="w-10 h-10 rounded-full hover:bg-[#e5e5e5] flex justify-center items-center">
                     <img class="w-5 h-5" src="@/assets/icons/svg-icons/shuffle-icon.svg" alt="">
                 </button>
                 <button @click="togglePlaylistDivision" class="playlist-div-toggle flex justify-center items-center absolute top-[60px] right-[3px] w-10 h-10

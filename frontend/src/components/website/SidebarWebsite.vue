@@ -42,10 +42,12 @@ const toggleSubscriptionChannels = () => {
                 <p>Playlists</p>
             </div>
         </router-link>
-        <div class="side-bar-links">
-            <img src="@/assets/icons/svg-icons/youtube-color-icon.svg" alt="">
-            <p>Your videos</p>
-        </div>
+        <router-link to="/studio/">
+            <div class="side-bar-links">
+                <img src="@/assets/icons/svg-icons/youtube-color-icon.svg" alt="">
+                <p>Your videos</p>
+            </div>
+        </router-link>
         <div class="side-bar-links">
             <img src="@/assets/icons/side-bar/watch-later.webp" alt="">
             <p>Watch Later</p>
