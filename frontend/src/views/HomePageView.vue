@@ -110,7 +110,7 @@ onMounted(() => {
                             <p class="video-title">{{ video.title }}</p>
                         </router-link>
                         <p class="video-channel-name">{{ video.channel_name }}</p>
-                        <p class="video-stats">409K views . {{ video.created_at }}</p>
+                        <p class="video-stats">{{ video.views }} views . {{ video.created_at }}</p>
                     </div>
                 </div>
             </div>
@@ -130,11 +130,11 @@ onMounted(() => {
             <div id="shortVideoScrollDiv" class="flex flex-row overflow-hidden gap-x-[30px] scroll-smooth">
                 <div v-for='short in shortVideos' :key="short.id" class=" select-none short-video-preview">
                     <div class="short-video-thumbnail">
-                        <img loading="lazy" src="@/assets/img/Django.png" alt="">
+                        <img loading="lazy" :src="short.thumbnail_url" alt="">
                     </div>
                     <div class="short-video-title-div">
-                        <p class="short-video-title"><a href="">{{ short.title }}</a></p>
-                        <p class="short-video-views">{{ short.view }} view</p>
+                        <p class="short-video-title">{{ short.title }}</p>
+                        <p class="short-video-views">{{ short.views }} view</p>
                     </div>
                 </div>
             </div>
@@ -165,7 +165,7 @@ onMounted(() => {
                         <p class="video-title">{{ video.title }}</p>
                     </router-link>
                     <p class="video-channel-name">{{ video.channel_name }}</p>
-                    <p class="video-stats">409K views . {{ video.created_at }}</p>
+                    <p class="video-stats">{{ video.views }} views . {{ video.created_at }}</p>
                 </div>
             </div>
         </div>

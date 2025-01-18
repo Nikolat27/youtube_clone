@@ -691,12 +691,12 @@ onMounted(async () => {
         let endTime = Date.now()
         let calculateWatchTime = (endTime - startTime) / 1000
         totalWatchedTime += calculateWatchTime
-        console.log(totalWatchedTime)
         startTime = null
 
         axios.get(`http://127.0.0.1:8000/videos/stream/watch-time/${route.params.id}`, {
             params: {
-                watch_time: totalWatchedTime
+                watch_time: totalWatchedTime,
+                duration: videoRef.value.duration
             }
         })
     });
@@ -905,7 +905,7 @@ onMounted(async () => {
     </div>
 
     <div class="video-description">
-        <p class="video-detail-stats"><span class="view-amount">6.1M </span>views
+        <p class="video-detail-stats"><span class="view-amount">{{ videoInfo.views }}&nbsp;</span>views
             <span class="upload-date">{{ videoInfo.created_at }} </span>ago
             <span class="hashtags">#slowedandreverb #coolio #tiktoksong</span>
         </p>

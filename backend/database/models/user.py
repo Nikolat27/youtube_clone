@@ -16,11 +16,14 @@ class User(Model):
     email = Column(String(320), unique=True, nullable=False)
     full_name = Column(String(200), nullable=True)
     password = Column(String(400), nullable=False)
-    channel = relationship("Channel", uselist=False)
+    channel = relationship("Channel", uselist=False, cascade="all, delete-orphan")
     created_at = Column(DateTime, default=get_utc_now, nullable=False)
     updated_at = Column(DateTime, onupdate=get_utc_now, nullable=True)
     user_log_info = relationship(
-        "UserLogInfo", back_populates="user", uselist=False, passive_deletes=True
+        "UserLogInfo",
+        back_populates="user",
+        uselist=False,
+        passive_deletes=True,
     )
 
     def __repr__(self):
@@ -34,7 +37,9 @@ class UserLogInfo(Model):
     user_id = Column(
         Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True
     )
-    user = relationship("User", back_populates="user_log_info")
+    user = relationship(
+        "User", back_populates="user_log_info", cascade="all, delete-orphan"
+    )
     session_id = Column(String(100), unique=True, nullable=False)
     last_login = Column(DateTime, default=get_utc_now, nullable=False)
     created_at = Column(DateTime, default=get_utc_now, nullable=False)
@@ -77,6 +82,7 @@ class Playlist(Model):
         secondary=playlist_video_association,
         back_populates="playlists",
         lazy="dynamic",
+        cascade="all, delete-orphan",
     )
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -107,18 +113,40 @@ class Video(Model):
     )  # False means don't restrict the video
     language = Column(String(50), default="not-applicable", nullable=True)
     playlists = relationship(
-        "Playlist", secondary=playlist_video_association, back_populates="video"
+        "Playlist",
+        secondary=playlist_video_association,
+        back_populates="video",
+        cascade="all, delete-orphan",
     )
     subtitle = relationship(
-        "Subtitle", back_populates="video", uselist=False, passive_deletes=True
+        "Subtitle",
+        back_populates="video",
+        uselist=False,
+        passive_deletes=True,
+        cascade="all, delete-orphan",
     )
     monetization = Column(Boolean, default=False)
     visibility = Column(Boolean, default=False)  # False means private
+    views = Column(Integer, default=0)
+    history = relationship("History", back_populates="video", cascade="all, delete-orphan")
     schedule_time = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     def __repr__(self):
         return self.title
+
+
+class History(Model):
+    __tablename__ = "histories"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    video = relationship("Video", back_populates="history", cascade="all, delete-orphan")
+    video_id = Column(String(30), ForeignKey("videos.unique_id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime, default=get_utc_now)
+
+    def __repr__(self):
+        return f"{self.video_id} - {self.user_id}"
 
 
 class Subtitle(Model):
@@ -131,7 +159,7 @@ class Subtitle(Model):
     video_id = Column(
         String(30), ForeignKey("videos.unique_id", ondelete="CASCADE"), nullable=False
     )
-    video = relationship("Video", back_populates="subtitle")
+    video = relationship("Video", back_populates="subtitle", cascade="all, delete-orphan")
     created_at = Column(DateTime, default=datetime.utcnow)
 
     def __repr__(self):
@@ -185,7 +213,7 @@ class Channel(Model):
     description = Column(String(500), nullable=True)
     contact_email = Column(String(100), nullable=True)
     channel_subscriptions = relationship(
-        "ChannelSubscription", back_populates="channel", passive_deletes=True
+        "ChannelSubscription", back_populates="channel", passive_deletes=True, cascade="all, delete-orphan"
     )
 
     def __repr__(self):
@@ -197,7 +225,7 @@ class ChannelSubscription(Model):
 
     id = Column(Integer, autoincrement=True, primary_key=True)
     channel = relationship(
-        "Channel", back_populates="channel_subscriptions", single_parent=True
+        "Channel", back_populates="channel_subscriptions", single_parent=True, cascade="all, delete-orphan"
     )
 
     channel_id = Column(
@@ -260,7 +288,7 @@ class Comment(Model):
     parent_id = Column(
         Integer, ForeignKey("comments.id", ondelete="CASCADE"), nullable=True
     )
-    parent = relationship("Comment", backref="replies", remote_side=[id])
+    parent = relationship("Comment", backref="replies", remote_side=[id], cascade="all, delete-orphan")
     created_at = Column(DateTime, default=get_utc_now)
 
     def __repr__(self):

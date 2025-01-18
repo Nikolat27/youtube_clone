@@ -90,6 +90,7 @@ async def get_playlist(playlist_id: int = Path_parameter(), filter: str = Query(
         "videos": [
             {
                 "id": video.id,
+                "views": video.views,
                 "unique_id": video.unique_id,
                 "title": video.title,
                 "created_at": await time_difference(video.created_at),

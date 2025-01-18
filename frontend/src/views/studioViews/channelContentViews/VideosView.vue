@@ -161,7 +161,7 @@ onMounted(() => {
                     <p class="ml-4 absolute top-1/3 transform translate-y-1/3 left-[430px]">{{ video.restriction ? 'yes'
                         : 'no' }}</p>
                     <p class="ml-4 absolute top-1/3 transform translate-y-1/3 left-[525px]">{{ video.created_at }}</p>
-                    <p class="ml-4 absolute top-1/3 transform translate-y-1/3 left-[635px]">101K </p>
+                    <p class="ml-4 absolute top-1/3 transform translate-y-1/3 left-[635px]">{{ video.views }} </p>
                     <p class="ml-4 absolute top-1/3 transform translate-y-1/3 left-[710px]">2k</p>
                     <p class="ml-8 absolute top-1/3 transform translate-y-1/3 left-[775px]">2k, 3k</p>
                 </div>

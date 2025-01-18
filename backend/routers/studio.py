@@ -242,6 +242,7 @@ async def list_video(
 
     videos = Video.query.with_entities(
         Video.id,
+        Video.views,
         Video.unique_id,
         Video.video_type,
         Video.title,
@@ -265,22 +266,22 @@ async def list_video(
     elif sort_type and sort_order and sort_type == "date" and sort_order == "ASC":
         videos = videos.order_by(asc(Video.id)).all()
 
-    serializer = []
-    for video in videos:
-        serializer.append(
-            {
-                "id": video.id,
-                "unique_id": video.unique_id,
-                "title": video.title,
-                "video_type": video_type,
-                "description": video.description,
-                "duration": await get_video_duration(video.file_url),
-                "thumbnail_url": f"http://127.0.0.1:8000/static/{video.thumbnail_url}",
-                "visibility": video.visibility,
-                "restriction": video.age_restriction,
-                "created_at": await time_formatter(video.created_at),
-            }
-        )
+    serializer = [
+        {
+            "id": video.id,
+            "unique_id": video.unique_id,
+            "views": video.views,
+            "title": video.title,
+            "video_type": video_type,
+            "description": video.description,
+            "duration": await get_video_duration(video.file_url),
+            "thumbnail_url": f"http://127.0.0.1:8000/static/{video.thumbnail_url}",
+            "visibility": video.visibility,
+            "restriction": video.age_restriction,
+            "created_at": await time_formatter(video.created_at),
+        }
+        for video in videos
+    ]
     return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)
 
 

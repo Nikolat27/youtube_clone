@@ -127,7 +127,7 @@ onMounted(() => {
                             </router-link>
                             <div class="flex flex-row text-[#898f90] text-xs font-normal">
                                 <p class="hover:text-[#182c61]">{{ video.channel_name }} .&nbsp;</p>
-                                <p class="hover:text-[#182c61]">25K views .&nbsp;</p>
+                                <p class="hover:text-[#182c61]">{{ video.views }} views .&nbsp;</p>
                                 <p class="hover:text-[#182c61]">{{ video.created_at }} days ago</p>
                             </div>
                         </div>

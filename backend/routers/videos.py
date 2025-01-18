@@ -147,6 +147,7 @@ async def videos_list() -> Page:
             Video.created_at,
             Video.user_id,
             Video.file_url,
+            Video.views,
         )
         .where(Video.video_type == "long_video")
         .order_by(Video.created_at),
@@ -154,7 +155,7 @@ async def videos_list() -> Page:
 
     short_videos = (
         Video.query.with_entities(
-            Video.id, Video.unique_id, Video.title, Video.thumbnail_url
+            Video.id, Video.unique_id, Video.views, Video.title, Video.thumbnail_url
         )
         .filter_by(video_type="short_video")
         .limit(12)
@@ -173,6 +174,7 @@ async def videos_list() -> Page:
                     "id": video.id,
                     "unique_id": video.unique_id,
                     "title": video.title,
+                    "views": video.views,
                     "watch_progress": await get_current_video_time(
                         user_ip, video.unique_id, video.file_url
                     ),
@@ -192,6 +194,7 @@ async def videos_list() -> Page:
                 "id": video.id,
                 "unique_id": video.unique_id,
                 "title": video.title,
+                "views": video.views,
                 "thumbnail_url": await static_file(video.thumbnail_url),
             }
             for video in short_videos
@@ -250,6 +253,7 @@ async def video_detail(
         Video.query.with_entities(
             Video.id,
             Video.unique_id,
+            Video.views,
             Video.user_id,
             Video.title,
             Video.description,
@@ -298,6 +302,7 @@ async def video_detail(
     serializer = {
         "id": video.unique_id,
         "title": video.title,
+        "views": video.views,
         "user_id": video.user_id,
         "description": video.description or "",
         "file_url": await static_file(video.file_url),
@@ -346,18 +351,55 @@ async def video_stream(unique_id: str = Path_parameter(), range: str = Header(No
 
 
 @router.get("/stream/watch-time/{unique_id}")
-async def video_watch_time(unique_id: str = Path_parameter(), watch_time: float = Query()):
-    user_ip = await get_users_ip()
-    redis_client.set(f'{unique_id}-{user_ip}-watch_time', watch_time)
+async def video_watch_time(
+    unique_id: str = Path_parameter(),
+    watch_time: float = Query(),
+    duration: float = Query(),
+):
+    if duration <= 30:
+        if watch_time >= duration:
+            video = Video.query.filter_by(unique_id=unique_id).first()
+            video.views += 1
+            session.commit()
+    else:
+        if watch_time >= 30:
+            video = Video.query.filter_by(unique_id=unique_id).first()
+            video.views += 1
+            session.commit()
+
+
+# @router.get("/stream/watch-time/{unique_id}")
+# async def video_watch_time(
+#     unique_id: str = Path_parameter(),
+#     watch_time: float = Query(),
+#     duration: float = Query(),
+# ):
+#     user_ip = await get_users_ip()
+#     redis_client.set(f"{unique_id}-{user_ip}-watch_time", watch_time, ex=3600) # 1 Hour expiration time
+#     await check_video_watch_time(unique_id, user_ip, duration)
+
+
+# async def check_video_watch_time(unique_id, user_ip, duration):
+#     watch_time = redis_client.get(f"{unique_id}-{user_ip}-watch_time")
+#     video_duration = duration
+
+#     if video_duration <= 30:
+#         if watch_time >= video_duration:
+#             video = Video.query.filter_by(unique_id=unique_id).first()
+#             video.views += 1
+#             session.commit()
+#     else:
+#         if watch_time >= 30:
+#             video = Video.query.filter_by(unique_id=unique_id).first()
+#             video.views += 1
+#             session.commit()
 
 
 @router.get("/stream/current-time/{unique_id}")
 async def set_current_video_time(
     unique_id: str = Path_parameter,
     current_time: float = Query(),
-    video_duration: float = Query(),
 ):
-    
     user_ip = await get_users_ip()
     current_time = round(current_time, 1)
     redis_client.set(f"{unique_id}-{user_ip}-current_time", current_time)
