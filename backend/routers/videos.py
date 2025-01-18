@@ -345,10 +345,19 @@ async def video_stream(unique_id: str = Path_parameter(), range: str = Header(No
         return Response(data, status_code=206, headers=headers, media_type="video/mp4")
 
 
+@router.get("/stream/watch-time/{unique_id}")
+async def video_watch_time(unique_id: str = Path_parameter(), watch_time: float = Query()):
+    user_ip = await get_users_ip()
+    redis_client.set(f'{unique_id}-{user_ip}-watch_time', watch_time)
+
+
 @router.get("/stream/current-time/{unique_id}")
 async def set_current_video_time(
-    unique_id: str = Path_parameter, current_time: float = Query()
+    unique_id: str = Path_parameter,
+    current_time: float = Query(),
+    video_duration: float = Query(),
 ):
+    
     user_ip = await get_users_ip()
     current_time = round(current_time, 1)
     redis_client.set(f"{unique_id}-{user_ip}-current_time", current_time)

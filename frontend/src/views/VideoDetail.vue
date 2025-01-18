@@ -26,6 +26,7 @@ import unSaveIcon from '/src/assets/icons/svg-icons/unsave-btn.svg'
 import replyIcon from '/src/assets/icons/svg-icons/reply-icon.svg'
 import fillBellSrc from '/src/assets/icons/svg-icons/notification-alert-icon.svg'
 import emptyBellSrc from '/src/assets/icons/svg-icons/bell-line-icon.svg'
+import router from '@/router';
 
 const route = useRoute()
 const router2 = useRouter()
@@ -258,6 +259,9 @@ const changePlayBackSpeed = (speed) => { // From 0.25x to 2x
 }
 
 // Handling Video progress track, specific time showing and the rest...
+let startTime = 0
+let totalWatchedTime = 0
+
 const videoRef = ref(null) // videoRef is the video tag itself
 const videoProgress = ref(0) // videoProgress is the time that we currently at (video must be played)
 const currentVideoTime = ref('0:00')
@@ -270,9 +274,11 @@ const updateProgress = () => {
         currentVideoTime.value = calculateTime(videoRef.value.currentTime)
         videoDuration.value = calculateTime(videoRef.value.duration)
 
+        // Sending some information to the backend such as current time for managing the watch progress tracking and duration
         axios.get(`http://127.0.0.1:8000/videos/stream/current-time/${route.params.id}`, {
             params: {
-                current_time: videoRef.value.currentTime
+                current_time: videoRef.value.currentTime,
+                video_duration: videoRef.value.duration
             }
         })
     }
@@ -518,7 +524,6 @@ const subscribeChannel = (channelId) => {
 }
 
 
-
 const youtubeVideoLink = ref(null)
 const retrieveVideoDetail = (videoId, user_session_id) => {
     axios.get(`http://127.0.0.1:8000/videos/detail/${videoId}`, {
@@ -679,6 +684,22 @@ const MountPage = async () => {
 onMounted(async () => {
     // This 'timeupdate' invokes whenever timeCurrent of the video changes
     videoRef.value.addEventListener('timeupdate', updateProgress);
+    videoRef.value.addEventListener('play', () => {
+        startTime = Date.now()
+    });
+    videoRef.value.addEventListener('pause', () => {
+        let endTime = Date.now()
+        let calculateWatchTime = (endTime - startTime) / 1000
+        totalWatchedTime += calculateWatchTime
+        console.log(totalWatchedTime)
+        startTime = null
+
+        axios.get(`http://127.0.0.1:8000/videos/stream/watch-time/${route.params.id}`, {
+            params: {
+                watch_time: totalWatchedTime
+            }
+        })
+    });
     MountPage()
 });
 </script>
