@@ -146,6 +146,7 @@ async def videos_list() -> Page:
             Video.thumbnail_url,
             Video.created_at,
             Video.user_id,
+            Video.file_url,
         )
         .where(Video.video_type == "long_video")
         .order_by(Video.created_at),
@@ -160,6 +161,7 @@ async def videos_list() -> Page:
         .all()
     )
 
+    user_ip = await get_users_ip()
     response_data = {
         "long_videos": {
             "total": long_videos.total,
@@ -171,6 +173,9 @@ async def videos_list() -> Page:
                     "id": video.id,
                     "unique_id": video.unique_id,
                     "title": video.title,
+                    "watch_progress": await get_current_video_time(
+                        user_ip, video.unique_id, video.file_url
+                    ),
                     "thumbnail_url": await static_file(video.thumbnail_url),
                     "created_at": f"{await time_difference(video.created_at)} days",
                     "channel_profile_picture": get_channel_profile(video.user_id),
@@ -285,7 +290,10 @@ async def video_detail(
     current_time = redis_client.get(
         f"{video.unique_id}-{user_ip}-current_time"
     )  # this one is in bytes
-    decode_current_time = float(current_time.decode("utf-8"))
+    if current_time:
+        decode_current_time = float(current_time.decode("utf-8"))
+    else:
+        decode_current_time = 0
 
     serializer = {
         "id": video.unique_id,
@@ -338,12 +346,23 @@ async def video_stream(unique_id: str = Path_parameter(), range: str = Header(No
 
 
 @router.get("/stream/current-time/{unique_id}")
-async def get_current_video_time(
+async def set_current_video_time(
     unique_id: str = Path_parameter, current_time: float = Query()
 ):
     user_ip = await get_users_ip()
     current_time = round(current_time, 1)
     redis_client.set(f"{unique_id}-{user_ip}-current_time", current_time)
+
+
+async def get_current_video_time(user_ip, unique_id, file_url):
+    try:
+        current_time = redis_client.get(f"{unique_id}-{user_ip}-current_time")
+        decode_current_time = float(current_time.decode("utf-8"))
+        video_duration = await get_video_duration(file_url)
+        progress_percentage = (decode_current_time * 100) / video_duration
+        return progress_percentage
+    except:
+        return None
 
 
 @router.get("/like/{unique_id}/{action_type}/{user_session_id}")

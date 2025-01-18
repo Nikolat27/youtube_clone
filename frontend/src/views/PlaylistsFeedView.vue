@@ -81,6 +81,10 @@ const retrievePlaylists = (user_session_id, sortBy) => {
     }).catch((error) => toast.error(error)).finally(() => isLoading.value = false)
 }
 
+const playPlaylistVideo = (playlistId, uniqueId) => {
+    router2.push({ name: 'video_detail', params: { id: uniqueId }, query: { 'playlist_id': playlistId } })
+}
+
 onMounted(() => {
     const user_session_id = sessionStorage.getItem("user_session_id")
     if (user_session_id) {
@@ -124,7 +128,7 @@ onMounted(() => {
             <div v-for="playlist in playlists" :key="playlist.id" class="playlist">
                 <div class="playlist-thumbnail relative z-0 w-[295px] h-[166px]" :id="playlist.id">
                     <img class="w-full h-full object-fill rounded-lg z-0" :src="playlist.last_video_thumbnail" alt="">
-                    <div @click="playPlaylist(playlist.id)"
+                    <div @click="playPlaylistVideo($route.params.id, playlist.last_video_unique_id)"
                         class="cursor-pointer play-buttons hidden bg-black w-auto p-2 rounded-lg flex-row gap-x-4 absolute top-1/2 left-[83px]">
                         <img class="w-[20px] h-[20px]" :src="playIcon" alt="">
                         <span class="text-[14px] font-medium text-white">Play all</span>

@@ -60,6 +60,7 @@ const retrieveVideos = () => {
             totalPages.value = response.data.data.long_videos.pages
             shortVideos.splice(0, shortVideos.length, ...response.data.data.short_videos)
             longVideos.splice(0, longVideos.length, ...response.data.data.long_videos.items)
+            console.log(longVideos)
         }
     }).catch((error) => {
         console.log(error)
@@ -92,11 +93,11 @@ onMounted(() => {
 <template>
     <div v-if="!isLoading" class="container mb-10">
         <div class="regular-videos">
-            <b v-if="isLoadingNProgress" class="ml-2">{{ ((progress || 0) * 100).toFixed(0) }}%</b>
             <div v-for="video in longVideos.slice(0, 3)" :key="video.id" class="video-preview">
-                <div class="video-thumbnail relative">
+                <div class="video-thumbnail relative z-0">
                     <img loading="lazy" :src="video.thumbnail_url" alt="">
-                    <input type="range" disabled class="watch-progress-tracking w-[400px] red absolute -bottom-1">
+                    <input v-if="video.watch_progress" type="range" :value="video.watch_progress" disabled class="z-10 watch-progress-tracking w-[400px]
+                     bg-transparent absolute -bottom-[10px] left-0">
                 </div>
                 <div class="video-info">
                     <router-link :to="`/channel-page/${video.channel_unique_identifier}`">
@@ -150,8 +151,10 @@ onMounted(() => {
         </div>
 
         <div v-for="video in longVideos.slice(3)" :key="video.id" class="video-preview">
-            <div class="video-thumbnail">
+            <div class="video-thumbnail relative">
                 <img :src="video.thumbnail_url" alt="">
+                <input v-if="video.watch_progress" type="range" :value="video.watch_progress" disabled class="z-10 watch-progress-tracking w-[400px]
+                     bg-transparent absolute -bottom-[10px] left-0">
             </div>
             <div class="video-info">
                 <div class="channel-logo">
