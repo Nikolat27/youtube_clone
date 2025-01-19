@@ -1,7 +1,8 @@
 <script setup>
-import { ref, reactive, onMounted, watch } from 'vue';
+import { ref, reactive, onMounted } from 'vue';
 import { useToast } from 'vue-toastification';
 import { useRoute, useRouter } from 'vue-router';
+import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
 import axios from 'axios';
 
 const toast = useToast()
@@ -10,6 +11,7 @@ const router2 = useRouter()
 
 const isClearHistoryDialogOpen = ref(false)
 const isPauseHistoryDialogOpen = ref(false)
+const isPlayHistoryDialogOpen = ref(false)
 const isDeleteCommentsDialogOpen = ref(false)
 
 const clearAllUserWatchHistory = () => {
@@ -34,8 +36,10 @@ const toggleWatchHistory = () => {
         }
     }).then((response) => {
         if (response.status == 200) {
-            toast.success("You changed your watch history!")
             isPauseHistoryDialogOpen.value = false
+            isPlayHistoryDialogOpen.value = false
+            toast.success("You changed your watch history!")
+            historyEnable.value = !historyEnable.value
         }
     }).catch(() => toast.error("Error!"))
 }
@@ -55,11 +59,8 @@ const clearAllUserCommentsReplies = () => {
 
 const toggleClearHistoryDialog = () => isClearHistoryDialogOpen.value = !isClearHistoryDialogOpen.value
 const togglePauseHistoryDialog = () => isPauseHistoryDialogOpen.value = !isPauseHistoryDialogOpen.value
+const togglePlayHistoryDialog = () => isPlayHistoryDialogOpen.value = !isPlayHistoryDialogOpen.value
 const toggleDeleteCommentsDialog = () => isDeleteCommentsDialogOpen.value = !isDeleteCommentsDialogOpen.value
-
-const longVideos = reactive([])
-const shortVideos = reactive([])
-
 
 const dialogBar = {
     props: ["main_title", "fst_para", "sec_para", "submitBtnText", 'isDialogOpen', 'toggleDialog', 'submitFunction'],
@@ -79,18 +80,23 @@ const dialogBar = {
     `
 }
 
-const retrieveVideos = (user_session_id) => {
-    axios.get("http://127.0.0.1:8000/videos/user-watch-history", {
+const videos = reactive([])
+const isLoading = ref(false)
+const historyEnable = ref(null)
+
+const retrieveVideos = async (user_session_id) => {
+    isLoading.value = true
+    await axios.get("http://127.0.0.1:8000/videos/user-watch-history", {
         params: {
             user_session_id: user_session_id
         }
     }).then((response) => {
         if (response.status == 200) {
-            longVideos.splice(0, longVideos.length, ...response.data.data)
+            videos.splice(0, videos.length, ...response.data.data)
+            historyEnable.value = response.data.history_enable
         }
-    }).catch(() => console.log("Error!"))
+    }).catch((error) => console.log("Error: ", error)).finally(() => isLoading.value = false)
 }
-
 
 const MountPage = (user_session_id) => {
     retrieveVideos(user_session_id)
@@ -141,44 +147,55 @@ onMounted(async () => {
 </script>
 
 <template>
-    <div class="flex flex-row w-[1070px] ml-[300px] mt-[100px] relative">
+    <div class="flex flex-row w-[1070px] ml-[300px] mt-[130px] relative">
         <div class="z-auto flex flex-col w-[628px] h-[600px] gap-y-4 relative">
             <div class="flex flex-col">
                 <div class="top-[-45px] font-bold text-4xl relative">
                     <p>Watch History</p>
                 </div>
-                <div class="relative font-bold text-xl">
+                <!-- <div class="relative font-bold text-xl">
                     <p>Today</p>
-                </div>
+                </div> -->
             </div>
-            <div v-for="video in longVideos" :key="video.unique_id" class="history-video flex flex-row relative">
-                <div class="w-[246px] h-[138px] flex flex-row">
-                    <img class="w-[100%] h-[100%] rounded-lg" :src="video.thumbnail_url" alt="">
-                </div>
-                <div class="flex flex-col cursor-pointer ml-4">
-                    <p class="font-normal text-lg">{{ video.title }}</p>
-                    <div class="flex flex-row">
-                        <router-link :to="`/channel-page/${video.channel_id}`">
-                            <p class="text-xs font-normal text-[#7d8a9f] hover:text-[#6b6b6b]">{{ video.channel_name
-                                }}&nbsp;
-                            </p>
-                        </router-link>
-                        <span class="text-[#7d8a9f] text-xs font-normal hover:text-[#6b6b6b] mb-4">. {{ video.views }}
-                            views</span>
+            <div v-if="!isLoading" class="flex flex-col">
+                <div v-for="video in videos" :key="video.unique_id" class="history-video flex flex-row relative">
+                    <div class="w-[246px] h-[138px] flex flex-row">
+                        <img class="w-[100%] h-[100%] rounded-lg" :src="video.thumbnail_url" alt="">
                     </div>
-                    <p class="text-[#7d8a9f] text-xs font-normal hover:text-[#6b6b6b]">{{ video.description }}</p>
-                </div>
-                <button @click="removeVideoFromWatchHistory(video.unique_id)"
-                    class="w-10 h-10 absolute right-0 top-0 rounded-full hover:bg-[#e5e5e5] flex justify-center items-center">
-                    <img class="w-5 h-5" src="@/assets/icons/svg-icons/x-mark-icon.svg" alt="">
-                </button>
-                <div class="remove-history hidden flex-col pl-2 pt-3 text-white bg-[#717171] text-xs font-normal w-[110px] h-[55px]
+                    <div class="flex flex-col cursor-pointer ml-4">
+                        <router-link :to="`video/${video.unique_id}`">
+                            <p class="font-normal text-lg">{{ video.title }}</p>
+                        </router-link>
+                        <div class="flex flex-row">
+                            <router-link :to="`/channel-page/${video.channel_id}`">
+                                <p class="text-xs font-normal text-[#7d8a9f] hover:text-[#6b6b6b]">{{ video.channel_name
+                                    }}&nbsp;
+                                </p>
+                            </router-link>
+                            <span class="text-[#7d8a9f] text-xs font-normal hover:text-[#6b6b6b] mb-4">. {{ video.views
+                                }}
+                                views</span>
+                        </div>
+                        <p class="text-[#7d8a9f] text-xs font-normal hover:text-[#6b6b6b]">{{ video.description }}</p>
+                    </div>
+                    <button @click="removeVideoFromWatchHistory(video.unique_id)"
+                        class="w-10 h-10 absolute right-0 top-0 rounded-full hover:bg-[#e5e5e5] flex justify-center items-center">
+                        <img class="w-5 h-5" src="@/assets/icons/svg-icons/x-mark-icon.svg" alt="">
+                    </button>
+                    <div class="remove-history hidden flex-col pl-2 pt-3 text-white bg-[#717171] text-xs font-normal w-[110px] h-[55px]
                     rounded-md absolute right-[-35px] top-12 opacity-90">
-                    <p>Remove from</p>
-                    <p>watch history</p>
+                        <p>Remove from</p>
+                        <p>watch history</p>
+                    </div>
+                </div>
+                <div v-if="videos.length <= 0">
+                    <p class="text-[20px] font-semibold underline">No Videos currently!</p>
                 </div>
             </div>
-            <div class="flex flex-col relative mt-[80px]">
+            <div v-else class="mt-40 ml-20">
+                <PulseLoader size="20px" color="red"></PulseLoader>
+            </div>
+            <!-- <div class="flex flex-col relative mt-[80px]">
                 <div class="top-[-60px] absolute font-bold text-xl">
                     <p>Yesterday</p>
                 </div>
@@ -196,8 +213,7 @@ onMounted(async () => {
                     <div class="flex flex-col w-[210px] h-[405px] mt-8 relative">
                         <img class="w-[100%] h-[100%] rounded-lg" src="@/assets/img/Django.png" alt="">
                         <p class="text-base font-medium mt-2">Lorem ipsum</p>
-                        <!-- Beware of data-targets (for backend) -->
-                        <button data-target="short-video-1" class="short-video-options-toggle flex justify-center items-center absolute bottom-[-6px] right-0
+                        <button class="short-video-options-toggle flex justify-center items-center absolute bottom-[-6px] right-0
                         w-8 h-8 rounded-full hover:bg-[#9c8c8c]">
                             <img class="w-[50%] h-[50%]" src="@/assets/icons/svg-icons/kebab-menu.svg" alt="">
                         </button>
@@ -216,8 +232,7 @@ onMounted(async () => {
                     <div class="flex flex-col w-[210px] h-[405px] mt-8 relative">
                         <img class="w-[100%] h-[100%] rounded-lg" src="@/assets/img/Django.png" alt="">
                         <p class="text-base font-medium mt-2">Lorem ipsum</p>
-                        <!-- Beware of data-targets (for backend) -->
-                        <button data-target="short-video-2" class="short-video-options-toggle flex justify-center items-center absolute bottom-[-6px] right-0
+                        <button class="short-video-options-toggle flex justify-center items-center absolute bottom-[-6px] right-0
                         w-8 h-8 rounded-full hover:bg-[#e5e5e5]">
                             <img class="w-[50%] h-[50%]" src="@/assets/icons/svg-icons/kebab-menu.svg" alt="">
                         </button>
@@ -240,33 +255,7 @@ onMounted(async () => {
                     <img class="w-[100%] h-[100%]" src="@/assets/icons/svg-icons/thin-chevron-round-right-icon.svg"
                         alt="">
                 </button>
-            </div>
-            <a href="">
-                <div class="history-video flex flex-row relative">
-                    <div class="w-[246px] h-[138px] flex flex-row">
-                        <img class="w-[100%] h-[100%] rounded-lg" src="@/assets/img/Django.png" alt="">
-                    </div>
-                    <div class="flex flex-col cursor-pointer ml-4">
-                        <p class="font-normal text-lg">Video Title</p>
-                        <div class="flex flex-row">
-                            <p class="text-xs font-normal text-[#7d8a9f] hover:text-[#6b6b6b]">Channel name&nbsp;
-                            </p>
-                            <span class="text-[#7d8a9f] text-xs font-normal hover:text-[#6b6b6b] mb-4">. 25M
-                                views</span>
-                        </div>
-                        <p class="text-[#7d8a9f] text-xs font-normal hover:text-[#6b6b6b]">video description</p>
-                    </div>
-                    <button
-                        class="w-10 h-10 absolute right-0 top-0 rounded-full hover:bg-[#e5e5e5] flex justify-center items-center">
-                        <img class="w-5 h-5" src="@/assets/icons/svg-icons/x-mark-icon.svg" alt="">
-                    </button>
-                    <div class="remove-history hidden flex-col pl-2 pt-3 text-white bg-[#717171] text-xs font-normal w-[110px] h-[55px]
-                    rounded-md absolute right-[-35px] top-12 opacity-90">
-                        <p>Remove from</p>
-                        <p>watch history</p>
-                    </div>
-                </div>
-            </a>
+            </div> -->
         </div>
         <div v-if="isClearHistoryDialogOpen || isPauseHistoryDialogOpen || isDeleteCommentsDialogOpen"
             class="fixed inset-0 bg-[#b2b2b2] bg-opacity-80 z-40"></div>
@@ -280,22 +269,26 @@ onMounted(async () => {
                 "
             sec_para="Remember, pausing this setting doesn't delete any previous activity, but you can view, edit and delete your private YouTube watch history data anytime. When you pause and clear your watch history, YouTube features that rely on history to personalize your experience are disabled."
             submitBtnText="Pause"></dialogBar>
+        <dialogBar :isDialogOpen="isPlayHistoryDialogOpen" :toggleDialog="togglePlayHistoryDialog"
+            :submitFunction="toggleWatchHistory" main_title="Play watch history?"
+            fst_para="Playing YouTube watch history"
+            sec_para="Remember, playing this setting doesn't delete any previous activity, but you can view, edit and delete your private YouTube watch history data anytime. When you play and clear your watch history, YouTube features that rely on history to personalize your experience are disabled."
+            submitBtnText="Play"></dialogBar>
         <dialogBar :isDialogOpen="isDeleteCommentsDialogOpen" :toggleDialog="toggleDeleteCommentsDialog"
             :submitFunction="clearAllUserCommentsReplies" main_title="Delete all the comments and replies?" fst_para="َAll the comments and replies that you have shared since your YouTube account has been created
              will be deleted (Even the comments that people have replied to you)!" submitBtnText="Delete All">
         </dialogBar>
         <div class="flex flex-col w-[441px] ml-[200px] mt-10">
-            <form action="">
-                <div class="flex flex-row w-[235px] h-[10]">
-                    <button
-                        class="w-12 h-10 mr-2 rounded-full cursor-pointer hover:bg-[#e5e5e5] flex justify-center items-center">
-                        <img class="w-5 h-5" src="@/assets/icons/svg-icons/search-line-icon.svg" alt="">
-                    </button>
-                    <input type="text" name="query"
-                        class="w-[235px] outline-none border-b-[1px] border-b-black focus:border-b-[#0f0f0f] focus:border-b-[2px] transition-all duration-100"
-                        placeholder="Search watch history">
-                </div>
-            </form>
+            <!-- Search history div -->
+            <!-- <div class="flex flex-row w-[235px] h-[10]">
+                <button
+                    class="w-12 h-10 mr-2 rounded-full cursor-pointer hover:bg-[#e5e5e5] flex justify-center items-center">
+                    <img class="w-5 h-5" src="@/assets/icons/svg-icons/search-line-icon.svg" alt="">
+                </button>
+                <input type="text" name="query"
+                    class="w-[235px] outline-none border-b-[1px] border-b-black focus:border-b-[#0f0f0f] focus:border-b-[2px] transition-all duration-100"
+                    placeholder="Search watch history">
+            </div> -->
             <div @click="toggleClearHistoryDialog" class="cursor-pointer flex flex-row w-[194px] h-[36px] mb-4 mt-7 justify-start
             items-center hover:bg-[#e5e5e5] rounded-3xl">
                 <button class="w-10 h-10 flex justify-center items-center">
@@ -303,12 +296,19 @@ onMounted(async () => {
                 </button>
                 <p class="text-sm font-medium">Clear all watch history</p>
             </div>
-            <div @click="togglePauseHistoryDialog"
+            <div v-if="historyEnable" @click="togglePauseHistoryDialog"
                 class="cursor-pointer flex flex-row w-[194px] h-[36px] justify-start items-center hover:bg-[#e5e5e5] rounded-3xl">
                 <button class="w-10 h-10 flex justify-center items-center">
                     <img class="w-4 h-4" src="@/assets/icons/svg-icons/pause-icon.svg" alt="">
                 </button>
                 <p class="text-sm font-medium">Pause watch history</p>
+            </div>
+            <div v-else @click="togglePlayHistoryDialog"
+                class="cursor-pointer flex flex-row w-[194px] h-[36px] justify-start items-center hover:bg-[#e5e5e5] rounded-3xl">
+                <button class="w-10 h-10 flex justify-center items-center">
+                    <img class="w-4 h-4" src="@/assets/icons/svg-icons/play-icon.svg" alt="">
+                </button>
+                <p class="text-sm font-medium">Play watch history</p>
             </div>
             <div @click="toggleDeleteCommentsDialog"
                 class="cursor-pointer mb-4 mt-4 flex flex-row w-[260px] h-[45px] justify-start items-center hover:bg-[#e5e5e5] rounded-3xl">

@@ -25,12 +25,16 @@ async def get_user_playlists(user_session_id: str = Query(), sortBy: str = Query
             "title": playlist.title,
             "visibility": playlist.visibility,
             "total_videos": playlist.video.count(),
-            "last_video_unique_id": await playlist_last_video_unique_id(
-                list(playlist.video)[-1]
-            ),  # Sending the last index video
-            "last_video_thumbnail": await playlist_last_video_thumbnail_url(
-                list(playlist.video)[-1]
-            ),  # Sending the last index video again
+            "last_video_unique_id": (
+                await playlist_last_video_unique_id(list(playlist.video)[-1])
+                if list(playlist.video)
+                else None
+            ),
+            "last_video_thumbnail": (
+                await playlist_last_video_thumbnail_url(list(playlist.video)[-1])
+                if list(playlist.video)
+                else None
+            ),
         }
         for playlist in playlists
     ]

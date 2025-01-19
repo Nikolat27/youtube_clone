@@ -762,7 +762,11 @@ async def add_video_watch_history(
 @router.get("/user-watch-history/")
 async def get_user_video_watch_history(user_session_id: str = Query()):
     user_id = await get_current_user_id(user_session_id)
-
+    user_instance = (
+        User.query.with_entities(User.watch_history_enable)
+        .filter_by(id=user_id)
+        .first()
+    )
     histories = History.query.filter_by(user_id=user_id).all()
 
     serializer = [
@@ -777,7 +781,11 @@ async def get_user_video_watch_history(user_session_id: str = Query()):
         }
         for history in histories
     ]
-    return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)
+
+    return JSONResponse(
+        {"data": serializer, "history_enable": user_instance.watch_history_enable},
+        status_code=status.HTTP_200_OK,
+    )
 
 
 @router.delete(
