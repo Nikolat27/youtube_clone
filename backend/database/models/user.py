@@ -17,6 +17,7 @@ class User(Model):
     full_name = Column(String(200), nullable=True)
     password = Column(String(400), nullable=False)
     channel = relationship("Channel", uselist=False)
+    watch_history_enable = Column(Boolean, default=True)  # False == disable
     created_at = Column(DateTime, default=get_utc_now, nullable=False)
     updated_at = Column(DateTime, onupdate=get_utc_now, nullable=True)
     user_log_info = relationship(

@@ -22,6 +22,7 @@ from database.models.user import (
 )
 from fastapi.responses import JSONResponse, Response
 from sqlalchemy import select, desc, asc
+from sqlalchemy.orm import joinedload
 from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
 from datetime import datetime
@@ -740,6 +741,13 @@ async def add_video_watch_history(
     video_id: str = Path_parameter(), user_session_id: str = Query()
 ):
     user_id = await get_current_user_id(user_session_id)
+    user_instance = (
+        User.query.with_entities(User.watch_history_enable)
+        .filter_by(id=user_id)
+        .first()
+    )
+    if user_instance.watch_history_enable is False:  # which means its disable
+        return
 
     # Checking the history
     history = History.query.filter_by(user_id=user_id, video_id=video_id).first()
@@ -757,4 +765,52 @@ async def get_user_video_watch_history(user_session_id: str = Query()):
 
     histories = History.query.filter_by(user_id=user_id).all()
 
-    return JSONResponse({"data": "hizdxfasdf"}, status_code=status.HTTP_200_OK)
+    serializer = [
+        {
+            "unique_id": history.video.unique_id,
+            "title": history.video.title,
+            "views": history.video.views,
+            "description": history.video.description,
+            "thumbnail_url": await static_file(history.video.thumbnail_url),
+            "channel_name": get_channel_name(history.video.user_id),
+            "channel_id": get_channel_unique_identifier(history.video.user_id),
+        }
+        for history in histories
+    ]
+    return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)
+
+
+@router.delete(
+    "/delete-user-watch-history/{video_id}", status_code=status.HTTP_204_NO_CONTENT
+)
+async def remove_user_video_watch_history(
+    video_id: str = Path_parameter(), user_session_id: str = Query()
+):
+    user_id = await get_current_user_id(user_session_id)
+    History.query.filter_by(user_id=user_id, video_id=video_id).delete()
+    return None
+
+
+@router.delete("/clear-all-user-watch-history", status_code=status.HTTP_204_NO_CONTENT)
+async def clear_all_user_watch_history_videos(user_session_id: str = Query()):
+    user_id = await get_current_user_id(user_session_id)
+    History.query.filter_by(user_id=user_id).delete()
+    session.commit()
+    return None
+
+
+@router.get("/toggle-watch-history", status_code=status.HTTP_200_OK)
+async def toggle_watch_history(user_session_id: str = Query()):
+    user_id = await get_current_user_id(user_session_id)
+    user_instance = User.query.filter_by(id=user_id).first()
+    user_instance.watch_history_enable = not user_instance.watch_history_enable
+    session.commit()
+    return True
+
+
+@router.delete("/clear-user-comments-replies", status_code=status.HTTP_204_NO_CONTENT)
+async def clear_all_user_comments_replies(user_session_id: str = Query()):
+    user_id = await get_current_user_id(user_session_id)
+    Comment.query.filter_by(user_id=user_id).delete()
+    session.commit()
+    return None

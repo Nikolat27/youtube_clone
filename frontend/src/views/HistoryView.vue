@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, onMounted, watch } from 'vue';
 import { useToast } from 'vue-toastification';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
@@ -12,6 +12,47 @@ const isClearHistoryDialogOpen = ref(false)
 const isPauseHistoryDialogOpen = ref(false)
 const isDeleteCommentsDialogOpen = ref(false)
 
+const clearAllUserWatchHistory = () => {
+    const user_session_id = sessionStorage.getItem("user_session_id")
+    axios.delete("http://127.0.0.1:8000/videos/clear-all-user-watch-history", {
+        params: {
+            user_session_id: user_session_id
+        }
+    }).then((response) => {
+        if (response.status == 204) {
+            retrieveVideos(user_session_id)
+            toast.success("Your cleared your watch history!")
+            isClearHistoryDialogOpen.value = false
+        }
+    }).catch(() => toast.error("Error!"))
+}
+
+const toggleWatchHistory = () => {
+    axios.get("http://127.0.0.1:8000/videos/toggle-watch-history", {
+        params: {
+            user_session_id: sessionStorage.getItem("user_session_id")
+        }
+    }).then((response) => {
+        if (response.status == 200) {
+            toast.success("You changed your watch history!")
+            isPauseHistoryDialogOpen.value = false
+        }
+    }).catch(() => toast.error("Error!"))
+}
+
+const clearAllUserCommentsReplies = () => {
+    axios.delete("http://127.0.0.1:8000/videos/clear-user-comments-replies", {
+        params: {
+            user_session_id: sessionStorage.getItem("user_session_id")
+        }
+    }).then((response) => {
+        if (response.status == 204) {
+            toast.success("Your comments and replies have been removed")
+            isDeleteCommentsDialogOpen.value = false
+        }
+    }).catch(() => toast.error("Error!"))
+}
+
 const toggleClearHistoryDialog = () => isClearHistoryDialogOpen.value = !isClearHistoryDialogOpen.value
 const togglePauseHistoryDialog = () => isPauseHistoryDialogOpen.value = !isPauseHistoryDialogOpen.value
 const toggleDeleteCommentsDialog = () => isDeleteCommentsDialogOpen.value = !isDeleteCommentsDialogOpen.value
@@ -21,34 +62,51 @@ const shortVideos = reactive([])
 
 
 const dialogBar = {
-    props: ["main_title", "user_email", "fst_para", "sec_para", "submitBtnText", 'isDialogOpen', 'toggleDialog'],
+    props: ["main_title", "fst_para", "sec_para", "submitBtnText", 'isDialogOpen', 'toggleDialog', 'submitFunction'],
     template: `
         <div v-if='isDialogOpen' class="z-50 bg-white top-[150px] left-[130px] flex mx-auto justify-start p-6 items-start absolute flex-col gap-y-4
         w-[688px] min-h-[262px] h-auto rounded-2xl font-roboto" style="box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);">
             <p class="font-normal text-base">{{ main_title }}</p>
-            <p class="font-medium text-sm text-[#5e5a5a]">{{ user_email }}</p>
             <p class="font-medium text-sm text-[#666666]">{{ fst_para }}</p>
             <p class="font-medium text-sm text-[#666666] mb-12">{{ sec_para }}</p>
             <div class="flex flex-row gap-x-2 text-sm font-medium absolute bottom-2 right-2">
                 <button @click="toggleDialog" class="w-[74.9px] h-[36px] font-roboto rounded-3xl text-black
                 hover:bg-[#e5e5e5]">Cancel</button>
-                <button class="w-auto pl-4 pr-4 h-[36px] rounded-3xl text-[#1a6cd8]
+                <button @click="submitFunction" class="w-auto pl-4 pr-4 h-[36px] rounded-3xl text-[#1a6cd8]
                 hover:bg-[#def1ff]">{{ submitBtnText }}</button>
             </div >
         </div >
     `
 }
 
-const MountPage = (user_session_id) => {
+const retrieveVideos = (user_session_id) => {
     axios.get("http://127.0.0.1:8000/videos/user-watch-history", {
         params: {
             user_session_id: user_session_id
         }
     }).then((response) => {
         if (response.status == 200) {
-            console.log(response.data.data)
+            longVideos.splice(0, longVideos.length, ...response.data.data)
         }
     }).catch(() => console.log("Error!"))
+}
+
+
+const MountPage = (user_session_id) => {
+    retrieveVideos(user_session_id)
+}
+
+const removeVideoFromWatchHistory = (video_id) => {
+    const user_session_id = sessionStorage.getItem("user_session_id")
+    axios.delete(`http://127.0.0.1:8000/videos/delete-user-watch-history/${video_id}`, {
+        params: {
+            user_session_id: user_session_id
+        }
+    }).then((response) => {
+        if (response.status == 204) {
+            retrieveVideos(user_session_id)
+        }
+    })
 }
 
 const isUserAuthenticated = ref(false)
@@ -93,32 +151,33 @@ onMounted(async () => {
                     <p>Today</p>
                 </div>
             </div>
-            <a href="">
-                <div class="history-video flex flex-row relative">
-                    <div class="w-[246px] h-[138px] flex flex-row">
-                        <img class="w-[100%] h-[100%] rounded-lg" src="@/assets/img/Django.png" alt="">
-                    </div>
-                    <div class="flex flex-col cursor-pointer ml-4">
-                        <p class="font-normal text-lg">Video Title</p>
-                        <div class="flex flex-row">
-                            <p class="text-xs font-normal text-[#7d8a9f] hover:text-[#6b6b6b]">Channel name&nbsp;
-                            </p>
-                            <span class="text-[#7d8a9f] text-xs font-normal hover:text-[#6b6b6b] mb-4">. 25M
-                                views</span>
-                        </div>
-                        <p class="text-[#7d8a9f] text-xs font-normal hover:text-[#6b6b6b]">video description</p>
-                    </div>
-                    <button
-                        class="w-10 h-10 absolute right-0 top-0 rounded-full hover:bg-[#e5e5e5] flex justify-center items-center">
-                        <img class="w-5 h-5" src="@/assets/icons/svg-icons/x-mark-icon.svg" alt="">
-                    </button>
-                    <div class="remove-history hidden flex-col pl-2 pt-3 text-white bg-[#717171] text-xs font-normal w-[110px] h-[55px]
-                    rounded-md absolute right-[-35px] top-12 opacity-90">
-                        <p>Remove from</p>
-                        <p>watch history</p>
-                    </div>
+            <div v-for="video in longVideos" :key="video.unique_id" class="history-video flex flex-row relative">
+                <div class="w-[246px] h-[138px] flex flex-row">
+                    <img class="w-[100%] h-[100%] rounded-lg" :src="video.thumbnail_url" alt="">
                 </div>
-            </a>
+                <div class="flex flex-col cursor-pointer ml-4">
+                    <p class="font-normal text-lg">{{ video.title }}</p>
+                    <div class="flex flex-row">
+                        <router-link :to="`/channel-page/${video.channel_id}`">
+                            <p class="text-xs font-normal text-[#7d8a9f] hover:text-[#6b6b6b]">{{ video.channel_name
+                                }}&nbsp;
+                            </p>
+                        </router-link>
+                        <span class="text-[#7d8a9f] text-xs font-normal hover:text-[#6b6b6b] mb-4">. {{ video.views }}
+                            views</span>
+                    </div>
+                    <p class="text-[#7d8a9f] text-xs font-normal hover:text-[#6b6b6b]">{{ video.description }}</p>
+                </div>
+                <button @click="removeVideoFromWatchHistory(video.unique_id)"
+                    class="w-10 h-10 absolute right-0 top-0 rounded-full hover:bg-[#e5e5e5] flex justify-center items-center">
+                    <img class="w-5 h-5" src="@/assets/icons/svg-icons/x-mark-icon.svg" alt="">
+                </button>
+                <div class="remove-history hidden flex-col pl-2 pt-3 text-white bg-[#717171] text-xs font-normal w-[110px] h-[55px]
+                    rounded-md absolute right-[-35px] top-12 opacity-90">
+                    <p>Remove from</p>
+                    <p>watch history</p>
+                </div>
+            </div>
             <div class="flex flex-col relative mt-[80px]">
                 <div class="top-[-60px] absolute font-bold text-xl">
                     <p>Yesterday</p>
@@ -212,16 +271,17 @@ onMounted(async () => {
         <div v-if="isClearHistoryDialogOpen || isPauseHistoryDialogOpen || isDeleteCommentsDialogOpen"
             class="fixed inset-0 bg-[#b2b2b2] bg-opacity-80 z-40"></div>
         <dialogBar :isDialogOpen="isClearHistoryDialogOpen" :toggleDialog="toggleClearHistoryDialog"
-            main_title="Clear watch history?" user_email="Nikolat28@gmail.com" fst_para="Your YouTube watch history will be cleared from all
+            main_title="Clear watch history?" fst_para="Your YouTube watch history will be cleared from all
                 YouTube apps on all devices." sec_para="Your video recommendations will be reset, but may still be
-                influenced by activity on other Google products." submitBtnText="Clear watch history"></dialogBar>
+                influenced by activity on other Google products." submitBtnText="Clear watch history"
+            :submitFunction="clearAllUserWatchHistory"></dialogBar>
         <dialogBar :isDialogOpen="isPauseHistoryDialogOpen" :toggleDialog="togglePauseHistoryDialog"
-            main_title="Pause watch history?" user_email="Nikolat28@gmail.com" fst_para="Pausing YouTube watch history can make it harder to find videos you watched, and you may see fewer recommendations for new videos in YouTube and other Google products.
+            :submitFunction="toggleWatchHistory" main_title="Pause watch history?" fst_para="Pausing YouTube watch history can make it harder to find videos you watched, and you may see fewer recommendations for new videos in YouTube and other Google products.
                 "
             sec_para="Remember, pausing this setting doesn't delete any previous activity, but you can view, edit and delete your private YouTube watch history data anytime. When you pause and clear your watch history, YouTube features that rely on history to personalize your experience are disabled."
             submitBtnText="Pause"></dialogBar>
         <dialogBar :isDialogOpen="isDeleteCommentsDialogOpen" :toggleDialog="toggleDeleteCommentsDialog"
-            main_title="Delete all the comments and replies?" user_email="Nikolat28@gmail.com" fst_para="َAll the comments and replies that you have shared since your YouTube account has been created
+            :submitFunction="clearAllUserCommentsReplies" main_title="Delete all the comments and replies?" fst_para="َAll the comments and replies that you have shared since your YouTube account has been created
              will be deleted (Even the comments that people have replied to you)!" submitBtnText="Delete All">
         </dialogBar>
         <div class="flex flex-col w-[441px] ml-[200px] mt-10">

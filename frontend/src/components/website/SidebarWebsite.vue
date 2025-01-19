@@ -32,10 +32,12 @@ const toggleSubscriptionChannels = () => {
             <img class="rotate-90" style="width: 14px; height: 14px; margin-left: 8px;"
                 src="@/assets/icons/svg-icons/line-angle-up-icon.svg" alt="">
         </div>
-        <div class="side-bar-links">
-            <img src="@/assets/icons/svg-icons/clockwise-icon.svg" alt="">
-            <p>History</p>
-        </div>
+        <router-link to="/history">
+            <div class="side-bar-links">
+                <img src="@/assets/icons/svg-icons/clockwise-icon.svg" alt="">
+                <p>History</p>
+            </div>
+        </router-link>
         <router-link to="/feed/playlists">
             <div class="side-bar-links">
                 <img src="@/assets/icons/svg-icons/playlist-videos-icon.svg" alt="">
