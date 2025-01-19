@@ -60,7 +60,6 @@ const retrieveVideos = () => {
             totalPages.value = response.data.data.long_videos.pages
             shortVideos.splice(0, shortVideos.length, ...response.data.data.short_videos)
             longVideos.splice(0, longVideos.length, ...response.data.data.long_videos.items)
-            console.log(longVideos)
         }
     }).catch((error) => {
         console.log(error)

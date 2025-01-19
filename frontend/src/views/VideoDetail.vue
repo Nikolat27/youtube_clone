@@ -655,6 +655,14 @@ const retrievePlaylistVideoInfo = (videoId, playlistId) => {
     }).catch((error) => console.log(error))
 }
 
+const addWatchHistory = (videoId, user_session_id) => {
+    axios.get(`http://127.0.0.1:8000/videos/add-watch-history/${videoId}`, {
+        params: {
+            user_session_id: user_session_id
+        }
+    })
+}
+
 watch(() => route.params.id, () => {
     MountPage()
 })
@@ -673,6 +681,7 @@ const MountPage = async () => {
     if (user_session_id) {
         await userAuthentication(user_session_id)
         if (isUserAuthenticated.value) {
+            addWatchHistory(videoId, user_session_id)
             userLikeSituation(videoId, user_session_id)
             videoSaveSituation(videoId, user_session_id)
             await retrieveUserProfileImg(user_session_id)

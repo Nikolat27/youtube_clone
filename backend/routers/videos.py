@@ -13,6 +13,7 @@ from database.models.user import (
     User,
     Like,
     SaveVideos,
+    History,
     Channel,
     Comment,
     Notification,
@@ -20,7 +21,7 @@ from database.models.user import (
     ChannelSubscription,
 )
 from fastapi.responses import JSONResponse, Response
-from sqlalchemy import select, desc
+from sqlalchemy import select, desc, asc
 from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
 from datetime import datetime
@@ -178,6 +179,7 @@ async def videos_list() -> Page:
                     "watch_progress": await get_current_video_time(
                         user_ip, video.unique_id, video.file_url
                     ),
+                    # "watch_progress": None,
                     "thumbnail_url": await static_file(video.thumbnail_url),
                     "created_at": f"{await time_difference(video.created_at)} days",
                     "channel_profile_picture": get_channel_profile(video.user_id),
@@ -731,3 +733,28 @@ def download_video(video_id: str = Path_parameter()):
     return JSONResponse(
         {"data": "This video have been downloaded"}, status_code=status.HTTP_200_OK
     )
+
+
+@router.get("/add-watch-history/{video_id}")
+async def add_video_watch_history(
+    video_id: str = Path_parameter(), user_session_id: str = Query()
+):
+    user_id = await get_current_user_id(user_session_id)
+
+    # Checking the history
+    history = History.query.filter_by(user_id=user_id, video_id=video_id).first()
+    if history:
+        history.created_at = datetime.utcnow()
+    else:
+        new_history = History(user_id=user_id, video_id=video_id)
+        session.add(new_history)
+    session.commit()
+
+
+@router.get("/user-watch-history/")
+async def get_user_video_watch_history(user_session_id: str = Query()):
+    user_id = await get_current_user_id(user_session_id)
+
+    histories = History.query.filter_by(user_id=user_id).all()
+
+    return JSONResponse({"data": "hizdxfasdf"}, status_code=status.HTTP_200_OK)

@@ -1,5 +1,12 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, reactive, onMounted } from 'vue';
+import { useToast } from 'vue-toastification';
+import { useRoute, useRouter } from 'vue-router';
+import axios from 'axios';
+
+const toast = useToast()
+const router1 = useRoute()
+const router2 = useRouter()
 
 const isClearHistoryDialogOpen = ref(false)
 const isPauseHistoryDialogOpen = ref(false)
@@ -8,6 +15,9 @@ const isDeleteCommentsDialogOpen = ref(false)
 const toggleClearHistoryDialog = () => isClearHistoryDialogOpen.value = !isClearHistoryDialogOpen.value
 const togglePauseHistoryDialog = () => isPauseHistoryDialogOpen.value = !isPauseHistoryDialogOpen.value
 const toggleDeleteCommentsDialog = () => isDeleteCommentsDialogOpen.value = !isDeleteCommentsDialogOpen.value
+
+const longVideos = reactive([])
+const shortVideos = reactive([])
 
 
 const dialogBar = {
@@ -28,6 +38,48 @@ const dialogBar = {
         </div >
     `
 }
+
+const MountPage = (user_session_id) => {
+    axios.get("http://127.0.0.1:8000/videos/user-watch-history", {
+        params: {
+            user_session_id: user_session_id
+        }
+    }).then((response) => {
+        if (response.status == 200) {
+            console.log(response.data.data)
+        }
+    }).catch(() => console.log("Error!"))
+}
+
+const isUserAuthenticated = ref(false)
+const userAuthentication = async (user_session_id) => {
+    await axios.get("http://127.0.0.1:8000/users/is_authenticated", {
+        params: {
+            user_session_id: user_session_id
+        }
+    }).then((response) => {
+        if (response.status == 200) {
+            isUserAuthenticated.value = true
+        }
+    }).catch((error) => {
+        toast.error(error)
+    })
+}
+
+onMounted(async () => {
+    const user_session_id = sessionStorage.getItem("user_session_id")
+    if (!user_session_id) {
+        router2.push({ name: "auth" })
+    }
+
+    await userAuthentication(user_session_id)
+    if (!isUserAuthenticated.value) {
+        router2.push({ name: "auth" })
+    }
+
+    MountPage(user_session_id)
+
+})
 </script>
 
 <template>
