@@ -131,10 +131,12 @@ onMounted(() => {
                     <div class="short-video-thumbnail">
                         <img loading="lazy" :src="short.thumbnail_url" alt="">
                     </div>
-                    <div class="short-video-title-div">
-                        <p class="short-video-title">{{ short.title }}</p>
-                        <p class="short-video-views">{{ short.views }} view</p>
-                    </div>
+                    <router-link :to="`/short/${short.unique_id}`">
+                        <div class="short-video-title-div">
+                            <p class="short-video-title">{{ short.title }}</p>
+                            <p class="short-video-views">{{ short.views }} view</p>
+                        </div>
+                    </router-link>
                 </div>
             </div>
 

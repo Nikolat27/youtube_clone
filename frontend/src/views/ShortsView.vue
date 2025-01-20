@@ -1,9 +1,23 @@
 <script setup>
-import { ref, reactive, computed } from 'vue';
+import { ref, reactive, computed, onMounted, watch } from 'vue';
+import { useToast } from 'vue-toastification';
+import { useRoute, useRouter } from 'vue-router';
 import socialShare from '@/components/socialShare.vue';
 import { sharedState } from '@/sharedState';
+import axios from 'axios';
+import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
 
 
+// Icons
+import emptyLikeIcon from '/src/assets/icons/svg-icons/like-empty.svg'
+import fillLikeIcon from '/src/assets/icons/svg-icons/like-fill.svg'
+import emptyDislikeIcon from '/src/assets/icons/svg-icons/dislike-empty.svg'
+import fillDislikeIcon from '/src/assets/icons/svg-icons/dislike-fill.svg'
+
+
+const toast = useToast()
+const router1 = useRoute()
+const router2 = useRouter()
 
 // Toggling Sharing Tab
 const toggleSharingTab = () => {
@@ -18,14 +32,6 @@ const toggleCommentContainer = () => {
     isCommentContainerOpen.value = !isCommentContainerOpen.value;
     shortVideoWrapper.style.marginRight = isCommentContainerOpen.value ? "350px" : "0px";
 }
-
-
-// Fake comments
-const comments = [
-    { id: 1, text: "Hello World" },
-    { id: 2, text: "Hello World" },
-    { id: 3, text: "Hello World" },
-]
 
 
 // Toggle User Comment Options
@@ -49,7 +55,7 @@ const toggleReplyOptions = (comment_id) => toggleUserComment(comment_id, 'replyO
 // Handle video`s playing
 const isVideoPlayed = ref(true)
 const toggleVideoPlay = () => {
-    const video = document.getElementById("main-video")
+    const video = videoRef.value
     if (video.paused) {
         video.play()
     }
@@ -63,17 +69,17 @@ const toggleVideoPlay = () => {
 // Handle video`s voice 
 const isVideoMuted = ref(false)
 const toggleVideoMute = () => {
-    const video = document.getElementById("main-video")
+    const video = videoRef.value
     video.muted = !video.muted
     isVideoMuted.value = !isVideoMuted.value
 }
 
 
 // Update video volume based on input range
-const volumeValue = ref(100); // default volume value
+const volumeValue = ref(50); // default volume value
 const updateVolume = (event) => {
     volumeValue.value = event.target.value;
-    const video = document.getElementById("main-video");
+    const video = videoRef.value
     video.volume = volumeValue.value / 100; // we devided the value by 100 because the 'volume' method 
     // only supports an int between 0 to 1
 }
@@ -92,18 +98,170 @@ const videoVolumeIcon = computed(() => {
 // Handle video fullscreen
 const isVideoFullscreen = ref(false)
 const toggleVideoFullscreen = () => {
-    const video = document.getElementById("main-video");
+    const video = videoRef.value
     video.requestFullscreen();
     isVideoFullscreen.value = !isVideoFullscreen.value;
 }
+
+
+const videoRef = ref(null)
+let videoInfo = reactive({
+    id: '',
+    unique_id: '',
+    total_likes: '',
+    user_id: '',
+    title: '',
+    description: '',
+    thumbnail_url: '',
+    video_url: '',
+    duration: '',
+    created_at: '',
+    channel_id: '',
+    channel_name: '',
+    channel_profile_url: '',
+})
+
+const youtubeVideoLink = ref(null)
+const retrieveVideoDetail = async (videoId, user_session_id) => {
+    await axios.get(`http://127.0.0.1:8000/videos/detail/${videoId}`, {
+        params: {
+            unique_id: router1.query.unique_id,
+            user_session_id: user_session_id
+        }
+    }).then((response) => {
+        if (response.status == 200) {
+            Object.assign(videoInfo, response.data.data)
+        } else {
+            youtubeVideoLink.value = response.data.data
+        }
+        isChannelSubscribed.value = videoInfo.is_channel_subed
+    }).catch((error) => {
+        console.log(error)
+    })
+}
+
+const comments = reactive([])
+const commentRetrievingLoading = ref(false)
+const retrieveVideoComments = async (videoId) => {
+    commentRetrievingLoading.value = true
+    await axios.get(`http://127.0.0.1:8000/videos/comment/list/${videoId}`, {
+        params: {
+            user_session_id: sessionStorage.getItem("user_session_id")
+        }
+    }).then((response) => {
+        if (response.status == 200) {
+            Object.assign(comments, response.data.data)
+        }
+    }).catch((error) => {
+        toast.error(error)
+    }).finally(() => commentRetrievingLoading.value = false)
+}
+
+const isChannelSubscribed = ref(null)
+const subscribeChannel = (channelId) => {
+    if (!isUserAuthenticated.value) {
+        toast.error("You have Login to subscribe a channel!")
+        return;
+    }
+    axios.get(`http://127.0.0.1:8000/channel/subscribe/${channelId}`, {
+        params: {
+            user_session_id: sessionStorage.getItem("user_session_id")
+        }
+    }).then((response) => {
+        if (response.status == 200) {
+            toast.success(response.data.data)
+            isChannelSubscribed.value = !isChannelSubscribed.value
+        }
+    }).catch((error) => toast.error(error))
+}
+
+
+const userId = ref(null)
+const userProfileImgSrc = ref(null)
+const retrieveUserProfileImg = async (user_session_id) => {
+    await axios.get("http://127.0.0.1:8000/users/profile-picture", {
+        params: {
+            user_session_id: user_session_id
+        }
+    }).then((response) => {
+        if (response.status == 200) {
+            userProfileImgSrc.value = response.data.profile_picture
+            userId.value = response.data.user_id
+        }
+    }).catch((error) => {
+        toast.error(error)
+    })
+}
+
+const totalLikes = ref(null)
+const likeSituation = ref(null)
+const userLikeSituation = async (video_id, user_session_id) => {
+    await axios.get(`http://127.0.0.1:8000/videos/like-situation/${video_id}/${user_session_id}`).then((response) => {
+        if (response.status == 200) {
+            likeSituation.value = response.data.data
+            totalLikes.value = response.data.total_likes
+        }
+    }).catch((error) => {
+        console.log(error)
+    })
+}
+
+
+const likeVideo = (action_type) => { // true == 'like', false == 'dislike', null == 'None'
+    const user_session_id = sessionStorage.getItem("user_session_id")
+    if (!user_session_id) {
+        toast.error("You have to be Logged in!")
+        return;
+    }
+    axios.get(`http://127.0.0.1:8000/videos/like/${videoInfo.id}/${action_type}/${user_session_id}`).then(() => {
+        userLikeSituation(router1.params.id, user_session_id)
+    }).catch((error) => {
+        toast.error("Error: ", error)
+    })
+}
+
+const isUserAuthenticated = ref(false)
+const userAuthentication = async (user_session_id) => {
+    await axios.get("http://127.0.0.1:8000/users/is_authenticated", {
+        params: {
+            user_session_id: user_session_id
+        }
+    }).then((response) => {
+        if (response.status == 200) {
+            isUserAuthenticated.value = true
+        }
+    }).catch((error) => {
+        toast.error(error)
+    })
+}
+
+const MountPage = async () => {
+    const user_session_id = sessionStorage.getItem("user_session_id")
+    const videoId = router1.params.id // Current Video Id
+    await retrieveVideoDetail(videoId, user_session_id)
+
+    if (user_session_id) {
+        await userAuthentication(user_session_id)
+        if (isUserAuthenticated.value) {
+            userLikeSituation(videoId, user_session_id)
+            await retrieveUserProfileImg(user_session_id)
+            retrieveVideoComments(videoId)
+        }
+    }
+}
+
+onMounted(() => {
+    MountPage()
+})
 </script>
 
 <template>
     <div class="flex flex-col justify-center items-center mt-16 gap-y-7">
         <div class="short-video-wrapper">
             <div class="short-video w-[350px] h-[600px] relative">
-                <video id="main-video" oncontextmenu="return false;" class="w-[100%] h-[100%] object-cover rounded-2xl"
-                    src="@/assets/video/test-vid3.mp4">
+                <video :poster="videoInfo.thumbnail_url" ref="videoRef" oncontextmenu="return false;" volume="0.5"
+                    class="w-[100%] h-[100%] object-cover rounded-2xl">
+                    <source :src="`http://127.0.0.1:8000/videos/stream/${$route.params.id}/`" type="video/mp4" />
                 </video>
                 <button @click="toggleVideoPlay" class="w-[48px] h-[48px] flex justify-center items-center bg-opacity-75 rounded-full absolute top-2 left-4
                      bg-[#b2b1b2] hover:bg-[#797879]">
@@ -122,21 +280,30 @@ const toggleVideoFullscreen = () => {
                 </button>
                 <div class="short-video-info flex flex-col absolute bottom-7 left-4 text-white">
                     <div class="flex flex-row justify-center items-center gap-x-3">
-                        <img src="@/assets/img/Django.png" class="w-8 h-8 rounded-full border-white border" alt="">
-                        <p class="text-[14px] font-medium">@channelName</p>
-                        <button
-                            class="bg-white text-black w-[76px] h-[32px] rounded-2xl text-[12px] font-medium">Subscribe</button>
+                        <router-link :to="`/channel-page/${videoInfo.channel_unique_identifier}`">
+                            <img :src="videoInfo.channel_profile_url" class="w-8 h-8 rounded-full border-white border"
+                                alt="">
+                        </router-link>
+                        <router-link :to="`/channel-page/${videoInfo.channel_unique_identifier}`">
+                            <p class="text-[14px] font-medium">@{{ videoInfo.channel_name }}</p>
+                        </router-link>
+                        <button @click="subscribeChannel(videoInfo.channel_id)" v-if="isChannelSubscribed"
+                            class="bg-white text-black w-[76px] h-[32px] rounded-2xl text-[12px] font-medium">Subscribed</button>
+                        <button @click="subscribeChannel(videoInfo.channel_id)" v-else
+                            class="bg-black text-text w-[76px] h-[32px] rounded-2xl text-[12px] font-medium">Subscribe</button>
                     </div>
-                    <h2 class="text-[14px] font-normal mt-4">Short video title</h2>
+                    <h2 class="text-[14px] font-normal mt-4">{{ videoInfo.title }}</h2>
                 </div>
                 <div class="flex flex-col gap-y-4 justify-center items-center
                  absolute right-[-65px] bottom-[30px]">
-                    <button class="w-12 h-12 bg-[#f2f2f2] rounded-full hover:bg-[#e5e5e5]">
-                        <img src="@/assets/icons/svg-icons/like-empty.svg" class="h-[80%] w-[80%] m-auto" alt="">
+                    <button @click="likeVideo(true)" class="w-12 h-12 bg-[#f2f2f2] rounded-full hover:bg-[#e5e5e5]">
+                        <img :src="likeSituation === true ? fillLikeIcon : emptyLikeIcon" class="h-[80%] w-[80%] m-auto"
+                            alt="">
                     </button>
-                    <span class="mt-[-10px]">2k</span>
-                    <button class="w-12 h-12 bg-[#f2f2f2] rounded-full hover:bg-[#e5e5e5]">
-                        <img src="@/assets/icons/svg-icons/dislike-empty.svg" class="h-[80%] w-[80%] m-auto" alt="">
+                    <span class="mt-[-10px]">{{ totalLikes }}</span>
+                    <button @click="likeVideo(false)" class="w-12 h-12 bg-[#f2f2f2] rounded-full hover:bg-[#e5e5e5]">
+                        <img :src="likeSituation === false ? fillDislikeIcon : emptyDislikeIcon"
+                            class="h-[80%] w-[80%] m-auto" alt="">
                     </button>
                     <span class="mt-[-10px]">Dislike</span>
                     <button @click="toggleCommentContainer"
@@ -144,14 +311,16 @@ const toggleVideoFullscreen = () => {
                         <img src="@/assets/icons/svg-icons/comment-empty-icon.svg" class="h-[60%] w-[60%] m-auto"
                             alt="">
                     </button>
-                    <span class="mt-[-10px]">8</span>
+                    <span class="mt-[-10px]">{{ videoInfo.total_comments }}</span>
                     <button @click="toggleSharingTab" class="w-12 h-12 bg-[#f2f2f2] rounded-full hover:bg-[#e5e5e5]">
                         <img src="@/assets/icons/svg-icons/share-btn.svg" class="h-[60%] w-[60%] m-auto" alt="">
                     </button>
                     <span class="mt-[-10px]">Share</span>
-                    <button class="w-11 h-11 bg-[#f2f2f2] hover:bg-[#e5e5e5] rounded-full">
-                        <a href="#"><img src="@/assets/img/Django.png" class="h-[100%] w-[100%] rounded-md"></a>
-                    </button>
+                    <router-link :to="`/channel-page/${videoInfo.channel_unique_identifier}`">
+                        <button class="w-11 h-11 bg-[#f2f2f2] hover:bg-[#e5e5e5] rounded-full">
+                            <img :src="videoInfo.channel_profile_url" class="h-[100%] w-[100%] rounded-md">
+                        </button>
+                    </router-link>
                 </div>
                 <div v-if="isCommentContainerOpen" class="z-10 flex absolute left-[450px] bottom-[50px] flex-col w-[500px] h-[500px] 
                     border-[1px] border-gray-400 rounded-2xl pt-2 max-w-[500px] max-h-[500px]">
@@ -163,7 +332,8 @@ const toggleVideoFullscreen = () => {
                         </button>
                     </div>
                     <hr>
-                    <div class="flex-grow flex flex-col overflow-y-auto max-h-[394px]" style="scrollbar-width: thin;">
+                    <div v-if="!commentRetrievingLoading" class="flex-grow flex flex-col overflow-y-auto max-h-[394px]"
+                        style="scrollbar-width: thin;">
                         <div v-for="comment in comments" :key="comment.id" class="flex flex-col gap-y-8">
                             <div class="flex flex-row gap-x-2 ml-4 mt-4">
                                 <div>
@@ -258,6 +428,9 @@ const toggleVideoFullscreen = () => {
                                 </div>
                             </div>
                         </div>
+                    </div>
+                    <div v-else class="absolute top-0 w-full h-full flex justify-center items-center">
+                        <PulseLoader color="red" size="20px"></PulseLoader>
                     </div>
                     <div class="max-h-[56.8px] flex flex-row mt-10 absolute bottom-0 left-0 gap-x-4 w-full
                      border-t pt-2 pl-2 pb-2">

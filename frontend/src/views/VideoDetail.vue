@@ -420,7 +420,7 @@ const likeVideo = (action_type) => { // true == 'like', false == 'dislike', null
         toast.error("You have to be Logged in!")
         return;
     }
-    axios.get(`http://127.0.0.1:8000/videos/like/${videoInfo.id}/${action_type}/${user_session_id}`).then((response) => {
+    axios.get(`http://127.0.0.1:8000/videos/like/${videoInfo.id}/${action_type}/${user_session_id}`).then(() => {
         userLikeSituation(route.params.id, user_session_id)
     }).catch((error) => {
         toast.error(error)
@@ -512,6 +512,7 @@ const toggleChannelNotification = (channelId, notification) => {
         toggleChannelOptions()
     })
 }
+
 
 const subscribeChannel = (channelId) => {
     if (!isUserAuthenticated.value) {

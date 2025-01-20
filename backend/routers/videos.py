@@ -314,12 +314,14 @@ async def video_detail(
         "duration": await get_video_duration(video.file_url),
         "created_at": f"{await time_difference(video.created_at)} days ",
         "channel_id": channel.id,
+        "channel_unique_identifier": get_channel_unique_identifier(channel.id),
         "channel_name": channel.name or "",
         "channel_profile_url": await static_file(channel.profile_picture_url) or "",
         "channel_watermark_url": await static_file(channel.video_watermark_url) or "",
         "channel_total_subs": get_channel_total_subs(channel.id),
         "is_channel_subed": is_channel_subed(channel.id, user_id),
         "total_likes": await total_video_likes(video.unique_id),
+        "total_comments": await get_total_comments(video.unique_id),
     }
     return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)
 
@@ -539,6 +541,10 @@ async def get_comments_list(
         for comment in comments.items
     ]
     return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)
+
+
+async def get_total_comments(unique_id):
+    return Comment.query.filter_by(video_id=unique_id).count()
 
 
 async def create_notification(
