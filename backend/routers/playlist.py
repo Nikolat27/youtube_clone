@@ -10,6 +10,7 @@ from fastapi import APIRouter, Query, status, Path as Path_parameter
 from typing import List, Optional
 from dependencies import get_current_user_id
 from fastapi.responses import JSONResponse
+from fastapi import HTTPException
 from datetime import datetime
 import secrets
 from database.models.base import session
@@ -32,6 +33,7 @@ async def get_user_playlists(user_session_id: str = Query(), sortBy: str = Query
             "id": playlist.id,
             "title": playlist.title,
             "visibility": playlist.visibility,
+            "is_default": playlist.is_default,
             "total_videos": playlist.video.count(),
             "last_video_unique_id": (
                 await playlist_last_video_unique_id(list(playlist.video)[-1])
@@ -162,8 +164,19 @@ async def video_channel(user_id):
 
 
 @router.get("/{playlist_id}")
-async def get_playlist(playlist_id: int = Path_parameter(), filter: str = Query()):
+async def get_playlist(
+    playlist_id: int = Path_parameter(),
+    filter: str = Query(),
+    user_session_id: str = Query(None),
+):
     playlist = Playlist.query.filter_by(id=playlist_id).first()
+
+    if (
+        playlist.is_default or playlist.visibility == "private"
+    ):  # Only user can access the default and private playlists
+        user_id = await get_current_user_id(user_session_id)
+        if playlist.owner_id != user_id:
+            raise HTTPException(detail="Only the user can see this playlist")
 
     videos = playlist.video
     match filter:
@@ -190,11 +203,15 @@ async def get_playlist(playlist_id: int = Path_parameter(), filter: str = Query(
             }
             for video in videos.order_by(desc(Video.created_at))
         ],
-        "last_video_unique_id": await playlist_last_video_unique_id(
-            list(playlist.video)[-1]
+        "last_video_unique_id": (
+            await playlist_last_video_unique_id(list(playlist.video)[-1])
+            if list(playlist.video)
+            else None
         ),
-        "last_video_thumbnail": await playlist_last_video_thumbnail_url(
-            list(playlist.video)[-1]
+        "last_video_thumbnail": (
+            await playlist_last_video_thumbnail_url(list(playlist.video)[-1])
+            if list(playlist.video)
+            else None
         ),
         "total_videos": playlist.video.count(),
     }
@@ -235,3 +252,33 @@ async def get_current_video_playlist_info(
         },
         status_code=status.HTTP_200_OK,
     )
+
+
+@router.get("/watch/later")
+async def watch_later_user_playlist(user_session_id: str = Query()):
+    if not user_session_id:
+        raise HTTPException(status_code=400, detail="user_session_id is required")
+
+    user_id = await get_current_user_id(user_session_id)
+    # In this function we just pass the id of the playlist then redirect the user
+    playlist = (
+        Playlist.query.with_entities(Playlist.id)
+        .filter_by(owner_id=user_id, title="Watch later")
+        .first()
+    )
+    return playlist.id
+
+
+@router.get("/liked/videos")
+async def liked_videos_user_playlist(user_session_id: str = Query()):
+    if not user_session_id:
+        raise HTTPException(status_code=400, detail="user_session_id is required")
+
+    user_id = await get_current_user_id(user_session_id)
+    # In this function we just pass the id of the playlist then redirect the user
+    playlist = (
+        Playlist.query.with_entities(Playlist.id)
+        .filter_by(owner_id=user_id, title="Liked videos")
+        .first()
+    )
+    return playlist.id

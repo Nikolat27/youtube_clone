@@ -1,12 +1,12 @@
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, onMounted, watch } from 'vue';
 import { useToast } from 'vue-toastification';
 import { useRoute, useRouter } from 'vue-router';
 import ScaleLoader from 'vue-spinner/src/ScaleLoader.vue';
 import axios from 'axios';
 
 const toast = useToast();
-const router = useRoute();
+const router1 = useRoute();
 const router2 = useRouter();
 
 const isVideoOptionsOpen = ref([])
@@ -38,16 +38,25 @@ const checkScroll = () => {
     }
 }
 
+const playlistIsEmpty = ref(false)
 const playlistInfo = reactive([])
 const retrievePlaylist = (playlistId, filter) => {
     isLoading.value = true
     axios.get(`http://127.0.0.1:8000/playlist/${playlistId}`, {
         params: {
-            filter: filter
+            filter: filter,
+            user_session_id: sessionStorage.getItem("user_session_id")
         }
     }).then((response) => {
         if (response.status == 200) {
             Object.assign(playlistInfo, response.data.data)
+
+            if (playlistInfo.videos.length <= 0) {
+                toast.info("This Playlist is Empty")
+                playlistIsEmpty.value = true
+            } else {
+                playlistIsEmpty.value = false
+            }
         }
     }).catch((error) => console.log(error)).finally(() => isLoading.value = false)
 }
@@ -70,8 +79,13 @@ const shufflePlaylistVideo = (playlistId) => {
     }).catch((error) => toast.error("Error!"))
 }
 
+
+watch(() => router1.params.id, (newId) => {
+    retrievePlaylist(newId, currentFilter.value)
+})
+
 onMounted(() => {
-    const playlistId = router.params.id
+    const playlistId = router1.params.id
     if (playlistId) {
         retrievePlaylist(playlistId, currentFilter.value)
     }
@@ -81,12 +95,11 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="flex flex-row font-roboto">
+    <div v-if="!playlistIsEmpty" class="flex flex-row font-roboto">
         <div class="w-[360px] h-[650px] ml-[240px] mt-[55px] flex flex-col bg-[#967b69] bg-opacity-80
          pt-5 pl-5 rounded-2xl">
             <img class="w-[312px] h-[175px] rounded-2xl" :src="playlistInfo.last_video_thumbnail" alt="">
-            <p class="text-[28px] font-bold mt-3 text-white">Liked
-                videos</p>
+            <p class="text-[28px] font-bold mt-3 text-white">{{ playlistInfo.title }}</p>
             <p class="text-sm font-medium mt-4 text-white">{{ playlistInfo.username }}</p>
             <p class="text-gray-700 text-[12px] mt-2">{{ playlistInfo.total_videos }} videos</p>
             <div class="flex flex-row mt-6 gap-x-2 ml-1">
@@ -162,5 +175,10 @@ onMounted(() => {
                 <ScaleLoader color="red"></ScaleLoader>
             </div>
         </div>
+    </div>
+    <div v-else class="absolute ml-[800px] top-1/2">
+        <router-link to="/">
+            <p class="text-blue-700 underline text-[24px] font-medium cursor-pointer">Go back</p>
+        </router-link>
     </div>
 </template>

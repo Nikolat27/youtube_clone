@@ -15,6 +15,7 @@ const router2 = useRouter()
 import arrowDown from '/src/assets/icons/svg-icons/arrow-down-icon.svg'
 import playIcon from '/src/assets/icons/video-player/play-icon.png'
 import kebabMenuIcon from '/src/assets/icons/svg-icons/kebab-menu.svg'
+import playlistDefaultImg from '/src/assets/img/default-playlist-img.jpg'
 
 
 const playlistOptionsOpen = reactive([])
@@ -127,8 +128,9 @@ onMounted(() => {
         <div v-if="!isLoading" class="flex flex-row flex-wrap gap-x-4 gap-y-12">
             <div v-for="playlist in playlists" :key="playlist.id" class="playlist">
                 <div class="playlist-thumbnail relative z-0 w-[295px] h-[166px]" :id="playlist.id">
-                    <img class="w-full h-full object-fill rounded-lg z-0" :src="playlist.last_video_thumbnail" alt="">
-                    <div @click="playPlaylistVideo($route.params.id, playlist.last_video_unique_id)"
+                    <img class="w-full h-full object-fill rounded-lg z-0"
+                        :src="playlist.last_video_thumbnail ?? playlistDefaultImg" alt="">
+                    <div v-if="playlist.total_videos >= 1" @click="playPlaylistVideo($route.params.id, playlist.last_video_unique_id)"
                         class="cursor-pointer play-buttons hidden bg-black w-auto p-2 rounded-lg flex-row gap-x-4 absolute top-1/2 left-[83px]">
                         <img class="w-[20px] h-[20px]" :src="playIcon" alt="">
                         <span class="text-[14px] font-medium text-white">Play all</span>
@@ -140,7 +142,7 @@ onMounted(() => {
                 <div class="flex flex-col mt-1">
                     <div class="relative flex flex-row justify-start items-center">
                         <p class="text-[14px] font-medium">{{ playlist.title }}</p>
-                        <button class="justify-self-end ml-auto w-[36px] h-[36px] rounded-full flex justify-center items-center
+                        <button v-if="!playlist.is_default" class="justify-self-end ml-auto w-[36px] h-[36px] rounded-full flex justify-center items-center
                          hover:bg-[#e5e5e5]" @click="togglePlaylistOption(playlist.id)">
                             <img class="w-[14px] h-[14px]" :src="kebabMenuIcon" alt="">
                         </button>
@@ -157,7 +159,7 @@ onMounted(() => {
                         </div>
                     </div>
                     <p class="text-[14px] font-normal text-gray-600">{{ playlist.visibility }}</p>
-                    <p @click="playPlaylist(playlist.id)" class="cursor-pointer text-[14px] font-normal text-gray-700">
+                    <p v-if="playlist.total_videos >= 1" @click="playPlaylist(playlist.id)" class="cursor-pointer text-[14px] font-normal text-gray-700">
                         View full
                         playlist</p>
                 </div>

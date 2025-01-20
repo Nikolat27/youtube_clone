@@ -22,8 +22,7 @@ from database.models.user import (
     playlist_video_association,
 )
 from fastapi.responses import JSONResponse, Response
-from sqlalchemy import select, desc, asc
-from sqlalchemy.orm import joinedload
+from sqlalchemy import select, desc
 from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
 from datetime import datetime
@@ -350,7 +349,6 @@ async def video_stream(unique_id: str = Path_parameter(), range: str = Header(No
             "Accept-Ranges": "bytes",
         }
 
-        redis_client.set("filesize", filesize)
         return Response(data, status_code=206, headers=headers, media_type="video/mp4")
 
 

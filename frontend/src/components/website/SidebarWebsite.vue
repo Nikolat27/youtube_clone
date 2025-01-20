@@ -1,6 +1,13 @@
 <script setup>
-import { ref, reactive, computed } from 'vue';
+import { ref, reactive, computed, onMounted } from 'vue';
 import { RouterLink } from 'vue-router';
+import axios from 'axios';
+import { useToast } from 'vue-toastification';
+import { useRoute, useRouter } from 'vue-router';
+
+const toast = useToast()
+const router1 = useRoute()
+const router2 = useRouter()
 
 const items = reactive([{ title: "1" }, { title: "2" }, { title: "3" }, { title: "4" }])
 let maxChannelShown = ref(1);
@@ -9,6 +16,57 @@ let isCollapsed = computed(() => maxChannelShown.value === 1) // if value == 1 t
 const toggleSubscriptionChannels = () => {
     maxChannelShown.value = isCollapsed.value ? 10 : 1;
 };
+
+const watchLaterPlaylist = () => {
+    axios.get("http://127.0.0.1:8000/playlist/watch/later", {
+        params: {
+            user_session_id: sessionStorage.getItem("user_session_id")
+        }
+    }).then((response) => {
+        if (response.status == 200) {
+            router2.push({ name: "playlist-videos", params: { id: response.data } })
+        }
+    }).catch((error) => { toast.error("Error: ", error) })
+}
+
+const likedVideosPlaylist = () => {
+    axios.get("http://127.0.0.1:8000/playlist/liked/videos", {
+        params: {
+            user_session_id: sessionStorage.getItem("user_session_id")
+        }
+    }).then((response) => {
+        if (response.status == 200) {
+            router2.push({ name: "playlist-videos", params: { id: response.data } })
+        }
+    }).catch((error) => { toast.error("Error: ", error) })
+}
+
+const isUserAuthenticated = ref(false)
+const userAuthentication = async (user_session_id) => {
+    await axios.get("http://127.0.0.1:8000/users/is_authenticated", {
+        params: {
+            user_session_id: user_session_id
+        }
+    }).then((response) => {
+        if (response.status == 200) {
+            isUserAuthenticated.value = true
+        }
+    }).catch((error) => {
+        toast.error(error)
+    })
+}
+
+onMounted(async () => {
+    const user_session_id = sessionStorage.getItem("user_session_id")
+    if (!user_session_id) {
+        router2.push({ name: "auth" })
+    }
+
+    await userAuthentication(user_session_id)
+    if (!isUserAuthenticated) {
+        router2.push({ name: "auth" })
+    }
+})
 </script>
 
 <template>
@@ -50,11 +108,11 @@ const toggleSubscriptionChannels = () => {
                 <p>Your videos</p>
             </div>
         </router-link>
-        <div class="side-bar-links">
+        <div @click="watchLaterPlaylist" class="side-bar-links">
             <img src="@/assets/icons/side-bar/watch-later.webp" alt="">
             <p>Watch Later</p>
         </div>
-        <div class="side-bar-links">
+        <div @click="likedVideosPlaylist" class="side-bar-links">
             <img src="@/assets\icons\svg-icons\like-empty.svg" alt="">
             <p>Liked</p>
         </div>
