@@ -26,7 +26,8 @@ import unSaveIcon from '/src/assets/icons/svg-icons/unsave-btn.svg'
 import replyIcon from '/src/assets/icons/svg-icons/reply-icon.svg'
 import fillBellSrc from '/src/assets/icons/svg-icons/notification-alert-icon.svg'
 import emptyBellSrc from '/src/assets/icons/svg-icons/bell-line-icon.svg'
-import router from '@/router';
+import closeIconSrc from '/src/assets/icons/svg-icons/close-icon2.svg'
+
 
 const route = useRoute()
 const router2 = useRouter()
@@ -629,6 +630,28 @@ const retrievePlaylist = (playlistId, filter) => {
     }).catch((error) => console.log(error))
 }
 
+const isSaveDivOpen = ref(false)
+const toggleSaveDiv = () => isSaveDivOpen.value = !isSaveDivOpen.value
+
+watch(isSaveDivOpen, (newVal) => {
+    if (newVal) {
+        retrieveAllUserPlaylists()
+    }
+})
+
+const playlistSaves = ref([])
+const allPlaylists = reactive([])
+const retrieveAllUserPlaylists = () => {
+    axios.get(`http://127.0.0.1:8000/playlist/user-all-playlists/${route.params.id}`, {
+        params: {
+            user_session_id: sessionStorage.getItem("user_session_id")
+        }
+    }).then((response) => {
+        if (response.status == 200) {
+            allPlaylists.splice(0, allPlaylists.length, ...response.data.data)
+        }
+    }).catch((error) => toast.error("Error: ", error))
+}
 
 const playPlaylistVideo = (videoId, playlistId) => {
     router2.push({ name: "video_detail", params: { id: videoId }, query: { playlist_id: playlistId } })
@@ -892,7 +915,7 @@ onMounted(async () => {
                 <span>Unsubscribe</span>
             </button>
         </div>
-        <div class="video-detail-other-btn">
+        <div class="video-detail-other-btn relative">
             <button @click="likeVideo(true)" class="like-btn"><img
                     :src="likeSituation === true ? fillLikeIcon : emptyLikeIcon" alt="">
                 <span class="like-amount">{{ totalLikes }}</span>
@@ -903,9 +926,44 @@ onMounted(async () => {
                     alt="">
                 <span>&nbsp;Share</span>
             </button>
-            <button @click="saveVideoToPlaylist" class="save-btn"><img :src="saveSituation ? unSaveIcon : saveIcon">
+            <button @click="toggleSaveDiv" class="save-btn"><img :src="saveSituation ? unSaveIcon : saveIcon">
                 <span>Save</span>
             </button>
+            <div v-if="isSaveDivOpen"
+                class="save-div w-[200px] h-auto min-h-[200px] rounded-xl flex flex-col absolute gap-y-2 bg-white pl-2 pt-4 top-10 right-0">
+                <div class="flex flex-row mb-2">
+                    <p class="text-[16px] font-normal pl-4">Save video to...</p>
+                    <button @click="isSaveDivOpen = false" style="background-color: white;"
+                        class="flex justify-center justify-self-end ml-auto mr-4 rounded-full items-center">
+                        <img class="w-[18px] h-[18px]" :src="closeIconSrc" alt="">
+                    </button>
+                </div>
+                <div v-for="playlist in allPlaylists" :key="playlist.id"
+                    class="playlist flex flex-row justify-start px-4 items-center gap-x-4">
+                    <input v-model="playlistSaves" :checked="playlist.video_exists" :value="playlist.id" type="checkbox"
+                        name="playlist-saving" class="w-[20px] h-[20px] cursor-pointer">
+                    <p>{{ playlist.title }}</p>
+                    <div v-if="playlist.visibility === 'private'"
+                        class="w-[18px] h-[18px] flex justify-center justify-self-end ml-auto items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" height="18" viewBox="0 0 18 18" width="18"
+                            focusable="false" aria-hidden="true"
+                            style="pointer-events: none; display: inherit; width: 100%; height: 100%;">
+                            <path
+                                d="M13 5c0-2.21-1.79-4-4-4S5 2.79 5 5v1H3v11h12V6h-2V5zM6 5c0-1.65 1.35-3 3-3s3 1.35 3 3v1H6V5zm8 2v9H4V7h10zm-7 4c0-1.1.9-2 2-2s2 .9 2 2-.9 2-2 2-2-.9-2-2z">
+                            </path>
+                        </svg>
+                    </div>
+                    <div v-else class="w-[18px] h-[18px] flex justify-self-end ml-auto justify-center items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" height="18" viewBox="0 0 18 18" width="18"
+                            focusable="false" aria-hidden="true"
+                            style="pointer-events: none; display: inherit; width: 100%; height: 100%;">
+                            <path
+                                d="M9 1C4.58 1 1 4.58 1 9s3.58 8 8 8 8-3.58 8-8-3.58-8-8-8zm7 8c0 1.31-.37 2.54-1 3.59V11h-2c-.55 0-1-.45-1-1 0-1.1-.9-2-2-2H8.73c.17-.29.27-.64.27-1V5h1c1.1 0 2-.9 2-2v-.31c2.36 1.12 4 3.52 4 6.31zm-13.98.45L7 12.77V13c0 1.1.9 2 2 2v1c-3.71 0-6.74-2.9-6.98-6.55zM10 15.92V14H9c-.55 0-1-.45-1-1v-.77L2.04 8.26C2.41 4.75 5.39 2 9 2c.7 0 1.37.11 2 .29V3c0 .55-.45 1-1 1H8v3c0 .55-.45 1-1 1H5.5v1H10c.55 0 1 .45 1 1 0 1.1.9 2 2 2h1v1.89c-1.05 1.07-2.44 1.81-4 2.03z">
+                            </path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
             <button @click="downloadVideo($route.params.id)" class="download-btn"><img
                     src="@/assets/icons/svg-icons/download-icon.svg" alt="">
                 <span>Download</span>
@@ -1396,5 +1454,9 @@ button:hover #volume-bar {
 
 #progress-bar::-moz-range-track {
     background: rgb(150, 148, 148);
+}
+
+.save-div {
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
 }
 </style>

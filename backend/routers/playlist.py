@@ -41,6 +41,41 @@ async def get_user_playlists(user_session_id: str = Query(), sortBy: str = Query
     return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)
 
 
+@router.get("/user-all-playlists/{video_id}")
+async def get_all_user_playlists(
+    video_id: str = Path_parameter(), user_session_id: str = Query()
+):
+    user_id = await get_current_user_id(user_session_id)
+    # Corrected query
+    playlists = Playlist.query.with_entities(
+        Playlist.id,
+        Playlist.title,
+        Playlist.visibility,
+    ).filter(Playlist.owner_id == user_id)
+
+    serializer = [
+        {
+            "id": playlist.id,
+            "title": playlist.title,
+            "visibility": playlist.visibility,
+            "video_exists": await check_video_exists_in_playlist(playlist.id, video_id),
+        }
+        for playlist in playlists
+    ]
+
+    return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)
+
+
+async def check_video_exists_in_playlist(playlist_id, video_id):
+    video_exists = (
+        Playlist.query.join(Playlist.video)
+        .filter(Video.unique_id == video_id)
+        .filter(Playlist.id == playlist_id)
+        .first()
+    )
+    return bool(video_exists)
+
+
 @router.delete("/delete/{playlist_id}")
 async def delete_playlist(playlist_id: int = Path_parameter()):
     Playlist.query.filter_by(id=playlist_id).delete()

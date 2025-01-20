@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Body, Query, status
 from fastapi.responses import JSONResponse
-from database.models.user import User, UserLogInfo, Channel, Notification
+from database.models.user import User, UserLogInfo, Channel, Notification, Playlist
 from passlib.context import CryptContext
 from pydantic import BaseModel
 from database.models.base import session
@@ -99,6 +99,12 @@ async def all_users():
     return list(users)
 
 
+async def create_user_default_playlists(title, owner_id):
+    playlist = Playlist(title=title, owner_id=owner_id, is_default=True)
+    session.add(playlist)
+    session.commit()
+
+
 @router.post("/register")
 async def register_user(user: UserRegister):
     if user.password1 != user.password2:
@@ -128,6 +134,8 @@ async def register_user(user: UserRegister):
     session.commit()
 
     await create_user_channel(user_instance.id, user.email)
+    await create_user_default_playlists("Watch later", user_instance.id)
+    await create_user_default_playlists("Liked videos", user_instance.id)
 
     return JSONResponse(
         {"message": "User created successfully!"}, status_code=status.HTTP_201_CREATED

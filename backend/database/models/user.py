@@ -82,6 +82,7 @@ class Playlist(Model):
         back_populates="playlists",
         lazy="dynamic",
     )
+    is_default = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     def __repr__(self):
