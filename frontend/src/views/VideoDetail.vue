@@ -6,7 +6,7 @@ import { useToast } from 'vue-toastification';
 
 import socialShare from '@/components/socialShare.vue';
 import ClipLoader from 'vue-spinner/src/ClipLoader.vue';
-import axios from 'axios';
+import axios, { all } from 'axios';
 
 // Icons
 import playIcon from '/src/assets/icons/video-player/play-icon.png'
@@ -463,10 +463,16 @@ const saveVideoToPlaylist = async () => {
         return;
     }
 
-    await axios.get(`http://127.0.0.1:8000/videos/save/${route.params.id}/${user_session_id}`).then((response) => {
+    await axios.get(`http://127.0.0.1:8000/playlist/save-video-to-playlist/${route.params.id}`, {
+        params: {
+            user_session_id: user_session_id,
+            playlists: playlistSaves.value
+        }
+    }).then((response) => {
         if (response.status == 200) {
-            toast.info("Your Video Saved successfully!")
+            toast.info("Video Saved successfully!")
             videoSaveSituation(route.params.id, user_session_id)
+            isSaveDivOpen.value = false
         }
     }).catch((error) => {
         toast.error(error)
@@ -649,9 +655,11 @@ const retrieveAllUserPlaylists = () => {
     }).then((response) => {
         if (response.status == 200) {
             allPlaylists.splice(0, allPlaylists.length, ...response.data.data)
+            playlistSaves.value = allPlaylists.filter(playlist => playlist.video_exists).map(playlist => playlist.id)
         }
     }).catch((error) => toast.error("Error: ", error))
 }
+
 
 const playPlaylistVideo = (videoId, playlistId) => {
     router2.push({ name: "video_detail", params: { id: videoId }, query: { playlist_id: playlistId } })
@@ -930,7 +938,7 @@ onMounted(async () => {
                 <span>Save</span>
             </button>
             <div v-if="isSaveDivOpen"
-                class="save-div w-[200px] h-auto min-h-[200px] rounded-xl flex flex-col absolute gap-y-2 bg-white pl-2 pt-4 top-10 right-0">
+                class="save-div z-[1000] w-[200px] h-auto min-h-[200px] rounded-xl flex flex-col absolute gap-y-2 bg-white pl-2 pt-4 -top-40 left-10">
                 <div class="flex flex-row mb-2">
                     <p class="text-[16px] font-normal pl-4">Save video to...</p>
                     <button @click="isSaveDivOpen = false" style="background-color: white;"
@@ -940,8 +948,8 @@ onMounted(async () => {
                 </div>
                 <div v-for="playlist in allPlaylists" :key="playlist.id"
                     class="playlist flex flex-row justify-start px-4 items-center gap-x-4">
-                    <input v-model="playlistSaves" :checked="playlist.video_exists" :value="playlist.id" type="checkbox"
-                        name="playlist-saving" class="w-[20px] h-[20px] cursor-pointer">
+                    <input v-model="playlistSaves" :value="playlist.id" type="checkbox" name="playlist-saving"
+                        class="w-[20px] h-[20px] cursor-pointer">
                     <p>{{ playlist.title }}</p>
                     <div v-if="playlist.visibility === 'private'"
                         class="w-[18px] h-[18px] flex justify-center justify-self-end ml-auto items-center">
@@ -963,6 +971,10 @@ onMounted(async () => {
                         </svg>
                     </div>
                 </div>
+                <button @click="saveVideoToPlaylist"
+                    class="w-[70px] h-[30px] rounded-2xl bg-white my-2 justify-self-end ml-auto mr-4 hover:bg-[#e2e2e2]">
+                    Save
+                </button>
             </div>
             <button @click="downloadVideo($route.params.id)" class="download-btn"><img
                     src="@/assets/icons/svg-icons/download-icon.svg" alt="">

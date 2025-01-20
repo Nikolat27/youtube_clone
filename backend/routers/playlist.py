@@ -1,10 +1,18 @@
-from database.models.user import Playlist, User, Video, Channel
+from database.models.user import (
+    Playlist,
+    User,
+    Video,
+    Channel,
+    playlist_video_association,
+)
 from sqlalchemy import desc, asc
 from fastapi import APIRouter, Query, status, Path as Path_parameter
+from typing import List, Optional
 from dependencies import get_current_user_id
 from fastapi.responses import JSONResponse
 from datetime import datetime
 import secrets
+from database.models.base import session
 
 router = APIRouter(prefix="/playlist", tags=["playlists"])
 
@@ -62,8 +70,52 @@ async def get_all_user_playlists(
         }
         for playlist in playlists
     ]
-
     return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)
+
+
+@router.get("/save-video-to-playlist/{video_id}", status_code=status.HTTP_200_OK)
+async def save_video_to_playlist(
+    video_id: str = Path_parameter(),
+    playlists: Optional[List[str]] = Query(None, alias="playlists[]"),
+):
+    if not playlists:
+        session.execute(
+            playlist_video_association.delete().where(
+                playlist_video_association.c.video_id == video_id
+            )
+        )
+        session.commit()
+        return
+
+    playlist_ids = [int(playlist) for playlist in playlists]
+
+    existing_associations = session.execute(
+        playlist_video_association.select().where(
+            playlist_video_association.c.video_id == video_id
+        )
+    ).fetchall()
+
+    existing_playlist_ids = [
+        association.playlist_id for association in existing_associations
+    ]
+
+    for playlist_id in playlist_ids:
+        if playlist_id not in existing_playlist_ids:
+            session.execute(
+                playlist_video_association.insert().values(
+                    playlist_id=playlist_id, video_id=video_id
+                )
+            )
+
+    for existing_playlist_id in existing_playlist_ids:
+        if existing_playlist_id not in playlist_ids:
+            session.execute(
+                playlist_video_association.delete()
+                .where(playlist_video_association.c.playlist_id == existing_playlist_id)
+                .where(playlist_video_association.c.video_id == video_id)
+            )
+
+    session.commit()
 
 
 async def check_video_exists_in_playlist(playlist_id, video_id):

@@ -19,6 +19,7 @@ from database.models.user import (
     Notification,
     CommentLike,
     ChannelSubscription,
+    playlist_video_association,
 )
 from fastapi.responses import JSONResponse, Response
 from sqlalchemy import select, desc, asc
@@ -497,9 +498,11 @@ async def is_video_saved(
     await check_video_exist(unique_id)
 
     is_video_saved = False
-    save_instance = SaveVideos.query.filter_by(
-        video_id=unique_id, user_id=user_id
-    ).first()
+    save_instance = session.execute(
+        playlist_video_association.select().where(
+            playlist_video_association.c.video_id == unique_id
+        )
+    )
     if save_instance:
         is_video_saved = True
 
