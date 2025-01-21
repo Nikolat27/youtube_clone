@@ -529,6 +529,7 @@ async def get_comments_list(
         {
             "id": comment.id,
             "user_id": comment.user_id,
+            "user_channel_id": get_channel_unique_identifier(comment.user_id),
             "username": await get_username(comment.user_id),
             "text": comment.text,
             "parent_id": comment.parent_id,
@@ -541,6 +542,8 @@ async def get_comments_list(
         }
         for comment in comments.items
     ]
+
+    print("Serializer: ", serializer)
     return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)
 
 
@@ -612,6 +615,13 @@ async def add_comment(
     )
 
 
+@router.delete("/comment/delete/{comment_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_comment(comment_id: int = Path_parameter(), user_id: int = Query()):
+    comment = Comment.query.filter_by(id=comment_id, user_id=user_id).first()
+    session.delete(comment)
+    session.commit()
+
+
 @router.get("/replies/list/{comment_id}")
 async def get_replies_list(
     comment_id: int = Path_parameter(), user_session_id: str = Query(None)
@@ -626,6 +636,7 @@ async def get_replies_list(
             "id": reply.id,
             "parent_username": await get_username(reply.user_id),
             "user_id": reply.user_id,
+            "user_channel_id": get_channel_unique_identifier(reply.user_id),
             "username": await get_username(reply.user_id),
             "user_profile_picrure": get_channel_profile(comment.user_id),
             "is_liked": await is_comment_liked(reply.id, user_id),

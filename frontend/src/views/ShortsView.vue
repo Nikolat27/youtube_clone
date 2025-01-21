@@ -42,10 +42,10 @@ const submitVideoComment = (parentId = null) => {
         submitFormData.append("parent_id", parentId)
     }
 
-    console.log(submitFormData)
     axios.post(`http://127.0.0.1:8000/videos/comment/add/`, submitFormData).then((response) => {
         if (response.status == 201) {
             retrieveVideoComments(videoInfo.id);
+            openComments = {}
             videoInfo.total_comments += 1
             userReplyText.value = null
             userCommentText.value = null // Delete the comment text
@@ -76,17 +76,52 @@ const toggleUserOptions = () => isUserOptionsOpen.value = !isUserOptionsOpen.val
 
 
 // Handling Comment opening
-const openComments = reactive({})
+let openComments = reactive({})
 const toggleUserComment = (commentId, state) => {
     if (!openComments[commentId]) {
         openComments[commentId] = { replyContainerVisible: false, userReplyOptionsVisible: false, replyOptionsVisible: false };
     }
     openComments[commentId][state] = !openComments[commentId][state];
 }
-const toggleReplyContainer = (comment_id) => toggleUserComment(comment_id, 'replyContainerVisible')
-const toggleUserReplyOptionsVisible = (comment_id) => toggleUserComment(comment_id, 'userReplyOptionsVisible')
-const toggleReplyOptions = (comment_id) => toggleUserComment(comment_id, 'replyOptionsVisible')
 
+const toggleUserReplyOptionsVisible = (comment_id) => {
+    // Close all other reply inputs first
+    Object.keys(openComments).forEach(key => {
+        if (key !== comment_id.toString()) {
+            openComments[key].userReplyOptionsVisible = false
+        }
+    })
+
+    toggleUserComment(comment_id, 'userReplyOptionsVisible')
+}
+const toggleReplyOptions = (comment_id) => toggleUserComment(comment_id, 'replyOptionsVisible')
+const retrieveCommentReplies = async (comment_id) => {
+    Object.keys(openComments).forEach(key => {
+        if (key !== comment_id.toString()) {
+            openComments[key].replyContainerVisible = false
+        }
+    })
+
+    toggleUserComment(comment_id, 'replyContainerVisible')
+    if (openComments[comment_id]?.replyContainerVisible) {
+        await axios.get(`http://127.0.0.1:8000/videos/replies/list/${comment_id}`, {
+            params: {
+                user_session_id: sessionStorage.getItem("user_session_id")
+            }
+        }).then((response) => {
+            if (response.status == 200) {
+                comments.forEach(comment => {
+                    if (comment.id === comment_id) {
+                        comment.replies = response.data.data
+                        return;
+                    }
+                })
+            }
+        }).catch((error) => {
+            toast.error(error)
+        })
+    }
+}
 
 // Handle video`s playing
 const isVideoPlayed = ref(true)
@@ -177,6 +212,7 @@ const retrieveVideoDetail = async (videoId, user_session_id) => {
     })
 }
 
+
 const comments = reactive([])
 const commentRetrievingLoading = ref(false)
 const retrieveVideoComments = async (videoId) => {
@@ -187,8 +223,7 @@ const retrieveVideoComments = async (videoId) => {
         }
     }).then((response) => {
         if (response.status == 200) {
-            Object.assign(comments, response.data.data)
-            console.log(comments)
+            comments.splice(0, comments.length, ...response.data.data)
         }
     }).catch((error) => {
         toast.error(error)
@@ -210,14 +245,29 @@ const likeComment = async (commentId, actionType, replyId = null) => {
                 reply.is_liked = reply.is_liked === actionType ? null : actionType
             } else {
                 comment.is_liked = comment.is_liked === actionType ? null : actionType
-
+                comment.total_likes = response.data.total_likes
             }
-            comment.total_likes = response.data.total_likes
         }
     }).catch((error) => {
         toast.error(error)
     })
+}
 
+
+const deleteComment = (commentId) => {
+    if (!confirm("Confirm that you wanna delete your comment.")) return;
+
+    axios.delete(`http://127.0.0.1:8000/videos/comment/delete/${commentId}`, {
+        params: {
+            user_id: userId.value
+        }
+    }).then((response) => {
+        if (response.status == 204) {
+            toast.success("Your comment deleted successfully!")
+            retrieveVideoComments(router1.params.id)
+            videoInfo.total_comments -= 1
+        }
+    }).catch(() => toast.error("Error!"))
 }
 
 
@@ -256,6 +306,7 @@ const retrieveUserProfileImg = async (user_session_id) => {
         toast.error(error)
     })
 }
+
 
 const totalLikes = ref(null)
 const likeSituation = ref(null)
@@ -400,14 +451,29 @@ onMounted(() => {
                         style="scrollbar-width: thin;">
                         <div v-for="comment in comments" :key="comment.id" class="flex flex-col gap-y-8">
                             <div class="flex flex-row gap-x-2 ml-4 mt-4">
-                                <div>
-                                    <img class="w-10 h-10 rounded-full" :src="comment.user_profile_picrure" alt="">
-                                </div>
+                                <router-link :to="`/channel-page/${comment.user_channel_id}`">
+                                    <div>
+                                        <img class="w-10 h-10 rounded-full" :src="comment.user_profile_picrure" alt="">
+                                    </div>
+                                </router-link>
                                 <div class="flex flex-col flex-1 ml-2">
                                     <div class="flex flex-row justify-start items-center">
                                         <p class="text-[13px] font-medium">@{{ comment.username }}</p>
                                         <span class="text-[12px] font-normal ml-2 text-[#918b8b]">{{ comment.created_at
                                             }} days ago</span>
+                                        <div v-if="comment.user_id === userId"
+                                            class="flex justify-self-end ml-auto mr-4">
+                                            <button @click="deleteComment(comment.id)">
+                                                <svg xmlns="http://www.w3.org/2000/svg"
+                                                    enable-background="new 0 0 24 24" height="24" viewBox="0 0 24 24"
+                                                    width="24" focusable="false" aria-hidden="true"
+                                                    style="pointer-events: none; display: inherit; width: 100%; height: 100%;">
+                                                    <path
+                                                        d="M11 17H9V8h2v9zm4-9h-2v9h2V8zm4-4v1h-1v16H6V5H5V4h4V3h6v1h4zm-2 1H7v15h10V5z">
+                                                    </path>
+                                                </svg>
+                                            </button>
+                                        </div>
                                     </div>
                                     <div class="flex">
                                         <p class="text-[14px] font-normal">{{ comment.text }}</p>
@@ -425,14 +491,15 @@ onMounted(() => {
                                             <img :src="comment.is_liked === false ? fillDislikeIcon : emptyDislikeIcon"
                                                 class="h-[80%] w-[80%] m-auto" alt="">
                                         </button>
-                                        <button @click="toggleUserReplyOptionsVisible(comment.id)" class="flex justify-center items-center text-[12px] w-[42px] h-[27px]
-                                            font-semibold border-none m-auto rounded-2xl hover:bg-[#e5e5e5] ml-2">
+                                        <button @click="toggleUserReplyOptionsVisible(comment.id)"
+                                            class="flex justify-center items-center 
+                                            text-[12px] w-[42px] h-[27px] font-semibold border-none m-auto rounded-2xl hover:bg-[#e5e5e5] ml-2">
                                             Reply
                                         </button>
                                         <div v-if="openComments[comment.id]?.userReplyOptionsVisible"
                                             class="user-reply-creation-container absolute top-10 left-0 flex flex-row justify-center items-center">
                                             <img class="rounded-full w-6 h-6" :src="userProfileImgSrc" alt="">
-                                            <input type="text"
+                                            <input type="text" v-model="userReplyText"
                                                 class="ml-2 w-[90%] outline-none border-b hover:border-b-2 hover:border-black"
                                                 placeholder="Add a comment..."
                                                 style="transition: border-bottom 0.1s ease-in-out;">
@@ -440,12 +507,13 @@ onMounted(() => {
                                                 class="absolute left-[250px] flex flex-row justify-center items-center">
                                                 <button @click="toggleUserReplyOptionsVisible(comment.id)"
                                                     class="cancel-comment-btn w-[70px] h-[32px] rounded-[18px]">Cancel</button>
-                                                <button
+                                                <button @click="submitVideoComment(comment.id)"
                                                     class="submit-comment-btn w-[70px] h-[32px] rounded-[18px] ml-2">Reply</button>
                                             </div>
                                         </div>
                                     </div>
-                                    <div v-if="comment.replies_count >= 1" @click="toggleReplyContainer(comment.id)"
+                                    <div class="cursor-pointer" v-if="comment.replies_count >= 1"
+                                        @click="retrieveCommentReplies(comment.id)"
                                         :class="['comment-reply-button', openComments[comment.id]?.userReplyOptionsVisible ? 'mt-10' : '']">
                                         <i
                                             :class="['arrow', openComments[comment.id]?.replyContainerVisible ? 'rotate-[225deg]' : 'button']"></i><span>
@@ -453,39 +521,47 @@ onMounted(() => {
                                     </div>
                                     <div v-if="openComments[comment.id]?.replyContainerVisible"
                                         class="replies-container mt-3">
-                                        <div class="reply">
-                                            <div class="reply-author-img">
-                                                <img src="" alt="">
-                                            </div>
+                                        <div v-for="reply in comment.replies" :key="reply.id" class="reply">
+                                            <router-link :to="`/channel-page/${reply.user_channel_id}`">
+                                                <div class="reply-author-img">
+                                                    <img :src="reply.user_profile_picrure" alt="">
+                                                </div>
+                                            </router-link>
                                             <div class="reply-detail">
                                                 <div class="reply-author-info">
                                                     <p>@</p>
-                                                    <p>Nikolat27</p>
-                                                    <span>1 years </span>ago
+                                                    <p>{{ reply.username }}</p>
+                                                    <span>&nbsp;{{ reply.created_at }} days </span>ago
                                                 </div>
-                                                <p class="reply-value">Hello World</p>
+                                                <p class="reply-value">{{ reply.text }}</p>
                                                 <div class="reply-toolbar">
-                                                    <button class="reply-like-button" style="outline: none;">
-                                                        <img src="@/assets/icons/svg-icons/like-empty.svg">
+                                                    <button @click="likeComment(comment.id, true, reply.id)"
+                                                        class="reply-like-button" style="outline: none;">
+                                                        <img
+                                                            :src="reply.is_liked === true ? fillLikeIcon : emptyLikeIcon">
                                                     </button>
-                                                    <button class="reply-dislike-button" style="outline: none;">
-                                                        <img src="@/assets/icons/svg-icons/dislike-empty.svg" alt="">
+                                                    <button @click="likeComment(comment.id, false, reply.id)"
+                                                        class="reply-dislike-button" style="outline: none;">
+                                                        <img
+                                                            :src="reply.is_liked === false ? fillDislikeIcon : emptyDislikeIcon">
                                                     </button>
-                                                    <button @click="toggleReplyOptions(comment.id)"
+                                                    <button @click="toggleReplyOptions(reply.id)"
                                                         class="reply-comment-button" style="outline: none;">
                                                         Reply
                                                     </button>
-                                                    <div v-if="openComments[comment.id]?.replyOptionsVisible"
+                                                    <div v-if="openComments[reply.id]?.replyOptionsVisible"
                                                         class="reply-division flex-col">
                                                         <div class="reply-creation">
-                                                            <img src="@/assets/img/Django.png" alt="">
-                                                            <input type="text" class="w-[200px] bg-transparent"
+                                                            <img :src="userProfileImgSrc" alt="">
+                                                            <input v-model="userReplyText" type="text"
+                                                                class="w-[200px] bg-transparent"
                                                                 placeholder="Add a Reply...">
                                                         </div>
                                                         <div class="reply-btns mt-2">
-                                                            <button @click="toggleReplyOptions(comment.id)"
+                                                            <button @click="toggleReplyOptions(reply.id)"
                                                                 class="cancel-reply-btn">Cancel</button>
-                                                            <button class="submit-reply-btn">Reply</button>
+                                                            <button @click="submitVideoComment(reply.id)"
+                                                                class="submit-reply-btn">Reply</button>
                                                         </div>
                                                     </div>
                                                 </div>
