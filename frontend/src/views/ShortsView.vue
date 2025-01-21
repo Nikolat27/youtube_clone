@@ -340,10 +340,11 @@ const likeVideo = (action_type) => { // true == 'like', false == 'dislike', null
 const playAnotherVideo = (direction) => {
     axios.get(`http://127.0.0.1:8000/videos/${direction}-video/${router1.params.id}/short_video`).then((response) => {
         if (response.status == 200) {
-            router2.push({ name: 'short_detail', params: { id: response.data.unique_id } })
+            router2.push({ name: 'short_detail', params: { id: response.data.unique_id }, state: { is_first: response.data.is_first, is_last: response.data.is_last } })
         }
     }).catch(() => toast.error("Error!"))
 }
+
 
 const isUserAuthenticated = ref(false)
 const userAuthentication = async (user_session_id) => {
@@ -360,11 +361,17 @@ const userAuthentication = async (user_session_id) => {
     })
 }
 
-const isFirst = ref(null)
-const isLast = ref(null)
+const isVideoFirst = ref(null)
+const isVideoLast = ref(null)
 const isPageLoading = ref(false)
 const MountPage = async () => {
-    console.log("State: ", useRoute().state)
+    isVideoFirst.value = history.state.is_first
+    isVideoLast.value = history.state.is_last
+
+    console.log(isVideoFirst.value)
+    console.log(isVideoLast.value)
+
+
     isVideoPlayed.value = true
     isPageLoading.value = true
     const user_session_id = sessionStorage.getItem("user_session_id")
@@ -385,6 +392,7 @@ const MountPage = async () => {
 watch(() => router1.params.id, () => {
     MountPage()
 })
+
 
 onMounted(() => {
     MountPage()
@@ -624,11 +632,11 @@ onMounted(() => {
     <socialShare></socialShare>
 
     <div class="flex flex-col gap-y-4 absolute right-4 top-[47%]">
-        <div @click="playAnotherVideo('previous')"
+        <div v-if="!isVideoFirst" @click="playAnotherVideo('previous')"
             class="w-[56px] h-[56px] rounded-full bg-[#f2f2f2] hover:bg-[#d9d9d9] cursor-pointer">
             <img class="w-[100%] h-[100%]" src="@/assets/icons/svg-icons/angle-circle-up-icon.svg" alt="">
         </div>
-        <div @click="playAnotherVideo('next')"
+        <div v-if="!isVideoLast" @click="playAnotherVideo('next')"
             class="w-[56px] h-[56px] rounded-full bg-[#f2f2f2] hover:bg-[#d9d9d9] cursor-pointer">
             <img class="w-[100%] h-[100%]" src="@/assets/icons/svg-icons/angle-circle-down-icon.svg" alt="">
         </div>

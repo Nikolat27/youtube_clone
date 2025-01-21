@@ -66,7 +66,7 @@ const openShortsPage = () => {
                 }
             })
         }
-    }).catch((error) => toast.error("Error!"))
+    }).catch(() => toast.error("Error!"))
 }
 
 onMounted(async () => {
