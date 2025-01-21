@@ -25,6 +25,37 @@ const toggleSharingTab = () => {
 }
 
 
+const userCommentText = ref(null)
+const userReplyText = ref(null)
+
+const submitVideoComment = (parentId = null) => {
+    const commentText = userCommentText.value;
+    const replyText = userReplyText.value;
+
+    const user_session_id = sessionStorage.getItem("user_session_id")
+
+    const submitFormData = new FormData()
+    submitFormData.append("user_session_id", user_session_id)
+    submitFormData.append("comment_text", commentText ?? replyText) // We either use comment or reply text!
+    submitFormData.append("video_id", videoInfo.id)
+    if (parentId) {
+        submitFormData.append("parent_id", parentId)
+    }
+
+    console.log(submitFormData)
+    axios.post(`http://127.0.0.1:8000/videos/comment/add/`, submitFormData).then((response) => {
+        if (response.status == 201) {
+            retrieveVideoComments(videoInfo.id);
+            videoInfo.total_comments += 1
+            userReplyText.value = null
+            userCommentText.value = null // Delete the comment text
+            toast.success("Your comment has been Posted!");
+        }
+    }).catch((error) => {
+        toast.error(error)
+    })
+};
+
 // Toggling Comment Container
 const isCommentContainerOpen = ref(false)
 const toggleCommentContainer = () => {
@@ -33,6 +64,11 @@ const toggleCommentContainer = () => {
     shortVideoWrapper.style.marginRight = isCommentContainerOpen.value ? "350px" : "0px";
 }
 
+watch(isCommentContainerOpen, (newVal) => {
+    if (newVal) {
+        retrieveVideoComments(router1.params.id)
+    }
+})
 
 // Toggle User Comment Options
 const isUserOptionsOpen = ref(false)
@@ -121,6 +157,7 @@ let videoInfo = reactive({
     channel_profile_url: '',
 })
 
+
 const youtubeVideoLink = ref(null)
 const retrieveVideoDetail = async (videoId, user_session_id) => {
     await axios.get(`http://127.0.0.1:8000/videos/detail/${videoId}`, {
@@ -151,11 +188,38 @@ const retrieveVideoComments = async (videoId) => {
     }).then((response) => {
         if (response.status == 200) {
             Object.assign(comments, response.data.data)
+            console.log(comments)
         }
     }).catch((error) => {
         toast.error(error)
     }).finally(() => commentRetrievingLoading.value = false)
 }
+
+
+const likeComment = async (commentId, actionType, replyId = null) => {
+    await axios.get(`http://127.0.0.1:8000/videos/comment/like/${replyId ? replyId : commentId}`, {
+        params: {
+            user_session_id: sessionStorage.getItem("user_session_id"),
+            action_type: actionType
+        }
+    }).then((response) => {
+        if (response.status == 200) {
+            const comment = comments.find(comment => comment.id === commentId)
+            if (replyId) {
+                const reply = comment.replies.find(reply => reply.id = replyId)
+                reply.is_liked = reply.is_liked === actionType ? null : actionType
+            } else {
+                comment.is_liked = comment.is_liked === actionType ? null : actionType
+
+            }
+            comment.total_likes = response.data.total_likes
+        }
+    }).catch((error) => {
+        toast.error(error)
+    })
+
+}
+
 
 const isChannelSubscribed = ref(null)
 const subscribeChannel = (channelId) => {
@@ -245,7 +309,6 @@ const MountPage = async () => {
         if (isUserAuthenticated.value) {
             userLikeSituation(videoId, user_session_id)
             await retrieveUserProfileImg(user_session_id)
-            retrieveVideoComments(videoId)
         }
     }
 }
@@ -325,7 +388,8 @@ onMounted(() => {
                 <div v-if="isCommentContainerOpen" class="z-10 flex absolute left-[450px] bottom-[50px] flex-col w-[500px] h-[500px] 
                     border-[1px] border-gray-400 rounded-2xl pt-2 max-w-[500px] max-h-[500px]">
                     <div class="flex flex-row justify-start items-center ml-2">
-                        <p class="font-bold text-[20px] pl-2">Comments&nbsp;</p><span>414</span>
+                        <p class="font-bold text-[20px] pl-2">Comments&nbsp;</p><span>{{ videoInfo.total_comments
+                            }}</span>
                         <button @click="toggleCommentContainer" class="w-10 h-10 border-none rounded-full bg-white hover:bg-[#e5e5e5]
                          ml-[310px]">
                             <img class="w-[50%] h-[50%] m-auto" src="@/assets/icons/svg-icons/x-mark-icon.svg" alt="">
@@ -337,25 +401,28 @@ onMounted(() => {
                         <div v-for="comment in comments" :key="comment.id" class="flex flex-col gap-y-8">
                             <div class="flex flex-row gap-x-2 ml-4 mt-4">
                                 <div>
-                                    <img class="w-10 h-10 rounded-full" src="@/assets/img/Django.png" alt="">
+                                    <img class="w-10 h-10 rounded-full" :src="comment.user_profile_picrure" alt="">
                                 </div>
                                 <div class="flex flex-col flex-1 ml-2">
                                     <div class="flex flex-row justify-start items-center">
-                                        <p class="text-[13px] font-medium">@Nikolat272</p>
-                                        <span class="text-[12px] font-normal ml-2 text-[#918b8b]">13 days ago</span>
+                                        <p class="text-[13px] font-medium">@{{ comment.username }}</p>
+                                        <span class="text-[12px] font-normal ml-2 text-[#918b8b]">{{ comment.created_at
+                                            }} days ago</span>
                                     </div>
                                     <div class="flex">
-                                        <p class="text-[14px] font-normal">{{ comment.text }} / {{ comment.id }}</p>
+                                        <p class="text-[14px] font-normal">{{ comment.text }}</p>
                                     </div>
                                     <div class="flex flex-row items-center mt-2 relative">
-                                        <button
+                                        <button @click="likeComment(comment.id, true)"
                                             class="flex items-center justify-center w-8 h-8 rounded-full hover:bg-[#e5e5e5]">
-                                            <img src="@/assets/icons/svg-icons/like-empty.svg" class="h-[80%] w-[80%]"
-                                                alt="">
+                                            <img :src="comment.is_liked === true ? fillLikeIcon : emptyLikeIcon"
+                                                class="h-[80%] w-[80%]" alt="">
                                         </button>
-                                        <span class="text-gray-500 text-[13px] font-normal">1.1k</span>
-                                        <button class="w-8 h-8 rounded-full hover:bg-[#e5e5e5] ml-2">
-                                            <img src="@/assets/icons/svg-icons/dislike-empty.svg"
+                                        <span class="text-gray-500 text-[13px] font-normal">{{ comment.total_likes
+                                            }}</span>
+                                        <button @click="likeComment(comment.id, false)"
+                                            class="w-8 h-8 rounded-full hover:bg-[#e5e5e5] ml-2">
+                                            <img :src="comment.is_liked === false ? fillDislikeIcon : emptyDislikeIcon"
                                                 class="h-[80%] w-[80%] m-auto" alt="">
                                         </button>
                                         <button @click="toggleUserReplyOptionsVisible(comment.id)" class="flex justify-center items-center text-[12px] w-[42px] h-[27px]
@@ -364,7 +431,7 @@ onMounted(() => {
                                         </button>
                                         <div v-if="openComments[comment.id]?.userReplyOptionsVisible"
                                             class="user-reply-creation-container absolute top-10 left-0 flex flex-row justify-center items-center">
-                                            <img class="rounded-full w-6 h-6" src="@/assets/img/Django.png" alt="">
+                                            <img class="rounded-full w-6 h-6" :src="userProfileImgSrc" alt="">
                                             <input type="text"
                                                 class="ml-2 w-[90%] outline-none border-b hover:border-b-2 hover:border-black"
                                                 placeholder="Add a comment..."
@@ -378,17 +445,17 @@ onMounted(() => {
                                             </div>
                                         </div>
                                     </div>
-                                    <div @click="toggleReplyContainer(comment.id)"
+                                    <div v-if="comment.replies_count >= 1" @click="toggleReplyContainer(comment.id)"
                                         :class="['comment-reply-button', openComments[comment.id]?.userReplyOptionsVisible ? 'mt-10' : '']">
                                         <i
                                             :class="['arrow', openComments[comment.id]?.replyContainerVisible ? 'rotate-[225deg]' : 'button']"></i><span>
-                                            &nbsp;&nbsp;63&nbsp;</span>replies
+                                            &nbsp;&nbsp;{{ comment.replies_count }}&nbsp;</span><span>replies</span>
                                     </div>
                                     <div v-if="openComments[comment.id]?.replyContainerVisible"
                                         class="replies-container mt-3">
                                         <div class="reply">
                                             <div class="reply-author-img">
-                                                <img src="@/assets/img/Django.png" alt="">
+                                                <img src="" alt="">
                                             </div>
                                             <div class="reply-detail">
                                                 <div class="reply-author-info">
@@ -435,16 +502,16 @@ onMounted(() => {
                     <div class="max-h-[56.8px] flex flex-row mt-10 absolute bottom-0 left-0 gap-x-4 w-full
                      border-t pt-2 pl-2 pb-2">
                         <div class="w-10 h-10">
-                            <img class="w-[100%] h-[100%] rounded-full cursor-pointer" src="@/assets/img/Django.png"
-                                alt="">
+                            <img class="w-[100%] h-[100%] rounded-full cursor-pointer" :src="userProfileImgSrc" alt="">
                         </div>
                         <div @click="toggleUserOptions"><input class="border-gray-400 bg-transparent border-b-[0.5px] outline-none
-                             short-video-comment-creation" type="text" placeholder="Add a comment...">
+                            short-video-comment-creation" v-model="userCommentText" type="text"
+                                placeholder="Add a comment...">
                         </div>
                         <div v-if="isUserOptionsOpen" class="flex flex-row gap-x-4 font-medium text-sm">
                             <button @click="toggleUserOptions"
                                 class="hover:bg-[#e5e5e5] w-[74px] h-[36px] rounded-2xl">Cancel</button>
-                            <button class="bg-[#065fd4] hover:bg-[#0556bf] text-white rounded-2xl w-[93px]
+                            <button @click="submitVideoComment(null)" class="bg-[#065fd4] hover:bg-[#0556bf] text-white rounded-2xl w-[93px]
                               h-[36px]">Comment</button>
                         </div>
                     </div>

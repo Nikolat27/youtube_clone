@@ -535,6 +535,7 @@ async def get_comments_list(
             "created_at": await time_difference(comment.created_at),
             "user_profile_picrure": get_channel_profile(comment.user_id),
             "is_liked": await is_comment_liked(comment.id, user_id),
+            "total_likes": await total_comment_likes(comment.id),
             "replies_count": len(comment.replies),
             "replies": [],
         }
@@ -545,6 +546,10 @@ async def get_comments_list(
 
 async def get_total_comments(unique_id):
     return Comment.query.filter_by(video_id=unique_id).count()
+
+
+async def total_comment_likes(comment_id):
+    return CommentLike.query.filter_by(comment_id=comment_id, action_type=True).count()
 
 
 async def create_notification(
@@ -563,7 +568,7 @@ async def create_notification(
     session.commit()
 
 
-@router.post("/comment/add")
+@router.post("/comment/add/")
 async def add_comment(
     video_id: str = Form(),
     user_session_id: str = Form(),
@@ -660,7 +665,8 @@ async def like_comment(
         session.add(new_like)
 
     session.commit()
-    return JSONResponse({"data": "Successful!"}, status_code=status.HTTP_200_OK)
+    total_likes = await total_comment_likes(comment_id)
+    return JSONResponse({"total_likes": total_likes}, status_code=status.HTTP_200_OK)
 
 
 async def is_comment_liked(comment_id, user_id=None):
