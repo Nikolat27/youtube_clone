@@ -56,6 +56,19 @@ const userAuthentication = async (user_session_id) => {
     })
 }
 
+const openShortsPage = () => {
+    axios.get("http://127.0.0.1:8000/videos/short-video").then((response) => {
+        if (response.status == 200) {
+            router2.push({
+                name: "short_detail", params: { id: response.data.unique_id }, state: {
+                    is_first: response.data.is_first,
+                    is_last: response.data.is_last
+                }
+            })
+        }
+    }).catch((error) => toast.error("Error!"))
+}
+
 onMounted(async () => {
     const user_session_id = sessionStorage.getItem("user_session_id")
     if (!user_session_id) {
@@ -77,7 +90,7 @@ onMounted(async () => {
                 <p>Home</p>
             </div>
         </router-link>
-        <div class="side-bar-links">
+        <div @click="openShortsPage" class="side-bar-links">
             <img src="@/assets/icons/svg-icons/youtube-shorts-icon.svg" alt="">
             <p>Shorts</p>
         </div>

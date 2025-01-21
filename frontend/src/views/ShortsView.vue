@@ -6,6 +6,7 @@ import socialShare from '@/components/socialShare.vue';
 import { sharedState } from '@/sharedState';
 import axios from 'axios';
 import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
+import ClipLoader from 'vue-spinner/src/ClipLoader.vue';
 
 
 // Icons
@@ -335,6 +336,15 @@ const likeVideo = (action_type) => { // true == 'like', false == 'dislike', null
     })
 }
 
+
+const playAnotherVideo = (direction) => {
+    axios.get(`http://127.0.0.1:8000/videos/${direction}-video/${router1.params.id}/short_video`).then((response) => {
+        if (response.status == 200) {
+            router2.push({ name: 'short_detail', params: { id: response.data.unique_id } })
+        }
+    }).catch(() => toast.error("Error!"))
+}
+
 const isUserAuthenticated = ref(false)
 const userAuthentication = async (user_session_id) => {
     await axios.get("http://127.0.0.1:8000/users/is_authenticated", {
@@ -350,7 +360,13 @@ const userAuthentication = async (user_session_id) => {
     })
 }
 
+const isFirst = ref(null)
+const isLast = ref(null)
+const isPageLoading = ref(false)
 const MountPage = async () => {
+    console.log("State: ", useRoute().state)
+    isVideoPlayed.value = true
+    isPageLoading.value = true
     const user_session_id = sessionStorage.getItem("user_session_id")
     const videoId = router1.params.id // Current Video Id
     await retrieveVideoDetail(videoId, user_session_id)
@@ -362,7 +378,13 @@ const MountPage = async () => {
             await retrieveUserProfileImg(user_session_id)
         }
     }
+    isPageLoading.value = false
 }
+
+
+watch(() => router1.params.id, () => {
+    MountPage()
+})
 
 onMounted(() => {
     MountPage()
@@ -370,7 +392,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="flex flex-col justify-center items-center mt-16 gap-y-7">
+    <div v-if="!isPageLoading" class="flex flex-col justify-center items-center mt-16 gap-y-7">
         <div class="short-video-wrapper">
             <div class="short-video w-[350px] h-[600px] relative">
                 <video :poster="videoInfo.thumbnail_url" ref="videoRef" oncontextmenu="return false;" volume="0.5"
@@ -595,14 +617,19 @@ onMounted(() => {
             </div>
         </div>
     </div>
+    <div v-else class="flex justify-center items-center w-full h-full absolute">
+        <ClipLoader size="55px" color='red'></ClipLoader>
+    </div>
 
     <socialShare></socialShare>
 
     <div class="flex flex-col gap-y-4 absolute right-4 top-[47%]">
-        <div class="w-[56px] h-[56px] rounded-full bg-[#f2f2f2] hover:bg-[#d9d9d9] cursor-pointer">
+        <div @click="playAnotherVideo('previous')"
+            class="w-[56px] h-[56px] rounded-full bg-[#f2f2f2] hover:bg-[#d9d9d9] cursor-pointer">
             <img class="w-[100%] h-[100%]" src="@/assets/icons/svg-icons/angle-circle-up-icon.svg" alt="">
         </div>
-        <div class="w-[56px] h-[56px] rounded-full bg-[#f2f2f2] hover:bg-[#d9d9d9] cursor-pointer">
+        <div @click="playAnotherVideo('next')"
+            class="w-[56px] h-[56px] rounded-full bg-[#f2f2f2] hover:bg-[#d9d9d9] cursor-pointer">
             <img class="w-[100%] h-[100%]" src="@/assets/icons/svg-icons/angle-circle-down-icon.svg" alt="">
         </div>
     </div>

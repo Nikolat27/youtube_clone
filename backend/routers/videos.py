@@ -36,6 +36,7 @@ from googleapiclient.discovery import build
 import yt_dlp
 import redis
 import socket
+import random
 
 
 # Replace with your API key
@@ -372,31 +373,88 @@ async def video_watch_time(
             session.commit()
 
 
-# @router.get("/stream/watch-time/{unique_id}")
-# async def video_watch_time(
-#     unique_id: str = Path_parameter(),
-#     watch_time: float = Query(),
-#     duration: float = Query(),
-# ):
-#     user_ip = await get_users_ip()
-#     redis_client.set(f"{unique_id}-{user_ip}-watch_time", watch_time, ex=3600) # 1 Hour expiration time
-#     await check_video_watch_time(unique_id, user_ip, duration)
+def is_first_video(video_created_at) -> bool:
+    return not bool(Video.query.with_entities(Video.id).filter(
+        Video.video_type == "short_video", Video.created_at < video_created_at
+    ).first())
 
 
-# async def check_video_watch_time(unique_id, user_ip, duration):
-#     watch_time = redis_client.get(f"{unique_id}-{user_ip}-watch_time")
-#     video_duration = duration
+def is_last_video(video_created_at) -> bool:
+    return not bool(
+        Video.query.with_entities(Video.id).filter(
+            Video.video_type == "short_video", Video.created_at > video_created_at
+        ).first()
+    )
 
-#     if video_duration <= 30:
-#         if watch_time >= video_duration:
-#             video = Video.query.filter_by(unique_id=unique_id).first()
-#             video.views += 1
-#             session.commit()
-#     else:
-#         if watch_time >= 30:
-#             video = Video.query.filter_by(unique_id=unique_id).first()
-#             video.views += 1
-#             session.commit()
+
+@router.get("/short-video")
+async def get_first_short_video():
+    first_video = (
+        Video.query.with_entities(Video.unique_id, Video.created_at)
+        .filter_by(video_type="short_video")
+        .order_by(Video.created_at.asc())
+        .first()
+    )
+
+    if not first_video:
+        raise HTTPException(status_code=404, detail="No videos found")
+
+    return {
+        "unique_id": first_video.unique_id,
+        "is_first": True,
+        "is_last": is_last_video(first_video.created_at),
+    }
+
+
+@router.get("/previous-video/{current_id}/{video_type}")
+async def get_previous_video(current_id: str = Path_parameter()):
+    current_video = Video.query.filter_by(unique_id=current_id).first()
+    if not current_video:
+        raise HTTPException(status_code=404, detail="Current video not found")
+
+    previous_video = (
+        Video.query.with_entities(Video.unique_id, Video.created_at)
+        .filter(
+            Video.video_type == "short_video",
+            Video.created_at < current_video.created_at,
+        )
+        .order_by(desc(Video.created_at))
+        .first()
+    )
+
+    return {
+        "unique_id": previous_video.unique_id if previous_video else None,
+        "is_first": is_first_video(previous_video.created_at),
+        "is_last": is_last_video(previous_video.created_at),
+    }
+
+
+@router.get("/next-video/{current_id}/{video_type}")
+async def get_next_video(
+    current_id: str = Path_parameter(), video_type: str = Path_parameter()
+):
+    current_video = (
+        Video.query.with_entities(Video.created_at)
+        .filter_by(unique_id=current_id)
+        .first()
+    )
+    if not current_video:
+        raise HTTPException(status_code=404, detail="Current video not found")
+
+    next_video = (
+        Video.query.with_entities(Video.unique_id, Video.created_at)
+        .filter(
+            Video.video_type == video_type, Video.created_at > current_video.created_at
+        )
+        .order_by(Video.created_at.asc())
+        .first()
+    )
+
+    return {
+        "unique_id": next_video.unique_id if next_video else None,
+        "is_first": is_first_video(next_video.created_at),
+        "is_last": is_last_video(next_video.created_at),
+    }
 
 
 @router.get("/stream/current-time/{unique_id}")
@@ -543,7 +601,6 @@ async def get_comments_list(
         for comment in comments.items
     ]
 
-    print("Serializer: ", serializer)
     return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)
 
 
