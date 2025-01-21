@@ -166,7 +166,6 @@ const videoVolumeIcon = computed(() => {
 });
 
 
-
 // Handle video fullscreen
 const isVideoFullscreen = ref(false)
 const toggleVideoFullscreen = () => {

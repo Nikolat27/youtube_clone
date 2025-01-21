@@ -94,10 +94,12 @@ onMounted(async () => {
             <img src="@/assets/icons/svg-icons/youtube-shorts-icon.svg" alt="">
             <p>Shorts</p>
         </div>
-        <div class="side-bar-links">
-            <img src="@/assets/icons/svg-icons/video-playlist-icon.svg" alt="">
-            <p>Subscriptions</p>
-        </div>
+        <router-link to="/subscriptions">
+            <div class="side-bar-links">
+                <img src="@/assets/icons/svg-icons/video-playlist-icon.svg" alt="">
+                <p>Subscriptions</p>
+            </div>
+        </router-link>
         <div class="side-bar-links">
             <p class="text-[16px] font-medium" style="margin-left: 0;">You</p>
             <img class="rotate-90" style="width: 14px; height: 14px; margin-left: 8px;"

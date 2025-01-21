@@ -22,7 +22,7 @@ from database.models.user import (
     playlist_video_association,
 )
 from fastapi.responses import JSONResponse, Response
-from sqlalchemy import select, desc
+from sqlalchemy import select, desc, asc
 from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
 from datetime import datetime
@@ -374,16 +374,18 @@ async def video_watch_time(
 
 
 def is_first_video(video_created_at) -> bool:
-    return not bool(Video.query.with_entities(Video.id).filter(
-        Video.video_type == "short_video", Video.created_at < video_created_at
-    ).first())
+    return not bool(
+        Video.query.with_entities(Video.id)
+        .filter(Video.video_type == "short_video", Video.created_at < video_created_at)
+        .first()
+    )
 
 
 def is_last_video(video_created_at) -> bool:
     return not bool(
-        Video.query.with_entities(Video.id).filter(
-            Video.video_type == "short_video", Video.created_at > video_created_at
-        ).first()
+        Video.query.with_entities(Video.id)
+        .filter(Video.video_type == "short_video", Video.created_at > video_created_at)
+        .first()
     )
 
 
@@ -903,3 +905,70 @@ async def clear_all_user_comments_replies(user_session_id: str = Query()):
     Comment.query.filter_by(user_id=user_id).delete()
     session.commit()
     return None
+
+
+@router.get("/subscriptions-list")
+async def get_subscriptions_videos_list(
+    user_session_id: str = Query(), page: int = Query(None), size: int = Query(None)
+):
+    page = 1 if not page else page
+    size = 2 if not size else size
+
+    user_id = await get_current_user_id(user_session_id)
+    user_subscribes = User.query.filter_by(id=user_id).first()
+    users_id = [
+        channel.user_id for channel in user_subscribes.channel.channel_subscriptions
+    ]
+
+    long_videos = (
+        Video.query.with_entities(
+            Video.unique_id,
+            Video.title,
+            Video.file_url,
+            Video.thumbnail_url,
+            Video.user_id,
+            Video.views,
+            Video.created_at,
+        )
+        .filter(Video.user_id.in_(users_id), Video.video_type == "long_video")
+        .order_by(asc(Video.created_at))
+        .offset(page * size - size)
+        .limit(size)
+        .all()
+    )
+
+    short_videos = (
+        Video.query.with_entities(
+            Video.title, Video.unique_id, Video.views, Video.thumbnail_url
+        )
+        .filter(Video.user_id.in_(users_id), Video.video_type == "short_video")
+        .order_by(asc(Video.created_at))
+        .limit(12)
+        .all()
+    )
+
+    long_serializer = [
+        {
+            "unique_id": video.unique_id,
+            "title": video.title,
+            "thumbnail_url": await static_file(video.thumbnail_url),
+            "channel_profile": get_channel_profile(video.user_id),
+            "channel_name": get_channel_name(video.user_id),
+            "channel_unique_identifier": get_channel_unique_identifier(video.user_id),
+            "views": video.views,
+            "duration": await get_video_duration(video.file_url),
+            "created_at": await time_difference(video.created_at),
+        }
+        for video in long_videos
+    ]
+    short_serializer = [
+        {
+            "unique_id": video.unique_id,
+            "title": video.title,
+            "thumbnail_url": await static_file(video.thumbnail_url),
+            "views": video.views,
+        }
+        for video in short_videos
+    ]
+
+    return JSONResponse({"long_videos": long_serializer, "short_videos": short_serializer}, status_code=status.HTTP_200_OK)
