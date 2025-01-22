@@ -942,7 +942,7 @@ async def get_subscriptions_videos_list(
             Video.title, Video.unique_id, Video.views, Video.thumbnail_url
         )
         .filter(Video.user_id.in_(users_id), Video.video_type == "short_video")
-        .order_by(asc(Video.created_at))
+        .order_by(desc(Video.created_at))
         .limit(12)
         .all()
     )
@@ -971,4 +971,33 @@ async def get_subscriptions_videos_list(
         for video in short_videos
     ]
 
-    return JSONResponse({"long_videos": long_serializer, "short_videos": short_serializer}, status_code=status.HTTP_200_OK)
+    return JSONResponse(
+        {"long_videos": long_serializer, "short_videos": short_serializer},
+        status_code=status.HTTP_200_OK,
+    )
+
+
+@router.get("/subscriptions-list-shorts")
+async def get_subscriptions_shorts_list(user_session_id: str = Query()):
+    user_id = await get_current_user_id(user_session_id)
+    user_subscribes = User.query.filter_by(id=user_id).first()
+    users_id = [
+        channel.user_id for channel in user_subscribes.channel.channel_subscriptions
+    ]
+
+    short_videos = (
+        Video.query.with_entities(Video.unique_id, Video.views, Video.thumbnail_url)
+        .filter(Video.user_id.in_(users_id), Video.video_type == "short_video")
+        .order_by(desc(Video.created_at))
+        .all()
+    )
+    serializer = [
+        {
+            "unique_id": video.unique_id,
+            "views": video.views,
+            "thumbnail_url": await static_file(video.thumbnail_url),
+        }
+        for video in short_videos
+    ]
+
+    return JSONResponse({"short_videos": serializer}, status_code=status.HTTP_200_OK)

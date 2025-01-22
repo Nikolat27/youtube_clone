@@ -492,7 +492,6 @@ const videoSaveSituation = async (video_id, user_session_id) => {
 // Handle Channel`s options
 const isChannelOptionsOpen = ref(false)
 const toggleChannelOptions = () => isChannelOptionsOpen.value = !isChannelOptionsOpen.value
-
 const isChannelSubscribed = ref(null)
 const channelNotification = ref(null)
 const toggleChannelNotification = (channelId, notification) => {
@@ -553,6 +552,7 @@ const retrieveVideoDetail = (videoId, user_session_id) => {
         console.log(error)
     })
 }
+
 
 const isUserAuthenticated = ref(false)
 const userAuthentication = async (user_session_id) => {

@@ -3,6 +3,7 @@ import NProgress from 'nprogress'
 import HomePageView from "@/views/HomePageView.vue";
 import VideoDetail from "@/views/VideoDetail.vue";
 import SubscriptionsView from "@/views/SubscriptionsView.vue";
+import SubscriptionShortsView from "@/views/SubscriptionShortsView.vue";
 import ShortsView from "@/views/ShortsView.vue";
 import ChannelPageView from "@/views/ChannelPageView.vue";
 import AuthView from "@/views/AuthView.vue";
@@ -38,7 +39,8 @@ const routes = [
     { path: "/", name: "home", component: HomePageView, },
     { path: "/video/:id", name: "video_detail", component: VideoDetail, },
     { path: "/videos/results", name: "search_results", component: SearchVideosView, },
-    { path: "/subscriptions", name: "subscriptions", component: SubscriptionsView, },
+    { path: "/subscriptions/", name: "subscriptions", component: SubscriptionsView },
+    { path: "/subscriptions/shorts", name: 'subscritpion-shorts', component: SubscriptionShortsView },
     { path: "/short/:id", name: "short_detail", component: ShortsView, },
     { path: "/auth", name: "auth", component: AuthView, },
     { path: "/history", name: "history", component: HistoryView, },
