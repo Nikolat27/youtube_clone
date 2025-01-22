@@ -14,35 +14,47 @@ import uninstallIcon from '@/assets/icons/svg-icons/uninstall-icon.svg'
 import { useToast } from 'vue-toastification';
 
 
-// Edit Video Title Management
-const videoTitle = ref('')
-
 const toggleVideoCreationVisibility = (video_id) => {
     sharedState.isVideoCreationOpen.open = !sharedState.isVideoCreationOpen.open;
     sharedState.isVideoCreationOpen.video_id = video_id
 }
 
-
 // Opening closing video options 
 const videoOptionStates = ref({});
-const toggleOptions = (video_id, video_title = '', video_description = '', option) => {
+const toggleOptions = (video_id, option) => {
     if (!videoOptionStates.value[video_id]) {
         videoOptionStates.value = {};
         videoOptionStates.value[video_id] = { optionDiv: false, editDiv: false }
     }
     videoOptionStates.value[video_id][option] = !videoOptionStates.value[video_id][option]
-
-    videoTitle.value = video_title; // Puting the video title and desc in their inputs
-    videoDescription.value = video_description;
 }
 
-const toggleVideoOptions = (video_id, video_title, video_description) => toggleOptions(video_id, video_title, video_description, 'optionDiv')
-const toggleVideoEdit = (video_id, video_title, video_description) => toggleOptions(video_id, video_title, video_description, 'editDiv')
-
+const toggleVideoOptions = (video_id) => toggleOptions(video_id, 'optionDiv')
 const toast = useToast()
 const router = useRoute()
 let videos = reactive([])
 const isVideoRetrievingLoading = ref(false)
+
+
+const downloadVideo = (video_id) => {
+    axios.get(`http://127.0.0.1:8000/videos/download/${video_id}`).then((response) => {
+        toast.info("Your download started...")
+        if (response.status == 200) {
+            toast.success(response.data.data)
+        }
+    }).catch((error) => console.error(error))
+}
+
+
+const deleteVideo = (video_id) => {
+    axios.delete(`http://127.0.0.1:8000/videos/delete/${video_id}`).then((response) => {
+        if (response.status == 204) {
+            toast.success("Video have been deleted")
+            retrieveAllVideos()
+        }
+    }).catch((error) => console.error(error))
+}
+
 
 watch(() => sharedState.refreshRetrieveVideos, () => {
     retrieveAllVideos()
@@ -80,41 +92,47 @@ onMounted(() => {
     <div class="border-b font-roboto pl-[48px] w-full">
         <div v-if="!isVideoRetrievingLoading">
             <div v-for="video in videos" :key="video.id" class="table-itself border-b">
-                <div class="video-thumbnail">
-                    <img draggable="false" :src="video.thumbnail_url" alt="">
-                    <span class="video-duration">{{ video.duration }}</span>
-                </div>
+                <router-link :to="`/video/${video.unique_id}`">
+                    <div class="video-thumbnail">
+                        <img draggable="false" :src="video.thumbnail_url" alt="">
+                        <span class="video-duration">{{ video.duration }}</span>
+                    </div>
+                </router-link>
                 <div class="video-detail relative flex flex-col font-normal text-[13px] mt-2"
                     style="padding-left: 12px;">
-                    <span>{{ video.title }}</span>
+                    <router-link :to="`/video/${video.unique_id}`">
+                        <span>{{ video.title }}</span>
+                    </router-link>
                     <span>{{ video.description }}</span>
                     <div class="flex flex-row justify-start items-center">
-                        <button class="w-[39.2px] h-[39.2px] rounded-full hover:bg-[#eaeaea] flex items-center
-                    justify-center">
-                            <img class="w-[20px] h-[20px] center" :src="youtubeIcon" alt="">
-                        </button>
+                        <router-link :to="`/video/${video.unique_id}`">
+                            <button class="w-[39.2px] h-[39.2px] rounded-full hover:bg-[#eaeaea] flex items-center
+                            justify-center">
+                                <img class="w-[20px] h-[20px] center" :src="youtubeIcon" alt="">
+                            </button>
+                        </router-link>
                         <button @click="toggleVideoCreationVisibility(video.id)" class="w-[39.2px] h-[39.2px] rounded-full hover:bg-[#eaeaea] flex items-center
-                    justify-center">
+                            justify-center">
                             <img class="w-[17px] h-[17px] center" :src="editIcon" alt="">
                         </button>
                         <button @click="toggleVideoOptions(video.id)" class="w-[39.2px] h-[39.2px] rounded-full hover:bg-[#eaeaea] flex items-center
-                    justify-center">
+                            justify-center">
                             <img class="w-[17px] h-[17px] center" :src="kebabMenuIcon" alt="">
                         </button>
                         <div v-if="videoOptionStates[video.id]?.optionDiv" class="absolute left-40 top-0 video-edit-options w-[226px] h-auto rounded-xl bg-white flex flex-col
-                        justify-start items-center py-4">
-                            <div @click="toggleVideoEdit(video.id, video.title, video.description)" class="cursor-pointer w-full h-[32px] hover:bg-[#f9f9f9] flex flex-row justify-start items-center
-                        text-[15px] font-normal font-roboto">
+                            justify-start items-center py-4">
+                            <!-- <div @click="toggleVideoEdit(video.id, video.title, video.description)" class="cursor-pointer w-full h-[32px] hover:bg-[#f9f9f9] flex flex-row justify-start items-center
+                            text-[15px] font-normal font-roboto">
                                 <img class="w-[17px] h-[17px] mx-4" :src="editIcon" alt="">
                                 <p>Edit title and description</p>
-                            </div>
-                            <div class="w-full h-[32px] hover:bg-[#f9f9f9] flex flex-row justify-start items-center
-                        text-[15px] font-normal font-roboto">
+                            </div> -->
+                            <div @click="downloadVideo(video.unique_id)" class="w-[226px] cursor-pointer z-50 h-[32px] hover:bg-[#f9f9f9] flex flex-row justify-start items-center
+                                text-[15px] font-normal font-roboto">
                                 <img class="w-[17px] h-[17px] mx-4" :src="downloadIcon" alt="">
                                 <p>Download</p>
                             </div>
-                            <div class="w-full h-[32px] hover:bg-[#f9f9f9] flex flex-row justify-start items-center
-                        text-[15px] font-normal font-roboto">
+                            <div @click="deleteVideo(video.unique_id)" class="w-full cursor-pointer h-[32px] z-50 hover:bg-[#f9f9f9] flex flex-row justify-start items-center
+                                text-[15px] font-normal font-roboto">
                                 <img class="w-[17px] h-[17px] mx-4" :src="uninstallIcon" alt="">
                                 <p>Delete forever</p>
                             </div>
@@ -162,8 +180,10 @@ onMounted(() => {
                         : 'no' }}</p>
                     <p class="ml-4 absolute top-1/3 transform translate-y-1/3 left-[525px]">{{ video.created_at }}</p>
                     <p class="ml-4 absolute top-1/3 transform translate-y-1/3 left-[635px]">{{ video.views }} </p>
-                    <p class="ml-4 absolute top-1/3 transform translate-y-1/3 left-[710px]">2k</p>
-                    <p class="ml-8 absolute top-1/3 transform translate-y-1/3 left-[775px]">2k, 3k</p>
+                    <p class="ml-4 absolute top-1/3 transform translate-y-1/3 left-[710px]">{{ video.total_comments }}
+                    </p>
+                    <p class="ml-8 absolute top-1/3 transform translate-y-1/3 left-[775px]">{{ video.total_likes }}, {{
+                        video.total_dislikes }}</p>
                 </div>
             </div>
         </div>

@@ -58,6 +58,26 @@ async def get_video_duration(file):
     return media_info.tracks[0].duration // 1000
 
 
+@router.get("/subscriptions")
+async def user_channel_subscriptions(user_session_id: str = Query()):
+    user_id = await get_current_user_id(user_session_id)
+    subscriptions = ChannelSubscription.query.filter_by(user_id=user_id).limit(10).all()
+    serializer = [
+        {
+            "name": subscription.channel.name,
+            "unique_identifier": subscription.channel.unique_identifier,
+            "profile_picture_url": await static_file(
+                subscription.channel.profile_picture_url
+            ),
+        }
+        for subscription in subscriptions
+    ]
+    return JSONResponse(
+        {"data": serializer, "channel_count": len(serializer)},
+        status_code=status.HTTP_200_OK,
+    )
+
+
 @router.get("/{unique_identifier}")
 async def channel_page(
     unique_identifier: str = Path_parameter(), user_session_id: str = Query(None)
@@ -348,7 +368,10 @@ async def like_video(
 
     session.commit()
     return JSONResponse(
-        {"data": like_situation, "total_likes": await total_community_likes(community_id)},
+        {
+            "data": like_situation,
+            "total_likes": await total_community_likes(community_id),
+        },
         status_code=status.HTTP_201_CREATED,
     )
 

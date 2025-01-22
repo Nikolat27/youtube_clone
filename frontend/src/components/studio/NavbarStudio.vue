@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, watch } from 'vue'
+import { ref, reactive, watch, onMounted } from 'vue'
 import axios from 'axios';
 import DetailStep from './video_creation/DetailStep.vue';
 import VideoElements from './video_creation/VideoElements.vue';
@@ -115,6 +115,8 @@ watch(sharedState.isVideoCreationOpen, () => {
         formData.thumbnailFile = response.data.data.thumbnailFile;
         formData.subtitleFile = response.data.data.subtitleFile;
         formData.visibility = response.data.data.visibility;
+
+        console.log(response.data.data.thumbnailFile)
     }).catch((error) => {
         console.log(error)
     }).finally(() => isLoading.value = false)
@@ -151,6 +153,8 @@ const submitForm = async () => {
     formDataToSend.append('user_session_id', formData.user_session_id);
 
     if (formData.thumbnailFile) {
+        console.log(formData.thumbnailFile)
+        console.log("Thumbnail exists!")
         formDataToSend.append('thumbnailFile', formData.thumbnailFile);
     }
 
@@ -158,30 +162,32 @@ const submitForm = async () => {
         formDataToSend.append('subtitleFile', formData.subtitleFile);
     }
     formDataToSend.append('details', JSON.stringify(formData.details));
-
     formDataToSend.append('visibility', JSON.stringify(formData.visibility));
-
 
     await axios.post("http://127.0.0.1:8000/studio/update", formDataToSend, {
         headers: {
             'Content-Type': 'multipart/form-data' // Important for file uploads
         }
     }).then((response) => {
-        toast.success("Your video Updated Successfully!")
-        sharedState.refreshRetrieveVideos = true;
-        sharedState.isVideoCreationOpen.open = false;
+        if (response.status == 200) {
+            toast.success("Your video Updated Successfully!")
+            sharedState.refreshRetrieveVideos = true;
+            sharedState.isVideoCreationOpen.open = false;
+        }
     }).catch(() => {
         toast.error("Error")
     }).finally(() => isLoading.value = false);
 }
 
-// Studio page is just for authenticated Users
-axios.get("http://localhost:8000/users/is_authenticated", {
-    params: {
-        user_session_id: sessionStorage.getItem("user_session_id")
-    }
-}).then((response) => {
-    if (!response.data) router.push({ name: 'auth' });
+onMounted(() => {
+    // Studio page is just for authenticated Users
+    axios.get("http://localhost:8000/users/is_authenticated", {
+        params: {
+            user_session_id: sessionStorage.getItem("user_session_id")
+        }
+    }).then((response) => {
+        if (!response.data) router.push({ name: 'auth' });
+    })
 })
 </script>
 

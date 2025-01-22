@@ -138,7 +138,9 @@ class History(Model):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     video = relationship("Video", back_populates="history")
-    video_id = Column(String(30), ForeignKey("videos.unique_id"), nullable=False)
+    video_id = Column(
+        String(30), ForeignKey("videos.unique_id", ondelete="CASCADE"), nullable=False
+    )
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime, default=get_utc_now)
 
@@ -224,7 +226,6 @@ class ChannelSubscription(Model):
     channel = relationship(
         "Channel", back_populates="channel_subscriptions", single_parent=True
     )
-
     channel_id = Column(
         Integer, ForeignKey("channels.id", ondelete="CASCADE"), nullable=False
     )

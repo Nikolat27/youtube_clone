@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, onMounted, computed } from 'vue';
 import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
 import axios from 'axios';
 import uploadImage from '/src/assets/img/upload-video-img.svg'
@@ -20,7 +20,7 @@ const removeBannerImg = async () => {
         return;
     }
     try {
-        await axios.delete("http://127.0.0.1:8000/videos/channel/customization/remove", {
+        await axios.delete("http://127.0.0.1:8000/studio/channel/customization/remove", {
             params: {
                 user_session_id: sessionStorage.getItem("user_session_id"),
                 image_type: 'banner_img',
@@ -147,6 +147,18 @@ const retrieveChannelInfo = () => {
     }).finally(() => isLoading.value = false)
 }
 
+const bannerImageUrl = computed(() => {
+    return bannerImgPreview.value || channelInfo.banner_img || uploadImage;
+});
+
+const profileImageUrl = computed(() => {
+    return profileImgPreview.value || channelInfo.profile_picture || uploadImage;
+});
+
+const watermarkImageUrl = computed(() => {
+    return watermarkImgPreview.value || channelInfo.video_watermark || uploadImage;
+});
+
 onMounted(() => {
     retrieveChannelInfo()
 })
@@ -184,8 +196,7 @@ onMounted(() => {
                 <span class="text-[13px] font-normal">This image will appear across the top of your channel</span>
                 <div class="flex flex-row gap-x-4">
                     <div class="w-[270px] h-[160px] rounded-lg bg-[#f9f9f9] z-0">
-                        <img :src="bannerImgPreview ?? channelInfo.banner_img" class="w-full h-full z-10"
-                            draggable="false" alt="">
+                        <img :src="bannerImageUrl" class="w-full h-full z-10" draggable="false" alt="">
                     </div>
                     <div class="flex flex-col gap-y-2">
                         <div class="max-w-[330px] h-[40px]">
@@ -213,7 +224,7 @@ onMounted(() => {
                     on YouTube, like next to your videos and comments </span>
                 <div class="flex flex-row gap-x-4">
                     <div class="w-[270px] h-[160px] rounded-lg bg-[#f9f9f9] flex justify-center items-center">
-                        <img class="w-[140px] h-[140px] rounded-full" :src="profileImgPreview ?? uploadImage" alt="">
+                        <img class="w-[140px] h-[140px] rounded-full" :src="profileImageUrl" alt="">
                     </div>
                     <div class="flex flex-col gap-y-2 h-auto">
                         <div class="max-w-[330px] h-[80px]">
@@ -285,7 +296,7 @@ onMounted(() => {
                     of the video player</span>
                 <div class="flex flex-row gap-x-4">
                     <div class="w-[270px] h-[160px] rounded-lg bg-[#f9f9f9] flex justify-center items-center">
-                        <img class="w-[140px] h-[140px] rounded-full" :src="watermarkImgPreview ?? uploadImage" alt="">
+                        <img class="w-[140px] h-[140px] rounded-full" :src="watermarkImageUrl" alt="">
                     </div>
                     <div class="flex flex-col gap-y-2 h-auto">
                         <div class="max-w-[330px] h-[60px]">

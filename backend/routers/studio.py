@@ -8,7 +8,16 @@ from fastapi import (
     Path as Path_paramter,
 )
 from fastapi.responses import JSONResponse
-from database.models.user import Video, Playlist, Subtitle, Community, Channel
+from database.models.user import (
+    Video,
+    Playlist,
+    Subtitle,
+    Community,
+    CommunityLike,
+    Channel,
+    Comment,
+    Like,
+)
 from database.models.base import session
 from sqlalchemy import desc, asc
 from pydantic import BaseModel
@@ -149,7 +158,7 @@ async def get_video(video_id: int = Query()):
             "playlists": playlists,
             "monetized": video.monetization,
         },
-        "thumbnailFile": video.thumbnail_url,
+        "thumbnailFile": None,
         "subtitleFile": subtitle,
         "visibility": {
             "scheduled": True if video.schedule_time else False,
@@ -211,23 +220,23 @@ async def update_video(
     visibility: dict,
     thumbnail_path: Path,
 ):
-    Video.query.filter_by(id=video_id).update(
-        {
-            "title": details["title"],
-            "video_type": video_type,
-            "description": details["description"],
-            "thumbnail_name": thumbnail_path.name if thumbnail_path else "",
-            "thumbnail_url": str(thumbnail_path) if thumbnail_path else "",
-            "audience": True if (details["audience"] == "kids") else False,
-            "age_restriction": (
-                True if (details["ageRestriction"] == "yes") else False
-            ),
-            "language": details["language"],
-            "monetization": details["monetized"],
-            "visibility": True if (visibility["publish"] == "public") else False,
-            "schedule_time": visibility["scheduledTime"] or None,
-        }
-    )
+    update_data = {
+        "title": details["title"],
+        "video_type": video_type,
+        "description": details["description"],
+        "audience": True if (details["audience"] == "kids") else False,
+        "age_restriction": (True if (details["ageRestriction"] == "yes") else False),
+        "language": details["language"],
+        "monetization": details["monetized"],
+        "visibility": True if (visibility["publish"] == "public") else False,
+        "schedule_time": visibility["scheduledTime"] or None,
+    }
+
+    if thumbnail_path:
+        update_data["thumbnail_url"] = str(thumbnail_path)
+        update_data["thumbnail_name"] = thumbnail_path.name
+
+    Video.query.filter_by(id=video_id).update(update_data)
 
 
 @router.get("/list")
@@ -252,6 +261,7 @@ async def list_video(
         Video.file_url,
         Video.age_restriction,
         Video.created_at,
+        Video.views,
     ).filter_by(user_id=user_id, video_type=video_type)
 
     if filter and filter == "age-restriction":
@@ -271,6 +281,9 @@ async def list_video(
             "id": video.id,
             "unique_id": video.unique_id,
             "views": video.views,
+            "total_likes": await total_video_likes(video.unique_id),
+            "total_dislikes": await total_video_dislikes(video.unique_id),
+            "total_comments": await total_video_comments(video.unique_id),
             "title": video.title,
             "video_type": video_type,
             "description": video.description,
@@ -303,23 +316,36 @@ async def retrieve_playlist(user_session_id: str = Query(), playlist_id: int = Q
 
 
 @router.get("/playlist/list")
-async def all_playlists(user_session_id: str = Query()):
+async def all_playlists(user_session_id: str = Query(), sortBy: str = Query(None)):
+    if not sortBy:
+        sortBy = "a-z"
+
     user_id = await get_current_user_id(user_session_id)
-    playlists = (
-        Playlist.query.with_entities(
-            Playlist.id, Playlist.owner_id, Playlist.title, Playlist.visibility
-        )
-        .filter_by(owner_id=user_id)
-        .order_by(desc(Playlist.id))
-        .all()
-    )
+    playlists = Playlist.query.filter_by(owner_id=user_id)
+
+    if sortBy and sortBy == "a-z":
+        playlists = playlists.order_by(asc(Playlist.created_at))
+    elif not sortBy or sortBy == "latest":
+        playlists = playlists.order_by(desc(Playlist.created_at))
 
     serializer = [
         {
             "id": playlist.id,
-            "owner_id": playlist.owner_id,
             "title": playlist.title,
             "visibility": playlist.visibility,
+            "is_default": playlist.is_default,
+            "total_videos": playlist.video.count(),
+            "last_video_unique_id": (
+                await playlist_last_video_unique_id(list(playlist.video)[-1])
+                if list(playlist.video)
+                else None
+            ),
+            "last_video_thumbnail": (
+                await playlist_last_video_thumbnail_url(list(playlist.video)[-1])
+                if list(playlist.video)
+                else None
+            ),
+            "created_at": await time_formatter(playlist.created_at)
         }
         for playlist in playlists
     ]
@@ -450,7 +476,12 @@ async def list_community_posts(
 ):
 
     user_id = await get_current_user_id(user_session_id)
-    communities = Community.query.filter_by(user_id=user_id)
+    communities = Community.query.with_entities(
+        Community.id,
+        Community.community_text,
+        Community.image_url,
+        Community.created_at,
+    ).filter_by(user_id=user_id)
 
     if type and order and type == "date" and order == "ASC":
         communities = communities.order_by(asc(Community.id)).all()
@@ -458,10 +489,16 @@ async def list_community_posts(
         communities = communities.order_by(desc(Community.id)).all()
 
     serializer = [
-        {"id": community.id, "community_text": community.community_text}
+        {
+            "id": community.id,
+            "community_text": community.community_text,
+            "community_image": await static_file(community.image_url),
+            "total_likes": await total_community_likes(community.id),
+            "total_dislikes": await total_community_dislikes(community.id),
+            "created_at": await time_formatter(community.created_at),
+        }
         for community in communities
     ]
-
     return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)
 
 
@@ -568,3 +605,44 @@ async def remove_channel_image(
     return JSONResponse(
         {"data": f"{image_type} removed successfully!"}, status_code=status.HTTP_200_OK
     )
+
+
+async def total_video_comments(video_id):
+    return Comment.query.filter_by(video_id=video_id).count()
+
+
+async def total_video_likes(video_id):
+    return Like.query.filter_by(video_id=video_id, action_type=True).count()
+
+
+async def total_video_dislikes(video_id):
+    return Like.query.filter_by(video_id=video_id, action_type=False).count()
+
+
+async def total_community_likes(community_id):
+    return CommunityLike.query.filter_by(
+        community_id=community_id, action_type=True
+    ).count()
+
+
+async def total_community_dislikes(community_id):
+    return CommunityLike.query.filter_by(
+        community_id=community_id, action_type=False
+    ).count()
+
+
+@router.delete(
+    "/community/delete/{community_id}", status_code=status.HTTP_204_NO_CONTENT
+)
+async def delete_community_note(community_id: int = Path_paramter()):
+    community = Community.query.filter_by(id=community_id).first()
+    session.delete(community)
+    session.commit()
+
+
+async def playlist_last_video_unique_id(video):
+    return video.unique_id
+
+
+async def playlist_last_video_thumbnail_url(video):
+    return f"http://127.0.0.1:8000/static/{video.thumbnail_url}"

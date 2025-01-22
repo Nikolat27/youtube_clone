@@ -43,6 +43,15 @@ watch(router, () => {
     retrieveAllPosts()
 })
 
+const deleteCommunity = (id) => {
+    axios.delete(`http://127.0.0.1:8000/studio/community/delete/${id}`).then((response) => {
+        if (response.status == 204) {
+            toast.success("Post deleted successfully!")
+            retrieveAllPosts()
+        }
+    }).catch((error) => console.error(error))
+}
+
 let posts = reactive([])
 const retrieveAllPosts = async () => {
     await axios.get("http://127.0.0.1:8000/studio/community/list", {
@@ -83,31 +92,31 @@ onMounted(() => {
     <div class="border-b font-roboto pl-[48px] w-full">
         <div v-for="post in posts" :key="post.id" class="table-itself border-b">
             <div class="video-thumbnail">
-                <img draggable="false" src="/src/assets/img/Django.png" alt="">
+                <img draggable="false" :src="post.community_image" alt="">
             </div>
             <div class="video-detail relative flex flex-col font-normal text-[13px] mt-2" style="padding-left: 12px;">
                 <span>{{ post.community_text }}</span>
                 <div class="flex flex-row justify-start items-center">
                     <button @click="toggleCommunityEdit(post.id, post.community_text)" class="w-[39.2px] h-[39.2px] rounded-full hover:bg-[#eaeaea] flex items-center
-                 justify-center">
+                        justify-center">
                         <img class="w-[17px] h-[17px] center" :src="editIcon" alt="">
                     </button>
                     <button @click="toggleCommunityOptions(post.id, post.community_text)" class="w-[39.2px] h-[39.2px] rounded-full hover:bg-[#eaeaea] flex items-center
-                 justify-center">
+                        justify-center">
                         <img class="w-[17px] h-[17px] center" :src="kebabMenuIcon" alt="">
                     </button>
                     <div v-if="communityOptionStates[post.id]?.optionDiv" class="absolute left-24 top-0 video-edit-options w-[226px] h-auto rounded-xl bg-white flex flex-col
-                 justify-start items-center py-4">
-                        <div class="w-full h-[32px] hover:bg-[#f9f9f9] flex flex-row justify-start items-center
-                 text-[15px] font-normal font-roboto">
+                        justify-start items-center py-4">
+                        <div @click="deleteCommunity(post.id)" class="w-full h-[32px] hover:bg-[#f9f9f9] flex flex-row justify-start items-center
+                        text-[15px] font-normal font-roboto">
                             <img class="w-[17px] h-[17px] mx-4" :src="uninstallIcon" alt="">
                             <p>Delete forever</p>
                         </div>
                     </div>
                     <div v-if="communityOptionStates[post.id]?.editDiv" class="edit-post-text bg-white z-40 w-[488px] h-auto max-h-[368px] rounded-lg
-                 flex flex-col justify-start pt-2 items-center gap-y-4 absolute left-2 top-6">
+                        flex flex-col justify-start pt-2 items-center gap-y-4 absolute left-2 top-6">
                         <div class="w-[464px] h-[91px] rounded-lg border border-solid box-border border-[#d6d6d6] hover:border-black hover:border-2
-                     focus:border-2 relative pl-2 pt-2"
+                            focus:border-2 relative pl-2 pt-2"
                             :style="{ borderColor: userAbleToSave ? 'black' : 'red', borderWidth: !userAbleToSave ? '2px' : '1px' }">
                             <span class="text-[12px] font-medium text-gray-600">Post`s Text (required)</span>
                             <textarea @input="communityTextEdit" v-model="communityText"
@@ -118,7 +127,7 @@ onMounted(() => {
                                     class="title-char-counter">{{ communityTextLength }}</span>/100</span>
                         </div>
                         <div class="flex flex-row w-full self-end justify-end items-center font-roboto 
-                     gap-x-2 pr-2 pb-2">
+                            gap-x-2 pr-2 pb-2">
                             <span v-if="!userAbleToSave" class="text-[12px] font-normal text-red-800">Your
                                 post needs a title</span>
                             <button @click="toggleCommunityEdit(post.id, post.community_text)" class="w-[74.9px] h-[36px] rounded-3xl text-[14px] font-medium
@@ -131,13 +140,14 @@ onMounted(() => {
                 </div>
             </div>
             <div class="video-info w-[70%] relative h-full flex flex-row justify-end items-center text-[13px] font-normal
-         ml-auto mr-8">
+                ml-auto mr-8">
                 <p class="ml-4 absolute top-1/3 transform translate-y-1/3 left-[355px]">Draft</p>
-                <p class="ml-4 absolute top-1/3 transform translate-y-1/3 left-[430px]">None</p>
-                <p class="ml-4 absolute top-1/3 transform translate-y-1/3 left-[525px]">1/1/2024</p>
-                <p class="ml-4 absolute top-1/3 transform translate-y-1/3 left-[635px]">101K </p>
-                <p class="ml-4 absolute top-1/3 transform translate-y-1/3 left-[710px]">2k</p>
-                <p class="ml-8 absolute top-1/3 transform translate-y-1/3 left-[775px]">2k, 3k</p>
+                <p class="ml-4 absolute top-1/3 transform translate-y-1/3 left-[430px]">Draft</p>
+                <p class="ml-4 absolute top-1/3 transform translate-y-1/3 left-[525px]">{{ post.created_at }}</p>
+                <p class="ml-4 absolute top-1/3 transform translate-y-1/3 left-[635px]">Draft</p>
+                <p class="ml-4 absolute top-1/3 transform translate-y-1/3 left-[710px]">Draft</p>
+                <p class="ml-8 absolute top-1/3 transform translate-y-1/3 left-[775px]">{{ post.total_likes }}, {{
+                    post.total_dislikes }}</p>
             </div>
         </div>
     </div>

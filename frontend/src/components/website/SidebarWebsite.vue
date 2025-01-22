@@ -9,12 +9,14 @@ const toast = useToast()
 const router1 = useRoute()
 const router2 = useRouter()
 
-const items = reactive([{ title: "1" }, { title: "2" }, { title: "3" }, { title: "4" }])
-let maxChannelShown = ref(1);
-let isCollapsed = computed(() => maxChannelShown.value === 1) // if value == 1 then collapsed is True
-
+let maxChannelShownByDefault = ref(4);
+let isCollapsed = computed(() => maxChannelShownByDefault.value === 1) // if value is 1 then collapsed is True
 const toggleSubscriptionChannels = () => {
-    maxChannelShown.value = isCollapsed.value ? 10 : 1;
+    if (isCollapsed.value === true) {
+        maxChannelShownByDefault.value = 10
+    } else {
+        maxChannelShownByDefault.value = 1
+    }
 };
 
 const watchLaterPlaylist = () => {
@@ -69,15 +71,28 @@ const openShortsPage = () => {
     }).catch(() => toast.error("Error!"))
 }
 
+let totalChannels = ref(null)
+const subscriptionChannels = reactive([])
+const retrieveChannelSubscriptions = (user_session_id) => {
+    axios.get("http://127.0.0.1:8000/channel/subscriptions", {
+        params: {
+            user_session_id: user_session_id
+        }
+    }).then((response) => {
+        if (response.status == 200) {
+            subscriptionChannels.splice(0, subscriptionChannels.length, ...response.data.data)
+            totalChannels.value = response.data.channel_count
+        }
+    }).catch((error) => console.error(error))
+}
+
 onMounted(async () => {
     const user_session_id = sessionStorage.getItem("user_session_id")
-    if (!user_session_id) {
-        router2.push({ name: "auth" })
-    }
-
-    await userAuthentication(user_session_id)
-    if (!isUserAuthenticated) {
-        router2.push({ name: "auth" })
+    if (user_session_id) {
+        await userAuthentication(user_session_id)
+        if (isUserAuthenticated.value) {
+            retrieveChannelSubscriptions(user_session_id)
+        }
     }
 })
 </script>
@@ -136,19 +151,35 @@ onMounted(async () => {
             <p style="margin-left: 0;">Subscriptions</p>
         </div>
 
+        <!-- Show only the first 4 channels by default -->
         <transition-group name="slide-down">
-            <div v-for="(channel, index) in items.slice(0, maxChannelShown)" :key="index"
-                class="side-bar-links subscriptions-div">
-                <img style="border-radius: 50%;" src="@/assets/img/Django.png" alt="">
-                <p>{{ channel.title }}</p>
+            <div v-for="channel in subscriptionChannels.slice(0, maxChannelShownByDefault)" :key="channel.unique_id">
+                <router-link :to="`/channel-page/${channel.unique_identifier}`"
+                    class="side-bar-links subscriptions-div">
+                    <img style="border-radius: 50%;" :src="channel.profile_picture_url" alt="">
+                    <p>{{ channel.name }}</p>
+                </router-link>
+            </div>
+            <div v-if="isCollapsed" class="side-bar-links subscriptions-div">
+                <div class="w-[24px] h-[24px]">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" height="24" viewBox="0 0 24 24"
+                        width="24" focusable="false" aria-hidden="true"
+                        style="pointer-events: none; display: inherit; width: 100%; height: 100%;">
+                        <path clip-rule="evenodd"
+                            d="M5 8.5c.828 0 1.5-.672 1.5-1.5S5.828 5.5 5 5.5 3.5 6.172 3.5 7 4.172 8.5 5 8.5ZM8 7c0-.414.336-.75.75-.75h11.5c.414 0 .75.336.75.75s-.336.75-.75.75H8.75C8.336 7.75 8 7.414 8 7Zm.75 4.25c-.414 0-.75.336-.75.75s.336.75.75.75h11.5c.414 0 .75-.336.75-.75s-.336-.75-.75-.75H8.75Zm0 5c-.414 0-.75.336-.75.75s.336.75.75.75h11.5c.414 0 .75-.336.75-.75s-.336-.75-.75-.75H8.75ZM6.5 12c0 .828-.672 1.5-1.5 1.5s-1.5-.672-1.5-1.5.672-1.5 1.5-1.5 1.5.672 1.5 1.5ZM5 18.5c.828 0 1.5-.672 1.5-1.5s-.672-1.5-1.5-1.5-1.5.672-1.5 1.5.672 1.5 1.5 1.5Z"
+                            fill-rule="evenodd"></path>
+                    </svg>
+                </div>
+                <p class="text-[14px] font-normal">All subscriptions</p>
             </div>
         </transition-group>
 
-        <div class="side-bar-links">
+        <div v-if="totalChannels > 4" class="side-bar-links">
             <img style="width: 18px; height: 18px;" :class="[isCollapsed ? 'rotate-180' : '']"
                 src="@/assets/icons/svg-icons/line-angle-up-icon.svg" alt="">
-            <button @click="toggleSubscriptionChannels" id="show-more-btn">{{ isCollapsed ? 'Show more' : 'Show less'
-                }}</button>
+            <button @click="toggleSubscriptionChannels" id="show-more-btn">
+                {{ isCollapsed ? 'Show more' : 'Show less' }}
+            </button>
         </div>
     </aside>
 </template>

@@ -208,6 +208,14 @@ async def videos_list() -> Page:
     return JSONResponse({"data": response_data}, status_code=status.HTTP_200_OK)
 
 
+@router.delete("/delete/{video_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_video(video_id):
+    video = Video.query.filter_by(unique_id=video_id).first()
+    print("Video: ", video)
+    session.delete(video)
+    session.commit()
+
+
 @router.get("/load-more")
 async def load_more_videos() -> Page:
     long_videos = paginate(

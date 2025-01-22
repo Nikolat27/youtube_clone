@@ -11,6 +11,7 @@ import youtubeIcon from '@/assets/icons/svg-icons/youtube-icon.svg'
 import editIcon from '@/assets/icons/svg-icons/edit-icon.svg'
 import kebabMenuIcon from '@/assets/icons/svg-icons/kebab-menu.svg'
 import uninstallIcon from '@/assets/icons/svg-icons/uninstall-icon.svg'
+import playlistDefaultImg from '/src/assets/img/default-playlist-img.jpg'
 
 // Opening closing video options 
 const playlistOptionStates = ref({});
@@ -45,7 +46,7 @@ const deletePlaylist = async (playlist_id) => {
         }
     }).then((response) => {
         if (response.status == 202) {
-            toast.info("Your Deleted your playlist.")
+            toast.info("You Deleted your playlist.")
             retrieveAllPlaylists()
         }
     }).catch((error) => {
@@ -81,32 +82,37 @@ onMounted(() => {
         </Teleport>
         <div v-if="!isLoading">
             <div v-for="playlist in playlists" :key="playlist.id" class="table-itself border-b">
-                <div class="video-thumbnail">
-                    <img draggable="false" src="@/assets/img/Django.png" alt="">
-                    <span class="video-duration">{{ playlist.video_count ?? 0 }}</span>
-                </div>
+                <router-link :to="`/playlist/${playlist.id}`">
+                    <div class="video-thumbnail">
+                        <img draggable="false" :src="playlist.last_video_thumbnail ?? playlistDefaultImg" alt="">
+                        <span class="video-duration">{{ playlist.total_videos ?? 0 }}</span>
+                    </div>
+                </router-link>
                 <div class="video-detail relative flex flex-col font-normal text-[13px] mt-2"
                     style="padding-left: 12px;">
-                    <span>{{ playlist.title }}</span>
+                    <router-link :to="`/playlist/${playlist.id}`">
+                        <span>{{ playlist.title }}</span>
+                    </router-link>
                     <span>{{ playlist.description }}</span>
                     <div class="flex flex-row justify-start items-center">
-                        <!-- <button class="w-[39.2px] h-[39.2px] rounded-full hover:bg-[#eaeaea] flex items-center
-                    justify-center">
-                        <img class="w-[20px] h-[20px] center" :src="youtubeIcon" alt="">
-                    </button> -->
-                        <button @click="togglePlaylistCreationOpen(playlist.id)" class="w-[39.2px] h-[39.2px] rounded-full hover:bg-[#eaeaea] flex items-center
-                    justify-center">
+                        <router-link :to="`/playlist/${playlist.id}`">
+                            <button class="w-[39.2px] h-[39.2px] rounded-full hover:bg-[#eaeaea] flex items-center
+                            justify-center">
+                                <img class="w-[20px] h-[20px] center" :src="youtubeIcon" alt="">
+                            </button>
+                        </router-link>
+                        <button v-if="!playlist.is_default" @click="togglePlaylistCreationOpen(playlist.id)" class="w-[39.2px] h-[39.2px] rounded-full hover:bg-[#eaeaea] flex items-center
+                                justify-center">
                             <img class="w-[17px] h-[17px] center" :src="editIcon" alt="">
                         </button>
-                        <button @click="togglePlaylistOptions(playlist.id)" class="w-[39.2px] h-[39.2px] rounded-full hover:bg-[#eaeaea] flex items-center
-                    justify-center">
+                        <button v-if="!playlist.is_default" @click="togglePlaylistOptions(playlist.id)" class="w-[39.2px] h-[39.2px] rounded-full hover:bg-[#eaeaea] flex items-center
+                                justify-center">
                             <img class="w-[17px] h-[17px] center" :src="kebabMenuIcon" alt="">
                         </button>
-                        <div @click="deletePlaylist(playlist.id)" v-if="playlistOptionStates[playlist.id]?.optionDiv"
-                            class="absolute left-24 top-0 video-edit-options w-[226px] h-auto rounded-xl bg-white flex flex-col
-                    justify-start items-center py-4">
-                            <div class="cursor-pointer w-full h-[32px] hover:bg-[#f9f9f9] flex flex-row justify-start items-center
-                            text-[15px] font-normal font-roboto">
+                        <div v-if="playlistOptionStates[playlist.id]?.optionDiv" class="absolute left-36 top-0 video-edit-options w-[226px] h-auto rounded-xl bg-white flex flex-col
+                                justify-start items-center py-4">
+                            <div @click="deletePlaylist(playlist.id)" class="cursor-pointer w-full h-[32px] hover:bg-[#f9f9f9] flex flex-row justify-start items-center
+                                text-[15px] font-normal font-roboto">
                                 <img class="w-[17px] h-[17px] mx-4" :src="uninstallIcon" alt="">
                                 <p>Delete forever</p>
                             </div>
@@ -114,13 +120,12 @@ onMounted(() => {
                     </div>
                 </div>
                 <div class="video-info w-[70%] relative h-full flex flex-row justify-end items-center text-[13px] font-normal
-            ml-auto mr-8">
-                    <p class="ml-4 absolute top-1/3 transform translate-y-1/3 left-[355px]">Draft</p>
-                    <p class="ml-4 absolute top-1/3 transform translate-y-1/3 left-[430px]">None</p>
-                    <p class="ml-4 absolute top-1/3 transform translate-y-1/3 left-[525px]">1/1/2024</p>
-                    <p class="ml-4 absolute top-1/3 transform translate-y-1/3 left-[635px]">101K </p>
-                    <p class="ml-4 absolute top-1/3 transform translate-y-1/3 left-[710px]">2k</p>
-                    <p class="ml-8 absolute top-1/3 transform translate-y-1/3 left-[775px]">2k, 3k</p>
+                        ml-auto mr-8">
+                    <p class="ml-4 absolute top-1/3 transform translate-y-1/3 left-[430px]">{{ playlist.visibility }}</p>
+                    <p class="ml-4 absolute top-1/3 transform translate-y-1/3 left-[525px]">{{ playlist.created_at }}</p>
+                    <p class="ml-4 absolute top-1/3 transform translate-y-1/3 left-[635px]">Draft</p>
+                    <p class="ml-4 absolute top-1/3 transform translate-y-1/3 left-[710px]">Draft</p>
+                    <p class="ml-8 absolute top-1/3 transform translate-y-1/3 left-[775px]">Draft</p>
                 </div>
             </div>
         </div>
