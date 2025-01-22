@@ -895,11 +895,15 @@ onMounted(async () => {
     </div>
 
     <div class="video-detail-info">
-        <img class="video-detail-channel-logo" loading="eager" :src="videoInfo.channel_profile_url" alt="">
-        <div class="video-detail-upload-info">
-            <p class="video-detail-channel-name">{{ videoInfo.channel_name }}</p>
-            <p class="video-detail-channel-sub-count">{{ videoInfo.channel_total_subs }} subscribers</p>
-        </div>
+        <router-link :to="`/channel-page/${videoInfo.channel_unique_identifier}`">
+            <img class="video-detail-channel-logo" loading="eager" :src="videoInfo.channel_profile_url" alt="">
+        </router-link>
+        <router-link :to="`/channel-page/${videoInfo.channel_unique_identifier}`">
+            <div class="video-detail-upload-info">
+                <p class="video-detail-channel-name">{{ videoInfo.channel_name }}</p>
+                <p class="video-detail-channel-sub-count">{{ videoInfo.channel_total_subs }} subscribers</p>
+            </div>
+        </router-link>
         <button v-if="isChannelSubscribed" @click="toggleChannelOptions" class="w-[150px] h-[36px] rounded-2xl bg-[#f2f2f2] hover:bg-[#e5e5e5]
             flex justify-center items-center">
             <img class="w-5 h-6" :src="channelNotification ? fillBellSrc : emptyBellSrc" alt="">

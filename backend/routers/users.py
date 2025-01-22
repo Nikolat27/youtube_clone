@@ -5,6 +5,7 @@ from passlib.context import CryptContext
 from pydantic import BaseModel
 from database.models.base import session
 from datetime import datetime, timedelta
+from sqlalchemy import desc
 import random
 import string
 
@@ -213,13 +214,19 @@ async def get_user_profile(user_session_id: str = Query()):
     user_id = await get_current_user_id(user_session_id)
 
     channel = (
-        Channel.query.with_entities(Channel.profile_picture_url)
+        Channel.query.with_entities(
+            Channel.profile_picture_url, Channel.unique_identifier
+        )
         .filter_by(owner_id=user_id)
         .first()
     )
     profile_picture = f"http://127.0.0.1:8000/static/{channel.profile_picture_url}"
     return JSONResponse(
-        {"profile_picture": profile_picture or "", "user_id": user_id},
+        {
+            "profile_picture": profile_picture or "",
+            "user_id": user_id,
+            "channel_id": channel.unique_identifier,
+        },
         status_code=status.HTTP_200_OK,
     )
 
@@ -237,15 +244,17 @@ async def get_video_thumbnail(video_id):
     from database.models.user import Video
 
     video = (
-        Video.query.with_entities(Video.thumbnail_url).filter_by(unique_id=video_id).first()
+        Video.query.with_entities(Video.thumbnail_url)
+        .filter_by(unique_id=video_id)
+        .first()
     )
     return f"http://127.0.0.1:8000/static/{video.thumbnail_url}"
 
 
 async def time_difference(created_at):
     current_time = datetime.now()
-    difference = created_at.date() - current_time.date()
-    return str(difference)
+    difference = current_time.date() - created_at.date()
+    return difference.days
 
 
 @router.get("/notifications")
@@ -253,7 +262,11 @@ async def get_user_notifications(user_session_id: str = Query()):
     from dependencies import get_current_user_id  # Due to circular import
 
     user_id = await get_current_user_id(user_session_id)
-    notifications = Notification.query.filter_by(receiver_id=user_id).all()
+    notifications = (
+        Notification.query.filter_by(receiver_id=user_id)
+        .order_by(desc(Notification.created_at))
+        .all()
+    )
     unread_notifications = Notification.query.filter_by(
         receiver_id=user_id, is_read=False
     ).count()
@@ -262,6 +275,7 @@ async def get_user_notifications(user_session_id: str = Query()):
         "unread_notifications": unread_notifications,
         "detail": [
             {
+                "id": notification.id,
                 "sender_profile_picture": await get_sender_profile(
                     user_id=notification.sender_id
                 ),

@@ -1247,43 +1247,6 @@ a {
     height: 14px;
 }
 
-.notification-options {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    position: absolute;
-    top: 40px;
-    right: -3px;
-    background-color: white;
-    width: 230px;
-    height: 100px;
-    z-index: 40;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1), 0 2px 1px rgba(0, 0, 0, 0.01);
-}
-
-.notification-options a {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    height: 32px;
-    text-align: center;
-    font-size: 13px;
-}
-
-.notification-options img {
-    width: 24px;
-    height: 24px;
-    margin-right: 10px;
-}
-
-.notification-options a:hover {
-    font-size: 14px;
-    font-family: Roboto, Arial;
-    background-color: #e5e5e5;
-}
 
 .sign-up-container input {
     font-size: 15px;
