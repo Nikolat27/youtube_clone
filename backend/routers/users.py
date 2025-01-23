@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Body, Query, status
+from fastapi import APIRouter, Body, Query, status, Path as Path_parameter
 from fastapi.responses import JSONResponse
 from database.models.user import User, UserLogInfo, Channel, Notification, Playlist
 from passlib.context import CryptContext
@@ -290,3 +290,18 @@ async def get_user_notifications(user_session_id: str = Query()):
         ],
     }
     return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)
+
+
+@router.delete(
+    "/notifications/delete/{notification_id}", status_code=status.HTTP_204_NO_CONTENT
+)
+async def delete_user_notification(
+    notification_id: int = Path_parameter(), user_session_id: str = Query()
+):
+    from dependencies import get_current_user_id
+    user_id = await get_current_user_id(user_session_id)
+    notification = Notification.query.filter_by(
+        receiver_id=user_id, id=notification_id
+    ).first()
+    session.delete(notification)
+    session.commit()

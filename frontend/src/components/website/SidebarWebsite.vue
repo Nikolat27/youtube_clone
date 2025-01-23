@@ -160,18 +160,20 @@ onMounted(async () => {
                     <p>{{ channel.name }}</p>
                 </router-link>
             </div>
-            <div v-if="isCollapsed" class="side-bar-links subscriptions-div">
-                <div class="w-[24px] h-[24px]">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" height="24" viewBox="0 0 24 24"
-                        width="24" focusable="false" aria-hidden="true"
-                        style="pointer-events: none; display: inherit; width: 100%; height: 100%;">
-                        <path clip-rule="evenodd"
-                            d="M5 8.5c.828 0 1.5-.672 1.5-1.5S5.828 5.5 5 5.5 3.5 6.172 3.5 7 4.172 8.5 5 8.5ZM8 7c0-.414.336-.75.75-.75h11.5c.414 0 .75.336.75.75s-.336.75-.75.75H8.75C8.336 7.75 8 7.414 8 7Zm.75 4.25c-.414 0-.75.336-.75.75s.336.75.75.75h11.5c.414 0 .75-.336.75-.75s-.336-.75-.75-.75H8.75Zm0 5c-.414 0-.75.336-.75.75s.336.75.75.75h11.5c.414 0 .75-.336.75-.75s-.336-.75-.75-.75H8.75ZM6.5 12c0 .828-.672 1.5-1.5 1.5s-1.5-.672-1.5-1.5.672-1.5 1.5-1.5 1.5.672 1.5 1.5ZM5 18.5c.828 0 1.5-.672 1.5-1.5s-.672-1.5-1.5-1.5-1.5.672-1.5 1.5.672 1.5 1.5 1.5Z"
-                            fill-rule="evenodd"></path>
-                    </svg>
+            <router-link to="/feed/channels">
+                <div v-if="isCollapsed" class="side-bar-links subscriptions-div">
+                    <div class="w-[24px] h-[24px]">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" height="24" viewBox="0 0 24 24"
+                            width="24" focusable="false" aria-hidden="true"
+                            style="pointer-events: none; display: inherit; width: 100%; height: 100%;">
+                            <path clip-rule="evenodd"
+                                d="M5 8.5c.828 0 1.5-.672 1.5-1.5S5.828 5.5 5 5.5 3.5 6.172 3.5 7 4.172 8.5 5 8.5ZM8 7c0-.414.336-.75.75-.75h11.5c.414 0 .75.336.75.75s-.336.75-.75.75H8.75C8.336 7.75 8 7.414 8 7Zm.75 4.25c-.414 0-.75.336-.75.75s.336.75.75.75h11.5c.414 0 .75-.336.75-.75s-.336-.75-.75-.75H8.75Zm0 5c-.414 0-.75.336-.75.75s.336.75.75.75h11.5c.414 0 .75-.336.75-.75s-.336-.75-.75-.75H8.75ZM6.5 12c0 .828-.672 1.5-1.5 1.5s-1.5-.672-1.5-1.5.672-1.5 1.5-1.5 1.5.672 1.5 1.5ZM5 18.5c.828 0 1.5-.672 1.5-1.5s-.672-1.5-1.5-1.5-1.5.672-1.5 1.5.672 1.5 1.5 1.5Z"
+                                fill-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                    <p class="text-[14px] font-normal">All subscriptions</p>
                 </div>
-                <p class="text-[14px] font-normal">All subscriptions</p>
-            </div>
+            </router-link>
         </transition-group>
 
         <div v-if="totalChannels > 4" class="side-bar-links">

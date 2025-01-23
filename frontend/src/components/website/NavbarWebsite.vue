@@ -28,6 +28,7 @@ const toggleNotificationOptions = (notificationId) => {
     }
 };
 
+
 const isUserAuthenticated = ref(false)
 const userAuthentication = async (user_session_id) => {
     await axios.get("http://127.0.0.1:8000/users/is_authenticated", {
@@ -43,6 +44,24 @@ const userAuthentication = async (user_session_id) => {
     })
 }
 
+
+const hideNotification = async (notificationId) => {
+    await axios.delete(`http://127.0.0.1:8000/users/notifications/delete/${notificationId}`, {
+        params: {
+            "user_session_id": sessionStorage.getItem("user_session_id")
+        }
+    }).then((response) => {
+        if (response.status == 204) {
+            isNotificationContainerExpanded.value = false
+            retrieveNotifications()
+            toast.info("You Hide the notification", {
+                position: "top-center"
+            })
+        }
+    }).catch((error) => toast.error("Error!"))
+}
+
+
 const toast = useToast();
 const isLoading = ref(false)
 const notifications = reactive([])
@@ -55,7 +74,7 @@ const retrieveNotifications = () => {
         }
     }).then((response) => {
         if (response.status == 200) {
-            Object.assign(notifications, response.data.data.detail)
+            notifications.splice(0, notifications.length, ...response.data.data.detail)
             unreadNotifications.value = response.data.data.unread_notifications
         }
     }).catch((error) => {
@@ -63,9 +82,6 @@ const retrieveNotifications = () => {
     }).finally(() => isLoading.value = false)
 }
 
-const hideNotification = (notificationId) => {
-    console.log(notificationId)
-}
 
 const searchBarText = ref('')
 const isAutoCompleteOpen = ref(false)

@@ -50,7 +50,7 @@ async def check_channel_notification(user_session_id, channel_id):
         .filter_by(user_id=user_id, channel_id=channel_id)
         .first()
     )
-    return True if notification else False
+    return notification.notification
 
 
 async def get_video_duration(file):
@@ -76,6 +76,37 @@ async def user_channel_subscriptions(user_session_id: str = Query()):
         {"data": serializer, "channel_count": len(serializer)},
         status_code=status.HTTP_200_OK,
     )
+
+
+@router.get("/feed/subscriptions")
+async def get_user_subscriptions_list(user_session_id: str = Query()):
+    user_id = await get_current_user_id(user_session_id)
+
+    subscriptions = (
+        ChannelSubscription.query.filter_by(user_id=user_id)
+        .order_by(desc(ChannelSubscription.created_at))
+        .all()
+    )
+
+    serializer = [
+        {
+            "id": channel.channel_id,
+            "name": channel.channel.name,
+            "unique_identifier": channel.channel.unique_identifier,
+            "profile_picture_url": await static_file(
+                channel.channel.profile_picture_url
+            ),
+            "description": channel.channel.description,
+            "total_subs": await total_channel_subscribers(channel.channel_id),
+            "notification_type": await check_channel_notification(user_session_id, channel.channel_id)
+        }
+        for channel in subscriptions
+    ]
+    return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)
+
+
+async def total_channel_subscribers(channel_id):
+    return ChannelSubscription.query.filter_by(channel_id=channel_id).count()
 
 
 @router.get("/{unique_identifier}")
