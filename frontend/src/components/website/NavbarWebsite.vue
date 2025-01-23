@@ -62,6 +62,16 @@ const hideNotification = async (notificationId) => {
 }
 
 
+const markVisibleNotificationsAsRead = () => {
+    if (unreadNotifications.value <= 0) return;
+    axios.patch(`http://127.0.0.1:8000/users/notifications/read?user_session_id=${sessionStorage.getItem("user_session_id")}`).then((response) => {
+        if (response.status == 204) {
+            unreadNotifications.value = 0
+        }
+    }).catch((error) => console.error("Error: ", error))
+}
+
+
 const toast = useToast();
 const isLoading = ref(false)
 const notifications = reactive([])
@@ -109,6 +119,11 @@ watch(() => searchBarText.value, () => {
 
 const router = useRouter()
 const searchVideo = (query) => {
+    if (query.length <= 2) {
+        toast.warning("You have to enter at least one word")
+        return
+    };
+
     shouldWatch = false;
     isAutoCompleteOpen.value = false
     searchBarText.value = query
@@ -191,7 +206,8 @@ onMounted(async () => {
                     <img src="@/assets/icons/header/notifications.svg" class="notification-img" alt="">
                     <span class="icon-button--badge">{{ unreadNotifications ?? 0 }}</span>
                 </button>
-                <div v-if="isNotificationContainerExpanded" class="notification-container">
+                <div @vue:mounted="markVisibleNotificationsAsRead" v-if="isNotificationContainerExpanded"
+                    class="notification-container">
                     <div class="notification-title">
                         <p class="mb-1">Notifications</p>
                         <hr>

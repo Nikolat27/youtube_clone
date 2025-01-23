@@ -1154,6 +1154,10 @@ a {
     flex-direction: column;
     top: 55px;
     right: 135px;
+    height: 450px;
+    scrollbar-width: thin;
+    overflow-y: auto;
+    overflow-x: hidden;
     border-radius: 16px;
     z-index: 100;
     background-color: white;
