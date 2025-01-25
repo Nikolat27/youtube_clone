@@ -6,6 +6,8 @@ import analyticsIcon from '/src/assets/icons/svg-icons/analytics-icon.svg'
 import communityIcon from '/src/assets/icons/svg-icons/community-icon.svg'
 import earnIcon from '/src/assets/icons/svg-icons/earn-icon.svg'
 import customizationIcon from '/src/assets/icons/svg-icons/customization-icon.svg'
+import advertisingIcon from '/src/assets/icons/svg-icons/advertising-icon.svg'
+
 </script>
 
 <template>
@@ -43,6 +45,12 @@ import customizationIcon from '/src/assets/icons/svg-icons/customization-icon.sv
                 <div class="large-menu-item">
                     <img :src="customizationIcon" alt="">
                     <p>Customization</p>
+                </div>
+            </router-link>
+            <router-link to="/studio/create-ads">
+                <div class="large-menu-item">
+                    <img :src="advertisingIcon" alt="">
+                    <p>Create Ads</p>
                 </div>
             </router-link>
         </div>

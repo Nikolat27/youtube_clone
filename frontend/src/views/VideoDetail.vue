@@ -734,7 +734,6 @@ onMounted(async () => {
         let calculateWatchTime = (endTime - startTime) / 1000
         totalWatchedTime += calculateWatchTime
         startTime = null
-
         axios.get(`http://127.0.0.1:8000/videos/stream/watch-time/${route.params.id}`, {
             params: {
                 watch_time: totalWatchedTime,
@@ -742,7 +741,10 @@ onMounted(async () => {
             }
         })
     });
-    MountPage()
+    await MountPage()
+    if (videoInfo.video_type === 'short_video') {
+        router2.push({ name: "short_detail", params: { id: route.params.id } })
+    }
 });
 </script>
 
@@ -770,9 +772,11 @@ onMounted(async () => {
                 class="annotation-btn bg-[#191919] bg-opacity-90 p-1 absolute right-[48px] -bottom-[2px] w-[124px] h-[75px] rounded-xl flex-col items-center
              justify-center text-white">
                 <span class="text-[11px] font-normal text-left self-start ml-3 mb-1">{{ videoInfo.channel_name }}</span>
-                <button class="w-[94.5px] h-[36px] rounded-3xl bg-white cursor-pointer">
-                    <span class="text-[14px] font-medium text-black">Subscribe</span>
-                </button>
+                <router-link :to="`/channel-page/${videoInfo.channel_unique_identifier}`">
+                    <button class="w-[94.5px] h-[32px] rounded-3xl bg-white cursor-pointer px-1">
+                        <span class="text-[13px] font-medium text-black">View Channel</span>
+                    </button>
+                </router-link>
             </div>
         </div>
         <div class="bg-transparent z-50 control-bar flex opacity-0 w-full h-[48px] max-h-[48px] absolute bottom-0 justify-center

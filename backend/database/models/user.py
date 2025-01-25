@@ -335,3 +335,19 @@ class Notification(Model):
         return (
             f"Sender: {self.sender_id} / Receiver: {self.receiver_id} - {self.video_id}"
         )
+
+
+class Ad(Model):
+    __tablename__ = "ads"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    unique_id = Column(String(50), nullable=False, unique=True)
+    title = Column(String(80), nullable=False)
+    company_contact_url = Column(String(100), nullable=False)
+    company_picture_url = Column(String(100), nullable=False)
+    file_url = Column(String(150), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return self.title
+

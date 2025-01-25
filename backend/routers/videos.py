@@ -6,10 +6,12 @@ from fastapi import (
     Header,
     Form,
     HTTPException,
+    UploadFile,
 )
 from database.models.base import session
 from database.models.user import (
     Video,
+    Ad,
     User,
     Like,
     SaveVideos,
@@ -36,7 +38,9 @@ from googleapiclient.discovery import build
 import yt_dlp
 import redis
 import socket
+import shutil
 import random
+import string
 
 
 # Replace with your API key
@@ -265,6 +269,7 @@ async def video_detail(
             Video.id,
             Video.unique_id,
             Video.views,
+            Video.video_type,
             Video.user_id,
             Video.title,
             Video.description,
@@ -314,6 +319,7 @@ async def video_detail(
         "id": video.unique_id,
         "title": video.title,
         "views": video.views,
+        "video_type": video.video_type,
         "user_id": video.user_id,
         "description": video.description or "",
         "file_url": await static_file(video.file_url),
@@ -1036,3 +1042,51 @@ async def get_subscriptions_shorts_list(user_session_id: str = Query()):
     ]
 
     return JSONResponse({"short_videos": serializer}, status_code=status.HTTP_200_OK)
+
+
+UPLOAD_DIR = Path("uploaded_videos")
+letters = string.ascii_letters + string.digits
+
+
+async def upload_file(user_id, file, filename, type):
+    try:
+        UPLOAD_DIR_USER = Path(UPLOAD_DIR / str(user_id) / type)
+        UPLOAD_DIR_USER.mkdir(parents=True, exist_ok=True)
+
+        file_path = UPLOAD_DIR_USER / filename # filename is the unique_id
+        with file_path.open("wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        return str(file_path)
+    except Exception as e:
+        raise HTTPException(
+            detail=f"Error Uploading file: {e}", status_code=status.HTTP_400_BAD_REQUEST
+        )
+
+
+@router.post("/create-ad", status_code=status.HTTP_201_CREATED)
+async def create_ad(
+    user_session_id: str = Form(),
+    ad_title: str = Form(),
+    company_contact_url: str = Form(),
+    company_picture_file: UploadFile = Form(),
+    ad_video_file: UploadFile = Form(),
+):
+    user_id = await get_current_user_id(user_session_id)
+    unique_id = "".join([random.choice(letters) for i in range(12)])
+
+    company_picture_path = await upload_file(
+        user_id, company_picture_file, unique_id, "company_picture_file"
+    )
+    ad_video_path = await upload_file(
+        user_id, ad_video_file, unique_id, "ad_video_file"
+    )
+    new_add = Ad(
+        unique_id=unique_id,
+        title=ad_title,
+        company_contact_url=company_contact_url,
+        company_picture_url=company_picture_path,
+        file_url=ad_video_path,
+    )
+
+    session.add(new_add)
+    session.commit()

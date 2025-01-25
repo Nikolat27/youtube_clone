@@ -167,7 +167,9 @@ onMounted(async () => {
     <header class="header">
         <div class="left-div">
             <img class="hamburger-img" src="@/assets/icons/header/hamburger-menu.svg" alt="">
-            <img class="youtube-logo-img" src="@/assets/icons/header/youtube-logo.svg" alt="">
+            <router-link to="/">
+                <img class="youtube-logo-img" src="@/assets/icons/header/youtube-logo.svg" alt="">
+            </router-link>
         </div>
         <div class="flex flex-col w-[60%] h-full justify-center items-center relative top-1">
             <div class="flex flex-row search-div">

@@ -35,6 +35,7 @@ import LiveView from "@/views/studioViews/channelContentViews/LiveView.vue";
 import PostsView from "@/views/studioViews/channelContentViews/PostsView.vue";
 import PlaylistsView from "@/views/studioViews/channelContentViews/PlaylistsView.vue";
 import SearchVideosView from "@/views/SearchVideosView.vue";
+import CreateAdsView from "@/views/studioViews/createAdsView.vue";
 
 
 const routes = [
@@ -76,6 +77,7 @@ const routes = [
             { path: "community", name: 'community', component: null },
             { path: "earn", name: 'earn', component: null },
             { path: "customization", name: 'customization', component: customizationView },
+            { path: "create-ads", name: 'create-ads', component: CreateAdsView },
         ]
     },
     { path: "/test", name: "test", component: TestView, },

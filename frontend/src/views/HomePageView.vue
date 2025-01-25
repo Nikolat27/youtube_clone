@@ -93,11 +93,13 @@ onMounted(() => {
     <div v-if="!isLoading" class="container mb-10">
         <div class="regular-videos">
             <div v-for="video in longVideos.slice(0, 3)" :key="video.id" class="video-preview">
-                <div class="video-thumbnail relative z-0">
-                    <img loading="lazy" :src="video.thumbnail_url" alt="">
-                    <input v-if="video.watch_progress" type="range" :value="video.watch_progress" disabled class="z-10 watch-progress-tracking w-[400px]
-                     bg-transparent absolute -bottom-[10px] left-0">
-                </div>
+                <router-link :to="`/video/${video.unique_id}`">
+                    <div class="video-thumbnail relative z-0">
+                        <img loading="lazy" :src="video.thumbnail_url" alt="">
+                        <input v-if="video.watch_progress" type="range" :value="video.watch_progress" disabled class="z-10 watch-progress-tracking w-[400px]
+                        bg-transparent absolute -bottom-[10px] left-0">
+                    </div>
+                </router-link>
                 <div class="video-info">
                     <router-link :to="`/channel-page/${video.channel_unique_identifier}`">
                         <div class="channel-logo">
@@ -128,9 +130,11 @@ onMounted(() => {
 
             <div id="shortVideoScrollDiv" class="flex flex-row overflow-hidden gap-x-[30px] scroll-smooth">
                 <div v-for='short in shortVideos' :key="short.id" class=" select-none short-video-preview">
-                    <div class="short-video-thumbnail">
-                        <img loading="lazy" :src="short.thumbnail_url" alt="">
-                    </div>
+                    <router-link :to="`/short/${short.unique_id}`">
+                        <div class="short-video-thumbnail">
+                            <img loading="lazy" :src="short.thumbnail_url" alt="">
+                        </div>
+                    </router-link>
                     <router-link :to="`/short/${short.unique_id}`">
                         <div class="short-video-title-div">
                             <p class="short-video-title">{{ short.title }}</p>
@@ -152,11 +156,13 @@ onMounted(() => {
         </div>
 
         <div v-for="video in longVideos.slice(3)" :key="video.id" class="video-preview">
-            <div class="video-thumbnail relative">
-                <img :src="video.thumbnail_url" alt="">
-                <input v-if="video.watch_progress" type="range" :value="video.watch_progress" disabled class="z-10 watch-progress-tracking w-[400px]
+            <router-link :to="`/video/${video.unique_id}`">
+                <div class="video-thumbnail relative">
+                    <img :src="video.thumbnail_url" alt="">
+                    <input v-if="video.watch_progress" type="range" :value="video.watch_progress" disabled class="z-10 watch-progress-tracking w-[400px]
                      bg-transparent absolute -bottom-[10px] left-0">
-            </div>
+                </div>
+            </router-link>
             <div class="video-info">
                 <div class="channel-logo">
                     <img loading="lazy" :src="video.channel_profile_picture" alt="">

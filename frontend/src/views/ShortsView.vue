@@ -188,6 +188,7 @@ const videoRef = ref(null)
 let videoInfo = reactive({
     id: '',
     unique_id: '',
+    video_type: '',
     total_likes: '',
     user_id: '',
     title: '',
@@ -412,6 +413,10 @@ const videoWatchTimeTracker = () => {
 
 onMounted(async () => {
     await MountPage()
+    if (videoInfo.video_type === 'long_video') {
+        router2.push({ name: "video_detail", params: { id: router1.params.id } })
+    }
+
     videoRef.value.addEventListener("ended", videoWatchTimeTracker)
     window.addEventListener("popstate", videoWatchTimeTracker)
 })
