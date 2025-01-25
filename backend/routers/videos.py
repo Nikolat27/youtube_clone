@@ -211,7 +211,6 @@ async def videos_list() -> Page:
 @router.delete("/delete/{video_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_video(video_id):
     video = Video.query.filter_by(unique_id=video_id).first()
-    print("Video: ", video)
     session.delete(video)
     session.commit()
 
@@ -363,12 +362,14 @@ async def video_stream(unique_id: str = Path_parameter(), range: str = Header(No
         return Response(data, status_code=206, headers=headers, media_type="video/mp4")
 
 
-@router.get("/stream/watch-time/{unique_id}")
+@router.get("/stream/watch-time/{unique_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def video_watch_time(
     unique_id: str = Path_parameter(),
     watch_time: float = Query(),
     duration: float = Query(),
 ):
+    print("Total Watch time: ", watch_time)
+
     if duration <= 30:
         if watch_time >= duration:
             video = Video.query.filter_by(unique_id=unique_id).first()

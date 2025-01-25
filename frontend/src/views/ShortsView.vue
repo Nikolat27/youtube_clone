@@ -28,7 +28,6 @@ const toggleSharingTab = () => {
 
 const userCommentText = ref(null)
 const userReplyText = ref(null)
-
 const submitVideoComment = (parentId = null) => {
     const commentText = userCommentText.value;
     const replyText = userReplyText.value;
@@ -56,6 +55,7 @@ const submitVideoComment = (parentId = null) => {
         toast.error(error)
     })
 };
+
 
 // Toggling Comment Container
 const isCommentContainerOpen = ref(false)
@@ -125,14 +125,23 @@ const retrieveCommentReplies = async (comment_id) => {
 }
 
 // Handle video`s playing
+let totalWatchTime = computed(() => {
+    return (endTime.value - startTime.value) / 1000
+})
+const startTime = ref(null)
+const endTime = ref(null)
 const isVideoPlayed = ref(true)
 const toggleVideoPlay = () => {
     const video = videoRef.value
     if (video.paused) {
         video.play()
+        startTime.value = new Date().getTime()
     }
     else {
         video.pause()
+        endTime.value = new Date().getTime()
+        console.log("Watch: ", totalWatchTime.value)
+        videoWatchTimeTracker()
     }
     isVideoPlayed.value = !isVideoPlayed.value
 }
@@ -360,16 +369,13 @@ const userAuthentication = async (user_session_id) => {
     })
 }
 
+
 const isVideoFirst = ref(null)
 const isVideoLast = ref(null)
 const isPageLoading = ref(false)
 const MountPage = async () => {
     isVideoFirst.value = history.state.is_first
     isVideoLast.value = history.state.is_last
-
-    console.log(isVideoFirst.value)
-    console.log(isVideoLast.value)
-
 
     isVideoPlayed.value = true
     isPageLoading.value = true
@@ -393,8 +399,21 @@ watch(() => router1.params.id, () => {
 })
 
 
-onMounted(() => {
-    MountPage()
+const videoWatchTimeTracker = () => {
+    endTime.value = new Date().getTime()
+    axios.get(`http://127.0.0.1:8000/videos/stream/watch-time/${router1.params.id}`, {
+        params: {
+            watch_time: totalWatchTime.value,
+            duration: videoRef.value.duration,
+        }
+    }).catch((error) => console.error("Error: ", error))
+}
+
+
+onMounted(async () => {
+    await MountPage()
+    videoRef.value.addEventListener("ended", videoWatchTimeTracker)
+    window.addEventListener("popstate", videoWatchTimeTracker)
 })
 </script>
 
