@@ -689,6 +689,32 @@ async def delete_comment(comment_id: int = Path_parameter(), user_id: int = Quer
     session.commit()
 
 
+# Im not gonna use this function for now
+async def get_replies_tree(comment_id: int, user_id: int = None):
+    comment = Comment.query.filter_by(id=comment_id).first()
+    if not comment:
+        return []
+
+    replies = [
+        {
+            "id": reply.id,
+            "parent_username": await get_username(reply.user_id),
+            "user_id": reply.user_id,
+            "user_channel_id": get_channel_unique_identifier(reply.user_id),
+            "username": await get_username(reply.user_id),
+            "user_profile_picrure": get_channel_profile(reply.user_id),
+            "is_liked": await is_comment_liked(reply.id, user_id),
+            "text": reply.text,
+            "parent_id": reply.parent_id,
+            "created_at": await time_difference(reply.created_at),
+            "replies": await get_replies_tree(reply.id, user_id),
+        }
+        for reply in comment.replies.order_by(desc(Comment.created_at))
+    ]
+
+    return replies
+
+
 @router.get("/replies/list/{comment_id}")
 async def get_replies_list(
     comment_id: int = Path_parameter(), user_session_id: str = Query(None)

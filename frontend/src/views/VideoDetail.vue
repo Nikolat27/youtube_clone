@@ -6,7 +6,7 @@ import { useToast } from 'vue-toastification';
 
 import socialShare from '@/components/socialShare.vue';
 import ClipLoader from 'vue-spinner/src/ClipLoader.vue';
-import axios, { all } from 'axios';
+import axios from 'axios';
 
 // Icons
 import playIcon from '/src/assets/icons/video-player/play-icon.png'
@@ -673,6 +673,7 @@ const shufflePlaylistVideo = (playlistId) => {
         }
     }).catch(() => toast.error("Error!"))
 }
+
 
 
 // This function is used for getting the current video index in playlist and the next video title

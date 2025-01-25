@@ -8,7 +8,7 @@ import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
 import ClipLoader from 'vue-spinner/src/ClipLoader.vue';
 
 import kebabMenuIcon from '@/assets/icons/svg-icons/kebab-menu.svg'
-
+import unAuthenticatedUserImg from '/src/assets/img/unauthenticated_user_img.png'
 
 // Handle Notification Container Expanding 
 let isNotificationContainerExpanded = ref(false)
@@ -264,9 +264,10 @@ onMounted(async () => {
                     </div>
                 </div>
             </div>
-            <router-link :to="`/channel-page/${channelId}`">
+            <router-link :to="isUserAuthenticated ? `/channel-page/${channelId}` : '/auth/'">
                 <button class="channel-profile-btn">
-                    <img :src="userProfileImgSrc" class="channel-profile-img" alt="">
+                    <img :src="isUserAuthenticated ? userProfileImgSrc : unAuthenticatedUserImg"
+                        class="channel-profile-img" alt="">
                 </button>
             </router-link>
         </div>
