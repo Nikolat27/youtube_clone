@@ -329,6 +329,7 @@ async def video_detail(
     redis_client.set(str(random_uuid), "ad_video_path", ex=600)
     serializer = {
         "id": video.unique_id,
+        "unique_id": video.unique_id,
         "title": video.title,
         "views": video.views,
         "has_ad": True,
@@ -405,7 +406,7 @@ async def video_stream(
     CHUNK_SIZE = 1024 * 1024
     end = int(end) if end else start + CHUNK_SIZE
 
-    video_path = Path(video_path)
+    video_path = Path(video_path.strip())
     with open(video_path, "rb") as video:
         video.seek(start)
         data = video.read(end - start)

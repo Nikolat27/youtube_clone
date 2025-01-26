@@ -1154,7 +1154,8 @@ a {
     flex-direction: column;
     top: 55px;
     right: 135px;
-    height: 450px;
+    height: auto;
+    max-height: 450px;
     scrollbar-width: thin;
     overflow-y: auto;
     overflow-x: hidden;

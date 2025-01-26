@@ -28,7 +28,6 @@ import fillBellSrc from '/src/assets/icons/svg-icons/notification-alert-icon.svg
 import emptyBellSrc from '/src/assets/icons/svg-icons/bell-line-icon.svg'
 import closeIconSrc from '/src/assets/icons/svg-icons/close-icon2.svg'
 
-
 const route = useRoute()
 const router2 = useRouter()
 
@@ -464,7 +463,6 @@ const userLikeSituation = async (video_id, user_session_id) => {
     })
 }
 
-const saveSituation = ref(null)
 const saveVideoToPlaylist = async () => {
     const user_session_id = sessionStorage.getItem("user_session_id")
     if (!user_session_id) {
@@ -480,21 +478,11 @@ const saveVideoToPlaylist = async () => {
     }).then((response) => {
         if (response.status == 200) {
             toast.info("Video Saved successfully!")
-            videoSaveSituation(route.params.id, user_session_id)
             isSaveDivOpen.value = false
+            checkVideoSavedInPlaylist()
         }
     }).catch((error) => {
         toast.error(error)
-    })
-}
-
-const videoSaveSituation = async (video_id, user_session_id) => {
-    await axios.get(`http://127.0.0.1:8000/videos/is-save/${video_id}/${user_session_id}`).then((response) => {
-        if (response.status == 200) {
-            saveSituation.value = response.data.data
-        }
-    }).catch((error) => {
-        console.log(error)
     })
 }
 
@@ -637,14 +625,19 @@ const playlistInfo = reactive([])
 const retrievePlaylist = (playlistId, filter) => {
     axios.get(`http://127.0.0.1:8000/playlist/${playlistId}`, {
         params: {
-            filter: filter
+            filter: filter,
+            user_session_id: sessionStorage.getItem("user_session_id") ?? null
         }
     }).then((response) => {
         if (response.status == 200) {
             Object.assign(playlistInfo, response.data.data)
         }
-    }).catch((error) => console.log(error))
+    }).catch((error) => {
+        toast.error("This playlist is currently unavailable for viewing!")
+        router2.push({ name: "video_detail", params: { id: route.params.id }, query: null })
+    })
 }
+
 
 const isSaveDivOpen = ref(false)
 const toggleSaveDiv = () => isSaveDivOpen.value = !isSaveDivOpen.value
@@ -710,11 +703,6 @@ watch(() => route.params.id, () => {
 })
 
 
-const skipVideoAd = () => {
-
-}
-
-
 const MountPage = async () => {
     const user_session_id = sessionStorage.getItem("user_session_id")
     const videoId = route.params.id // Current Video Id
@@ -731,13 +719,11 @@ const MountPage = async () => {
         if (isUserAuthenticated.value) {
             addWatchHistory(videoId, user_session_id)
             userLikeSituation(videoId, user_session_id)
-            videoSaveSituation(videoId, user_session_id)
             await retrieveUserProfileImg(user_session_id)
             retrieveVideoComments(videoId)
+            checkVideoSavedInPlaylist()
         }
     }
-
-    console.log(videoInfo.random_uuid)
 }
 
 
@@ -762,6 +748,20 @@ const skipAd = async () => { // a.k.a finish the ad
         videoRef.value.load(); // Reload the video tag
         videoRef.value.play(); // Autoplay the main video
     }
+}
+
+
+const isVideoSavedInPlaylist = ref(false)
+const checkVideoSavedInPlaylist = () => {
+    axios.get(`http://127.0.0.1:8000/playlist/check-video-saved/${videoInfo.id}`, {
+        params: {
+            user_session_id: sessionStorage.getItem("user_session_id")
+        }
+    }).then((response) => {
+        if (response.status == 200) {
+            isVideoSavedInPlaylist.value = response.data
+        }
+    }).catch((error) => console.error(error))
 }
 
 
@@ -968,7 +968,7 @@ onMounted(async () => {
         </div>
     </div>
     <div v-else class="video-container top-14 left-12 relative overflow-hidden w-[920px] h-[480px] flex
-     justify-center items-center rounded-2xl mb-20">
+        justify-center items-center rounded-2xl mb-20">
         <iframe class="w-full h-full" :src="youtubeVideoLink">
         </iframe>
     </div>
@@ -1022,7 +1022,7 @@ onMounted(async () => {
                     alt="">
                 <span>&nbsp;Share</span>
             </button>
-            <button @click="toggleSaveDiv" class="save-btn"><img :src="saveSituation ? unSaveIcon : saveIcon">
+            <button @click="toggleSaveDiv" class="save-btn"><img :src="isVideoSavedInPlaylist ? unSaveIcon : saveIcon">
                 <span>Save</span>
             </button>
             <div v-if="isSaveDivOpen"

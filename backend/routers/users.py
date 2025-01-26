@@ -314,6 +314,15 @@ async def delete_user_notification(
     session.commit()
 
 
+@router.delete("/notifications/delete-all", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_all_user_notifiations(user_session_id: str = Query()):
+    from dependencies import get_current_user_id
+
+    user_id = await get_current_user_id(user_session_id)
+    Notification.query.filter_by(receiver_id=user_id).delete()
+    session.commit()
+
+
 @router.patch("/notifications/read", status_code=status.HTTP_204_NO_CONTENT)
 async def read_user_notifications(user_session_id: str = Query()):
     from dependencies import get_current_user_id

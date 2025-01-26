@@ -151,6 +151,24 @@ const retrieveUserProfileImg = async (user_session_id) => {
     })
 }
 
+
+const deleteAllNotifications = () => {
+    axios.delete("http://127.0.0.1:8000/users/notifications/delete-all", {
+        params: {
+            user_session_id: sessionStorage.getItem("user_session_id")
+        }
+    }).then((response) => {
+        if (response.status == 204) {
+            toast.info("All your Notifications have been removed", {
+                position: "top-center"
+            })
+            isNotificationContainerExpanded.value = false
+            retrieveNotifications()
+        }
+    })
+}
+
+
 onMounted(async () => {
     const user_session_id = sessionStorage.getItem("user_session_id")
     if (user_session_id) {
@@ -210,8 +228,12 @@ onMounted(async () => {
                 </button>
                 <div @vue:mounted="markVisibleNotificationsAsRead" v-if="isNotificationContainerExpanded"
                     class="notification-container">
-                    <div class="notification-title">
+                    <div class="notification-title flex w-full items-center flex-row">
                         <p class="mb-1">Notifications</p>
+                        <span v-if="notifications.length >= 1" @click="deleteAllNotifications"
+                            class="cursor-pointer ml-auto w-auto mt-1 px-2 mr-4 text-[15px] text-blue-700 font-medium">
+                            Delete All
+                        </span>
                         <hr>
                     </div>
                     <div v-if="isUserAuthenticated && !isLoading">

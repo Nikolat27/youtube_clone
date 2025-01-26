@@ -51,6 +51,20 @@ async def get_user_playlists(user_session_id: str = Query(), sortBy: str = Query
     return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)
 
 
+@router.get("/check-video-saved/{video_id}")
+async def is_video_saved_playlist(
+    video_id: str = Path_parameter(), user_session_id: str = Query()
+):
+    user_id = await get_current_user_id(user_session_id)
+    video_exists = (
+        Playlist.query.filter(Playlist.owner_id == user_id)
+        .join(Playlist.video)
+        .filter(Video.unique_id == video_id)
+        .first()
+    )
+    return bool(video_exists)
+
+
 @router.get("/user-all-playlists/{video_id}")
 async def get_all_user_playlists(
     video_id: str = Path_parameter(), user_session_id: str = Query()
@@ -169,6 +183,7 @@ async def get_playlist(
     filter: str = Query(),
     user_session_id: str = Query(None),
 ):
+    print("SessionId: ", user_session_id)
     playlist = Playlist.query.filter_by(id=playlist_id).first()
 
     if (
