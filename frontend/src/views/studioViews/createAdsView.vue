@@ -34,6 +34,7 @@ const adInfo = reactive({
     file_url: ''
 })
 
+
 const isLoading = ref(false)
 const toast = useToast()
 const submitForm = () => {
@@ -52,6 +53,9 @@ const submitForm = () => {
     }).then((response) => {
         if (response.status == 201) {
             toast.success("Ad created successfully!")
+            for (let key in adInfo) {
+                adInfo[key] = '';
+            }
         }
     }).catch((error) => {
         toast.error(error)

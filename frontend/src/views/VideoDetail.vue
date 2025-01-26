@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, reactive, watch } from 'vue';
+import { ref, computed, onMounted, reactive, watch, watchEffect, onUnmounted } from 'vue';
 import { sharedState } from '@/sharedState';
 import { useRoute, useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
@@ -179,9 +179,10 @@ const togglePlaylistDivision = () => {
 
 
 // Advertisement and such...
-let isVideoAd = ref(false)
+let videoHasAd = ref(false)
 let adSkipDuration = ref(5) // in seconds
 let adFinished = ref(false)
+let isAdPlaying = ref(false)
 let durationInternal = null; // Interval for advertisement
 
 
@@ -198,7 +199,7 @@ const startAdCountdown = () => {
 const stopAdCountdown = () => {
     clearInterval(durationInternal); // Stopping the Countdown
 }
-
+2
 
 // Handling Main video
 const isVideoPlayed = ref(false);
@@ -275,19 +276,22 @@ const updateProgress = () => {
         currentVideoTime.value = calculateTime(videoRef.value.currentTime)
         videoDuration.value = calculateTime(videoRef.value.duration)
 
-        // Sending some information to the backend such as current time for managing the watch progress tracking and duration
-        axios.get(`http://127.0.0.1:8000/videos/stream/current-time/${route.params.id}`, {
-            params: {
-                current_time: videoRef.value.currentTime,
-                video_duration: videoRef.value.duration
-            }
-        })
+        // Sending some information to the backend such as current time for managing the watch progress tracking
+        if (adFinished.value) {
+            axios.get(`http://127.0.0.1:8000/videos/stream/current-time/${route.params.id}`, {
+                params: {
+                    current_time: videoRef.value.currentTime,
+                    video_duration: videoRef.value.duration
+                }
+            })
+        }
     }
 }
 
 
 // This func is for when you CLICK on a specific time of the video and go there
 const seekVideo = (event) => {
+    if (isAdPlaying.value) return; // When ad is playing you cant change the time
     if (videoRef.value) {
         const newTime = (event.target.value / 100) * videoRef.value.duration;
         videoRef.value.currentTime = newTime;
@@ -326,6 +330,8 @@ const clearTimeOut = () => {
 }
 
 const getVideoFrame = debounce((event) => {
+    if (isAdPlaying.value) return;
+
     const input = event.target;
     const { left, width } = input.getBoundingClientRect();
     const positionX = event.clientX - left;
@@ -357,7 +363,7 @@ const getVideoFrame = debounce((event) => {
 
     const hiddenVideo = document.createElement('video');
     hiddenVideo.crossOrigin = "anonymous"; // This is necassary for CORS origin
-    hiddenVideo.src = `http://127.0.0.1:8000/videos/stream/${videoInfo.id}/`;
+    hiddenVideo.src = `http://127.0.0.1:8000/videos/stream/${videoInfo.id}?is_ad=false`;
     hiddenVideo.currentTime = mouseValue.value;
 
     hiddenVideo.addEventListener('loadeddata', () => {
@@ -431,6 +437,8 @@ let videoInfo = reactive({
     id: '',
     unique_id: '',
     total_likes: '',
+    has_ad: false,
+    ad_unique_id: '',
     user_id: '',
     title: '',
     description: '',
@@ -675,7 +683,6 @@ const shufflePlaylistVideo = (playlistId) => {
 }
 
 
-
 // This function is used for getting the current video index in playlist and the next video title
 const currentVideoIndex = ref(null)
 const nextVideoTitle = ref(null)
@@ -700,6 +707,12 @@ watch(() => route.params.id, () => {
     MountPage()
 })
 
+
+const skipVideoAd = () => {
+    console.log("hi")
+}
+
+
 const MountPage = async () => {
     const user_session_id = sessionStorage.getItem("user_session_id")
     const videoId = route.params.id // Current Video Id
@@ -723,13 +736,40 @@ const MountPage = async () => {
     }
 }
 
+
+// Dynamic style object for the range input
+const rangeInputStyle = computed(() => ({
+    '--track-color': isAdPlaying.value ? 'yellow' : 'red'
+}));
+
+
+const videoUniqueId = ref(null)
 onMounted(async () => {
     // This 'timeupdate' invokes whenever timeCurrent of the video changes
+    await MountPage()
+
     videoRef.value.addEventListener('timeupdate', updateProgress);
-    videoRef.value.addEventListener('play', () => {
-        startTime = Date.now()
+    videoRef.value.addEventListener('ended', async () => {
+        if (isAdPlaying.value) {
+            // Set the ad as finished
+            adFinished.value = true;
+            isAdPlaying.value = false;
+
+            await axios.get(`http://127.0.0.1:8000/videos/ads/complete/${videoInfo.ad_unique_id}`, {
+                params: {
+                    user_session_id: sessionStorage.getItem("user_session_id")
+                }
+            });
+
+            // Switch to the main video
+            videoUniqueId.value = route.params.id;
+            videoRef.value.load(); // Reload the video tag
+            videoRef.value.play(); // Autoplay the main video
+        }
     });
     videoRef.value.addEventListener('pause', () => {
+        if (isAdPlaying.value) return;
+
         let endTime = Date.now()
         let calculateWatchTime = (endTime - startTime) / 1000
         totalWatchedTime += calculateWatchTime
@@ -741,10 +781,42 @@ onMounted(async () => {
             }
         })
     });
-    await MountPage()
+    videoRef.value.addEventListener('play', () => {
+        if (isAdPlaying.value) {
+            axios.get(`http://127.0.0.1:8000/videos/ads/start/${videoInfo.ad_unique_id}`, {
+                params: {
+                    user_session_id: sessionStorage.getItem("user_session_id")
+                }
+            })
+        } else {
+            startTime = Date.now()
+        }
+    });
+
     if (videoInfo.video_type === 'short_video') {
         router2.push({ name: "short_detail", params: { id: route.params.id } })
     }
+
+    if (videoInfo.has_ad) {
+        videoHasAd.value = true
+        videoUniqueId.value = videoInfo.ad_unique_id
+    } else {
+        videoUniqueId.value = route.params.id
+    }
+
+    // Update the video source logic
+    watchEffect(() => {
+        if (videoInfo.has_ad && !adFinished.value) {
+            isAdPlaying.value = true;
+            if (videoRef.value) {
+                videoRef.value.src = `http://127.0.0.1:8000/videos/stream/${videoInfo.ad_unique_id}?is_ad=true`;
+            }
+        } else {
+            if (videoRef.value) {
+                videoRef.value.src = `http://127.0.0.1:8000/videos/stream/${route.params.id}?is_ad=false`;
+            }
+        }
+    });
 });
 </script>
 
@@ -754,7 +826,10 @@ onMounted(async () => {
         class="video-container top-14 left-12 relative overflow-hidden w-[920px] h-[480px] flex justify-center items-center rounded-2xl">
         <video ref="videoRef" :poster="videoInfo.thumbnail_url" :muted="videoMuted" volume="0.5"
             class="main-video cursor-pointer w-full h-full object-fill overflow-hidden">
-            <source :src="`http://127.0.0.1:8000/videos/stream/${$route.params.id}/`" type="video/mp4" />
+            <source v-if="videoInfo.has_ad"
+                :src="`http://127.0.0.1:8000/videos/stream/${videoInfo.ad_unique_id}?is_ad=true`" type="video/mp4" />
+            <source v-else :src="`http://127.0.0.1:8000/videos/stream/${$route.params.id}?is_ad=false`"
+                type="video/mp4" />
         </video>
         <button :disabled="!adFinished" @click="skipVideoAd" :style="{ backgroundColor: adFinished ? 'black' : 'gray' }"
             class="skip-ad-btn text-[14px] gap-x-1 font-normal text-white cursor-pointer absolute bottom-36
@@ -780,7 +855,7 @@ onMounted(async () => {
             </div>
         </div>
         <div class="bg-transparent z-50 control-bar flex opacity-0 w-full h-[48px] max-h-[48px] absolute bottom-0 justify-center
-         items-center flex-row bg-gray-200 bg-opacity-80">
+            items-center flex-row bg-gray-200 bg-opacity-80">
             <div class="video-progress-bar w-[906px] h-[8px] absolute bottom-14">
                 <div class="video-img-tracker z-10 overflow-hidden w-[225px] h-[130px] rounded-lg border-[3px] border-white
                     absolute bottom-12" :style="{ left: `${position}px`, display: `${canvasDisplay}`, }">
@@ -790,13 +865,13 @@ onMounted(async () => {
                     :style="{ left: `${videoTimePosition}px`, display: `${videoTimeDisplay}` }">
                     {{ videoTimeValue }}
                 </p>
-                <input :disabled="isVideoAd" @mousemove="getVideoFrame"
+                <input :disabled="isAdPlaying" @mousemove="getVideoFrame"
                     @mouseleave="mouseValue = null, canvasDisplay = 'none', videoTimeDisplay = 'none'; clearTimeOut()"
                     min="0" max="100" :value="videoProgress" id="progress-bar" class="h-full w-full" type="range"
-                    @input="seekVideo">
+                    @input="seekVideo" :style="rangeInputStyle">
             </div>
             <div class="w-[618px] h-full left-controls flex flex-row justify-start
-             items-center gap-x-6 pl-2">
+                items-center gap-x-6 pl-2">
                 <button @click="toggleVideoPlay">
                     <img class="play-video-button" style="width: 20px; height: 20px;"
                         :src="isVideoPlayed ? pauseIcon : playIcon" alt="">
@@ -816,11 +891,11 @@ onMounted(async () => {
                 </p>
             </div>
             <div class="w-[288px] h-full right-controls flex flex-row justify-end
-             items-center gap-x-4 pr-2">
+                items-center gap-x-4 pr-2">
                 <button>
                     <img @click="toggleSubtitle" style="width: 30px; height: 30px;" :src="subtitleIconSrc" alt="">
                 </button>
-                <button :disabled="isVideoAd" @click="toggleVideoOptions" class="setting-btn">
+                <button :disabled="``" @click="toggleVideoOptions" class="setting-btn">
                     <img src="@/assets/icons/video-player/settings-icon.png" alt="">
                 </button>
                 <div v-if="!isPlaybackSpeedDivOpen && isVideoOptionsOpen" class="video-options select-none video-settings flex flex-col text-white items-start justify-center w-[250px] h-auto pb-4 pt-4
@@ -1463,12 +1538,12 @@ button:hover #volume-bar {
 } */
 
 #progress-bar::-moz-range-progress {
-    background: red;
+    background: var(--track-color, red);
 }
 
 #progress-bar::-moz-range-thumb {
     visibility: hidden;
-    background: red;
+    background: var(--track-color, red);
     border: none;
     width: 13px;
     height: 13px;

@@ -256,6 +256,13 @@ async def load_more_videos() -> Page:
     return JSONResponse({"data": response_data}, status_code=status.HTTP_200_OK)
 
 
+async def choose_ad():
+    total_ads = Ad.query.count()
+    random_id = random.randint(1, total_ads)
+    ad = Ad.query.with_entities(Ad.unique_id).filter_by(id=random_id).first()
+    return ad.unique_id
+
+
 @router.get("/detail/{unique_id}")
 async def video_detail(
     unique_id: str = Path_parameter(), user_session_id: str = Query(None)
@@ -305,6 +312,7 @@ async def video_detail(
         .first()
     )
 
+    ad_unique_id = await choose_ad()
     user_ip = await get_users_ip()
 
     current_time = redis_client.get(
@@ -319,6 +327,8 @@ async def video_detail(
         "id": video.unique_id,
         "title": video.title,
         "views": video.views,
+        "has_ad": True,
+        "ad_unique_id": ad_unique_id,
         "video_type": video.video_type,
         "user_id": video.user_id,
         "description": video.description or "",
@@ -341,15 +351,26 @@ async def video_detail(
 
 
 @router.get("/stream/{unique_id}/")
-async def video_stream(unique_id: str = Path_parameter(), range: str = Header(None)):
-    video = (
-        Video.query.with_entities(Video.file_url).filter_by(unique_id=unique_id).first()
-    )
-    if video:
-        video_path = Path(f"{video.file_url}").resolve()
-    else:
-        DIR = Path("youtube_videos")
-        video_path = Path(DIR / unique_id / f"{unique_id}.mp4").resolve()
+async def video_stream(
+    unique_id: str = Path_parameter(), range: str = Header(None), is_ad: bool = Query()
+):
+    if not is_ad:  # Actual Video
+        video = (
+            Video.query.with_entities(Video.file_url)
+            .filter_by(unique_id=unique_id)
+            .first()
+        )
+        if video:
+            video_path = Path(f"{video.file_url}").resolve()
+        else:
+            DIR = Path("youtube_videos")
+            video_path = Path(DIR / unique_id / f"{unique_id}.mp4").resolve()
+    else:  # Ad
+        video = (
+            Ad.query.with_entities(Ad.file_url).filter_by(unique_id=unique_id).first()
+        )
+        if video:
+            video_path = Path(f"{video.file_url}").resolve()
 
     start, end = range.replace("bytes=", "").split("-")
     start = int(start)
@@ -364,7 +385,6 @@ async def video_stream(unique_id: str = Path_parameter(), range: str = Header(No
             "Content-Range": f"bytes {str(start)}-{str(end)}/{filesize}",
             "Accept-Ranges": "bytes",
         }
-
         return Response(data, status_code=206, headers=headers, media_type="video/mp4")
 
 
@@ -374,8 +394,6 @@ async def video_watch_time(
     watch_time: float = Query(),
     duration: float = Query(),
 ):
-    print("Total Watch time: ", watch_time)
-
     if duration <= 30:
         if watch_time >= duration:
             video = Video.query.filter_by(unique_id=unique_id).first()
@@ -386,6 +404,24 @@ async def video_watch_time(
             video = Video.query.filter_by(unique_id=unique_id).first()
             video.views += 1
             session.commit()
+
+
+@router.get("/ads/start/{ad_unique_id}")
+async def start_ad(
+    ad_unique_id: str = Path_parameter(), user_session_id: str = Query()
+):
+    redis_client.setex(f"ad_start:{user_session_id}-{ad_unique_id}", 3600, "1")
+    return {"status": "Ad tracking started"}
+
+
+@router.get("/ads/complete/{ad_unique_id}")
+async def complete_ad(
+    ad_unique_id: str = Path_parameter(), user_session_id: str = Query()
+):
+    if not redis_client.get(f"ad_start:{user_session_id}-{ad_unique_id}"):
+        raise HTTPException(status_code=400, detail="Ad not started or expired")
+    redis_client.delete(f"ad_start:{user_session_id}:{ad_unique_id}")
+    return {"status": "Ad completed"}
 
 
 def is_first_video(video_created_at) -> bool:
@@ -1053,7 +1089,7 @@ async def upload_file(user_id, file, filename, type):
         UPLOAD_DIR_USER = Path(UPLOAD_DIR / str(user_id) / type)
         UPLOAD_DIR_USER.mkdir(parents=True, exist_ok=True)
 
-        file_path = UPLOAD_DIR_USER / filename # filename is the unique_id
+        file_path = UPLOAD_DIR_USER / f"{filename}.mp4"  # filename is the unique_id
         with file_path.open("wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
         return str(file_path)
