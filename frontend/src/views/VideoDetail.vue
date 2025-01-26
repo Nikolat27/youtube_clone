@@ -741,10 +741,28 @@ const MountPage = async () => {
 }
 
 
-// Dynamic style object for the range input
+// Dynamic color styles for 'range input field' for the main video time tracker input
 const rangeInputStyle = computed(() => ({
     '--track-color': isAdPlaying.value ? 'yellow' : 'red'
 }));
+
+
+const skipAd = async () => { // a.k.a finish the ad
+    if (isAdPlaying.value) {
+        // Set the ad as finished
+        adFinished.value = true;
+        isAdPlaying.value = false;
+
+        await axios.get(`http://127.0.0.1:8000/videos/ads/complete/${videoInfo.ad_unique_id}`, {
+            params: {
+                user_session_id: sessionStorage.getItem("user_session_id"),
+                random_uuid: videoInfo.random_uuid
+            }
+        });
+        videoRef.value.load(); // Reload the video tag
+        videoRef.value.play(); // Autoplay the main video
+    }
+}
 
 
 onMounted(async () => {
@@ -753,20 +771,7 @@ onMounted(async () => {
 
     videoRef.value.addEventListener('timeupdate', updateProgress);
     videoRef.value.addEventListener('ended', async () => {
-        if (isAdPlaying.value) {
-            // Set the ad as finished
-            adFinished.value = true;
-            isAdPlaying.value = false;
-
-            await axios.get(`http://127.0.0.1:8000/videos/ads/complete/${videoInfo.ad_unique_id}`, {
-                params: {
-                    user_session_id: sessionStorage.getItem("user_session_id"),
-                    random_uuid: videoInfo.random_uuid
-                }
-            });
-            videoRef.value.load(); // Reload the video tag
-            videoRef.value.play(); // Autoplay the main video
-        }
+        skipAd()
     });
     videoRef.value.addEventListener('pause', () => {
         if (isAdPlaying.value) return;
@@ -829,7 +834,7 @@ onMounted(async () => {
                 :src="`http://127.0.0.1:8000/videos/stream/${$route.params.id}?is_ad=false&random_uuid=${videoInfo.random_uuid}`"
                 type="video/mp4" />
         </video>
-        <button v-if="isAdPlaying" :disabled="!adFinished" @click="skipVideoAd"
+        <button v-if="isAdPlaying" :disabled="!adFinished" @click="skipAd"
             :style="{ backgroundColor: adFinished ? 'black' : 'gray' }" class="skip-ad-btn text-[14px] gap-x-1 font-normal text-white cursor-pointer absolute bottom-36
              right-6 w-20 h-8 rounded-2xl flex justify-center items-center p-2">
             Skip <span v-if="!adFinished" class="remaining-time">{{ adSkipDuration }}</span>
