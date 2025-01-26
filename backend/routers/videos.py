@@ -41,7 +41,7 @@ import socket
 import shutil
 import random
 import string
-
+import uuid
 
 # Replace with your API key
 API_KEY = "AIzaSyD4tVMAI9kvBA7DghHz3QDrA3UJEe6u7as"
@@ -50,7 +50,9 @@ YOUTUBE_API_VERSION = "v3"
 
 router = APIRouter(prefix="/videos", tags=["videos"])
 
-redis_client = redis.Redis(host="127.0.0.1", port=6379, db=0)
+redis_client = redis.Redis(
+    host="127.0.0.1", port=6379, db=0, decode_responses=True, charset="utf-8"
+)
 
 
 async def get_video_duration(file):  # Using pymediainfo (This is faster)
@@ -319,10 +321,12 @@ async def video_detail(
         f"{video.unique_id}-{user_ip}-current_time"
     )  # this one is in bytes
     if current_time:
-        decode_current_time = float(current_time.decode("utf-8"))
+        decode_current_time = float(current_time)
     else:
         decode_current_time = 0
 
+    random_uuid = uuid.uuid4()
+    redis_client.set(str(random_uuid), "ad_video_path", ex=600)
     serializer = {
         "id": video.unique_id,
         "title": video.title,
@@ -346,14 +350,12 @@ async def video_detail(
         "is_channel_subed": is_channel_subed(channel.id, user_id),
         "total_likes": await total_video_likes(video.unique_id),
         "total_comments": await get_total_comments(video.unique_id),
+        "random_uuid": str(random_uuid),
     }
     return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)
 
 
-@router.get("/stream/{unique_id}/")
-async def video_stream(
-    unique_id: str = Path_parameter(), range: str = Header(None), is_ad: bool = Query()
-):
+async def check_video_for_streaming(is_ad, unique_id):
     if not is_ad:  # Actual Video
         video = (
             Video.query.with_entities(Video.file_url)
@@ -372,11 +374,38 @@ async def video_stream(
         if video:
             video_path = Path(f"{video.file_url}").resolve()
 
+    return str(video_path)
+
+
+@router.get("/stream/{unique_id}/")
+async def video_stream(
+    unique_id: str = Path_parameter(),
+    range: str = Header(None),
+    is_ad: bool = Query(),
+    random_uuid: str = Query(),
+):
+    user_uuid = redis_client.get(random_uuid)
+    if not user_uuid:
+        raise HTTPException(
+            detail="UUID doesnt exist! pls refresh the page",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if user_uuid == "ad_video_path":
+        video_path = await check_video_for_streaming(is_ad, unique_id)
+        redis_client.set(random_uuid, video_path)
+    elif user_uuid == "main_video_path":
+        video_path = await check_video_for_streaming(is_ad=False, unique_id=unique_id)
+        redis_client.set(random_uuid, video_path)
+    else:
+        video_path = redis_client.get(random_uuid)
+
     start, end = range.replace("bytes=", "").split("-")
     start = int(start)
     CHUNK_SIZE = 1024 * 1024
     end = int(end) if end else start + CHUNK_SIZE
 
+    video_path = Path(video_path)
     with open(video_path, "rb") as video:
         video.seek(start)
         data = video.read(end - start)
@@ -416,11 +445,14 @@ async def start_ad(
 
 @router.get("/ads/complete/{ad_unique_id}")
 async def complete_ad(
-    ad_unique_id: str = Path_parameter(), user_session_id: str = Query()
+    ad_unique_id: str = Path_parameter(),
+    user_session_id: str = Query(),
+    random_uuid: str = Query(),
 ):
     if not redis_client.get(f"ad_start:{user_session_id}-{ad_unique_id}"):
         raise HTTPException(status_code=400, detail="Ad not started or expired")
     redis_client.delete(f"ad_start:{user_session_id}:{ad_unique_id}")
+    redis_client.set(random_uuid, "main_video_path")
     return {"status": "Ad completed"}
 
 

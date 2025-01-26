@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from starlette.middleware.sessions import SessionMiddleware
 import uvicorn
 from routers import studio, users, videos, channel, playlist
 from fastapi_pagination import add_pagination
@@ -16,11 +15,6 @@ app.add_middleware(  # Cors middleware
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-)
-
-secret_key = "m($59=%u3#8lkvi)wy!j)6-$h*h=(eir(4y#b87^0&^hj660kh"
-app.add_middleware(
-    SessionMiddleware, secret_key=secret_key, max_age=2 * 24 * 60 * 60  # Days
 )
 
 app.include_router(users.router)

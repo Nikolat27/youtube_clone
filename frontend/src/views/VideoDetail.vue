@@ -278,7 +278,7 @@ const updateProgress = () => {
 
         // Sending some information to the backend such as current time for managing the watch progress tracking
         if (adFinished.value) {
-            axios.get(`http://127.0.0.1:8000/videos/stream/current-time/${route.params.id}`, {
+            axios.get(`http://127.0.0.1:8000/videos/stream/current-time/${route.params.id}?random_uuid=${videoInfo.random_uuid}`, {
                 params: {
                     current_time: videoRef.value.currentTime,
                     video_duration: videoRef.value.duration
@@ -363,7 +363,7 @@ const getVideoFrame = debounce((event) => {
 
     const hiddenVideo = document.createElement('video');
     hiddenVideo.crossOrigin = "anonymous"; // This is necassary for CORS origin
-    hiddenVideo.src = `http://127.0.0.1:8000/videos/stream/${videoInfo.id}?is_ad=false`;
+    hiddenVideo.src = `http://127.0.0.1:8000/videos/stream/${videoInfo.id}?is_ad=false&random_uuid=${videoInfo.random_uuid}`;
     hiddenVideo.currentTime = mouseValue.value;
 
     hiddenVideo.addEventListener('loadeddata', () => {
@@ -449,6 +449,7 @@ let videoInfo = reactive({
     channel_name: '',
     channel_profile_url: '',
     channel_watermark_url: '',
+    random_uuid: '',
 })
 
 const likeSituation = ref(null)
@@ -540,8 +541,8 @@ const subscribeChannel = (channelId) => {
 
 
 const youtubeVideoLink = ref(null)
-const retrieveVideoDetail = (videoId, user_session_id) => {
-    axios.get(`http://127.0.0.1:8000/videos/detail/${videoId}`, {
+const retrieveVideoDetail = async (videoId, user_session_id) => {
+    await axios.get(`http://127.0.0.1:8000/videos/detail/${videoId}`, {
         params: {
             unique_id: route.query.unique_id,
             user_session_id: user_session_id
@@ -550,14 +551,14 @@ const retrieveVideoDetail = (videoId, user_session_id) => {
         if (response.status == 200) {
             Object.assign(videoInfo, response.data.data)
             videoDuration.value = calculateTime(videoInfo.duration)
+            console.log("UUID: ", videoInfo.random_uuid)
         } else {
             youtubeVideoLink.value = response.data.data
         }
-
         if (videoRef.value) { videoRef.value.currentTime = response.data.data.current_time }
         isChannelSubscribed.value = videoInfo.is_channel_subed
     }).catch((error) => {
-        console.log(error)
+        console.error(error)
     })
 }
 
@@ -695,6 +696,7 @@ const retrievePlaylistVideoInfo = (videoId, playlistId) => {
     }).catch((error) => console.log(error))
 }
 
+
 const addWatchHistory = (videoId, user_session_id) => {
     axios.get(`http://127.0.0.1:8000/videos/add-watch-history/${videoId}`, {
         params: {
@@ -709,14 +711,14 @@ watch(() => route.params.id, () => {
 
 
 const skipVideoAd = () => {
-    console.log("hi")
+
 }
 
 
 const MountPage = async () => {
     const user_session_id = sessionStorage.getItem("user_session_id")
     const videoId = route.params.id // Current Video Id
-    retrieveVideoDetail(videoId, user_session_id)
+    await retrieveVideoDetail(videoId, user_session_id)
 
     const playlistId = route.query.playlist_id
     if (playlistId) {
@@ -734,6 +736,8 @@ const MountPage = async () => {
             retrieveVideoComments(videoId)
         }
     }
+
+    console.log(videoInfo.random_uuid)
 }
 
 
@@ -743,7 +747,6 @@ const rangeInputStyle = computed(() => ({
 }));
 
 
-const videoUniqueId = ref(null)
 onMounted(async () => {
     // This 'timeupdate' invokes whenever timeCurrent of the video changes
     await MountPage()
@@ -757,12 +760,10 @@ onMounted(async () => {
 
             await axios.get(`http://127.0.0.1:8000/videos/ads/complete/${videoInfo.ad_unique_id}`, {
                 params: {
-                    user_session_id: sessionStorage.getItem("user_session_id")
+                    user_session_id: sessionStorage.getItem("user_session_id"),
+                    random_uuid: videoInfo.random_uuid
                 }
             });
-
-            // Switch to the main video
-            videoUniqueId.value = route.params.id;
             videoRef.value.load(); // Reload the video tag
             videoRef.value.play(); // Autoplay the main video
         }
@@ -774,7 +775,7 @@ onMounted(async () => {
         let calculateWatchTime = (endTime - startTime) / 1000
         totalWatchedTime += calculateWatchTime
         startTime = null
-        axios.get(`http://127.0.0.1:8000/videos/stream/watch-time/${route.params.id}`, {
+        axios.get(`http://127.0.0.1:8000/videos/stream/watch-time/${route.params.id}?random_uuid=${videoInfo.random_uuid}`, {
             params: {
                 watch_time: totalWatchedTime,
                 duration: videoRef.value.duration
@@ -799,21 +800,16 @@ onMounted(async () => {
 
     if (videoInfo.has_ad) {
         videoHasAd.value = true
-        videoUniqueId.value = videoInfo.ad_unique_id
-    } else {
-        videoUniqueId.value = route.params.id
     }
 
     // Update the video source logic
     watchEffect(() => {
-        if (videoInfo.has_ad && !adFinished.value) {
-            isAdPlaying.value = true;
-            if (videoRef.value) {
-                videoRef.value.src = `http://127.0.0.1:8000/videos/stream/${videoInfo.ad_unique_id}?is_ad=true`;
-            }
-        } else {
-            if (videoRef.value) {
-                videoRef.value.src = `http://127.0.0.1:8000/videos/stream/${route.params.id}?is_ad=false`;
+        if (videoRef.value) {
+            if (videoInfo.has_ad && !adFinished.value && videoInfo.random_uuid) {
+                isAdPlaying.value = true;
+                videoRef.value.src = `http://127.0.0.1:8000/videos/stream/${videoInfo.ad_unique_id}?is_ad=true&random_uuid=${videoInfo.random_uuid}`;
+            } else {
+                videoRef.value.src = `http://127.0.0.1:8000/videos/stream/${route.params.id}?is_ad=false&random_uuid=${videoInfo.random_uuid}`;
             }
         }
     });
@@ -827,12 +823,14 @@ onMounted(async () => {
         <video ref="videoRef" :poster="videoInfo.thumbnail_url" :muted="videoMuted" volume="0.5"
             class="main-video cursor-pointer w-full h-full object-fill overflow-hidden">
             <source v-if="videoInfo.has_ad"
-                :src="`http://127.0.0.1:8000/videos/stream/${videoInfo.ad_unique_id}?is_ad=true`" type="video/mp4" />
-            <source v-else :src="`http://127.0.0.1:8000/videos/stream/${$route.params.id}?is_ad=false`"
+                :src="`http://127.0.0.1:8000/videos/stream/${videoInfo.ad_unique_id}?is_ad=true&random_uuid=${videoInfo.random_uuid}`"
+                type="video/mp4" />
+            <source v-else
+                :src="`http://127.0.0.1:8000/videos/stream/${$route.params.id}?is_ad=false&random_uuid=${videoInfo.random_uuid}`"
                 type="video/mp4" />
         </video>
-        <button :disabled="!adFinished" @click="skipVideoAd" :style="{ backgroundColor: adFinished ? 'black' : 'gray' }"
-            class="skip-ad-btn text-[14px] gap-x-1 font-normal text-white cursor-pointer absolute bottom-36
+        <button v-if="isAdPlaying" :disabled="!adFinished" @click="skipVideoAd"
+            :style="{ backgroundColor: adFinished ? 'black' : 'gray' }" class="skip-ad-btn text-[14px] gap-x-1 font-normal text-white cursor-pointer absolute bottom-36
              right-6 w-20 h-8 rounded-2xl flex justify-center items-center p-2">
             Skip <span v-if="!adFinished" class="remaining-time">{{ adSkipDuration }}</span>
             <img style="width: 15px; height: 15px;" src="\src\assets\icons\video-player\arrow-icon.png"
@@ -895,7 +893,7 @@ onMounted(async () => {
                 <button>
                     <img @click="toggleSubtitle" style="width: 30px; height: 30px;" :src="subtitleIconSrc" alt="">
                 </button>
-                <button :disabled="``" @click="toggleVideoOptions" class="setting-btn">
+                <button :disabled="isAdPlaying" @click="toggleVideoOptions" class="setting-btn">
                     <img src="@/assets/icons/video-player/settings-icon.png" alt="">
                 </button>
                 <div v-if="!isPlaybackSpeedDivOpen && isVideoOptionsOpen" class="video-options select-none video-settings flex flex-col text-white items-start justify-center w-[250px] h-auto pb-4 pt-4
