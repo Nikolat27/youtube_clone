@@ -24,9 +24,8 @@ body {
 
 .header {
     width: 100%;
-    margin-left: auto;
-    margin-right: auto;
     display: flex;
+    flex-direction: row;
     justify-content: space-between;
     height: 56px;
     background-color: white;
@@ -43,6 +42,7 @@ body {
     column-gap: 25px;
     position: relative;
     left: 20px;
+    z-index: 30;
 }
 
 .left-div img {
@@ -83,7 +83,6 @@ body {
     width: 60%;
     height: 40px;
     border-radius: 20px 0 0 20px;
-    /* Use shorthand for top-left and bottom-left radius */
     border: 0.5px solid gray;
     border-right: 0.2px solid lightgray;
     padding-left: 15px;
@@ -141,12 +140,6 @@ body {
     background-color: white;
     cursor: pointer;
     border: none;
-}
-
-.channel-profile-btn img {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
 }
 
 .right-div-buttons {

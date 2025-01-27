@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, reactive, ref, watch } from 'vue';
+import { onMounted, reactive, ref, watch, computed } from 'vue';
 import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
 import ClipLoader from 'vue-spinner/src/ClipLoader.vue';
 import axios from 'axios';
@@ -56,6 +56,7 @@ const isLoading = ref(false)
 const shortVideos = reactive([])
 const longVideos = reactive([])
 const totalPages = ref(null)
+
 const retrieveVideos = () => {
     isLoading.value = true
     axios.get("http://127.0.0.1:8000/videos/", {
@@ -89,28 +90,49 @@ const loadMoreVideos = async () => {
 }
 
 
-const isVideoDeleted = ref(false)
-const handleResize = () => {
-    // const windowWidth = window.innerWidth
-    // if (windowWidth <= 1200 && !isVideoDeleted.value) {
-    //     longVideos.pop()
-    //     isVideoDeleted.value = true
-    // }
+const isSideBarClosed = ref(false)
+const resizeHandle = () => {
+    const windowWidth = window.innerWidth
+    if (windowWidth > 650) {
+        sharedState.isWebsiteSideBarCollapsed = false
+        sharedState.isWebsiteSideBarClosed = false
+        isSideBarClosed.value = false
+    } else if (windowWidth >= 553 && windowWidth <= 650) {
+        sharedState.isWebsiteSideBarCollapsed = true
+        sharedState.isWebsiteSideBarClosed = false
+        isSideBarClosed.value = false
+    } else if (windowWidth < 553) {
+        sharedState.isWebsiteSideBarClosed = true
+        isSideBarClosed.value = true
+    }
 }
 
+
+const containerLeftPositionStyles = computed(() => {
+    if (isSideBarCollapsed.value && !isSideBarClosed.value) {
+        return '85px'
+    } else if (!isSideBarCollapsed.value && !isSideBarClosed.value) {
+        return '230px'
+    } else if (isSideBarClosed.value) {
+        return '8px'
+    }
+})
+
+
+const isVideoDeleted = ref(false)
 onMounted(() => {
     const shortContainerDiv = document.getElementById("shortVideoScrollDiv");
     updateScrollState(shortContainerDiv);
     retrieveVideos()
-
+    resizeHandle()
     document.addEventListener("scroll", checkScroll)
-    window.addEventListener("resize", handleResize)
+    window.addEventListener("resize", resizeHandle)
 });
 </script>
 
 <template>
     <div v-if="!isLoading" class="flex flex-row flex-wrap relative top-[85px] gap-x-[25px] gap-y-[18px] mb-10 w-full"
-        :style="{ left: isSideBarCollapsed === true ? '85px' : '230px' }">
+        :style="{ left: containerLeftPositionStyles }">
         <div class="regular-videos flex-wrap w-[80%] gap-y-4">
             <div v-for="video in longVideos.slice(0, 3)" :key="video.id" class="regular-video"
                 :class="[isSideBarCollapsed ? 'w-[33%] max-w-[450px]' : 'w-[29.5%] max-w-[400px]', isVideoDeleted ? 'w-[49%]' : 'w-[29.5%]']">
@@ -177,7 +199,7 @@ onMounted(() => {
             </button>
         </div>
 
-        <div v-if="False" class="flex flex-row flex-wrap gap-x-[15px] flex-grow basis-full w-[80%]">
+        <div v-if="false" class="flex flex-row flex-wrap gap-x-[15px] flex-grow basis-full w-[80%]">
             <div v-for="video in longVideos.slice(0)" :key="video.id" class="max-w-[400px] w-[29.5%]">
                 <router-link :to="`/video/${video.unique_id}`">
                     <div class="video-thumbnail w-full h-[225px] mb-[10px] relative z-0">

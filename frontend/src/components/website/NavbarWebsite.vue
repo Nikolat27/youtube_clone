@@ -13,7 +13,12 @@ import unAuthenticatedUserImg from '/src/assets/img/unauthenticated_user_img.png
 
 
 const toggleWebsiteSideBar = () => {
-    sharedState.isWebsiteSideBarCollapsed = !sharedState.isWebsiteSideBarCollapsed
+    if (!sharedState.isWebsiteSideBarClosed) {
+        sharedState.isWebsiteSideBarCollapsed = !sharedState.isWebsiteSideBarCollapsed
+    } else {
+        sharedState.isWebsiteSideBarCollapsed = true
+        sharedState.isSecondWebsiteSideBarOpen = true
+    }
 }
 
 
@@ -142,6 +147,7 @@ const searchVideo = (query) => {
 const channelId = ref(null)
 const userId = ref(null)
 const userProfileImgSrc = ref(null)
+
 const retrieveUserProfileImg = async (user_session_id) => {
     await axios.get("http://127.0.0.1:8000/users/profile-picture", {
         params: {
@@ -189,17 +195,19 @@ onMounted(async () => {
 </script>
 
 <template>
-    <header class="header">
+    <header class="header mx-auto">
         <div class="left-div">
-            <button class="w-[50px] h-[50px] bg-white hover:bg-[#f1f1f1] flex justify-center items-center rounded-full">
-                <img @click="toggleWebsiteSideBar" class="hamburger-img" src="@/assets/icons/header/hamburger-menu.svg"
+            <button
+                class="w-[50px] shrink-0 h-[50px] bg-white hover:bg-[#f1f1f1] flex justify-center items-center rounded-full">
+                <img @click="toggleWebsiteSideBar" class="shrink-0" src="@/assets/icons/header/hamburger-menu.svg"
                     alt="">
             </button>
             <router-link to="/">
-                <img class="youtube-logo-img" src="@/assets/icons/header/youtube-logo.svg" alt="">
+                <img class="youtube-logo-img min-w-[108px] w-[108px]" src="@/assets/icons/header/youtube-logo.svg"
+                    alt="">
             </router-link>
         </div>
-        <div class="center-div flex flex-col w-[60%] h-full justify-center items-center relative top-1">
+        <div class="center-div bg-transparent flex flex-col w-[60%] h-full justify-center items-center relative top-1">
             <div class="flex flex-row search-div">
                 <input v-model="searchBarText" autocomplete="off" type="text" class="search-bar" placeholder="Search">
                 <button @click="searchVideo(searchBarText)" class="search-btn active:border-black active:border-2ث">
@@ -299,9 +307,9 @@ onMounted(async () => {
                 </div>
             </div>
             <router-link :to="isUserAuthenticated ? `/channel-page/${channelId}` : '/auth/'">
-                <button class="channel-profile-btn">
+                <button class="channel-profile-btn w-[40px] h-[40px]">
                     <img :src="isUserAuthenticated ? userProfileImgSrc : unAuthenticatedUserImg"
-                        class="channel-profile-img" alt="">
+                        class="rounded-full w-full h-full" alt="">
                 </button>
             </router-link>
         </div>

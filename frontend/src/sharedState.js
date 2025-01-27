@@ -8,5 +8,7 @@ export const sharedState = reactive({
     refreshRetrievePlaylists: false,
     thumbnailPictureSrc: null,
     isSharingTabOpen: false, // For opening the Sharing Tab (social share)
-    isWebsiteSideBarCollapsed: false
+    isWebsiteSideBarCollapsed: false,
+    isWebsiteSideBarClosed: false,
+    isSecondWebsiteSideBarOpen: false,
 });
