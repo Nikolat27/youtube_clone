@@ -2,6 +2,7 @@
 import { ref, reactive, onMounted, watch } from 'vue';
 import { useToast } from 'vue-toastification';
 import { useRouter } from 'vue-router';
+import { sharedState } from '@/sharedState';
 
 import axios from 'axios';
 import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
@@ -9,6 +10,12 @@ import ClipLoader from 'vue-spinner/src/ClipLoader.vue';
 
 import kebabMenuIcon from '@/assets/icons/svg-icons/kebab-menu.svg'
 import unAuthenticatedUserImg from '/src/assets/img/unauthenticated_user_img.png'
+
+
+const toggleWebsiteSideBar = () => {
+    sharedState.isWebsiteSideBarCollapsed = !sharedState.isWebsiteSideBarCollapsed
+}
+
 
 // Handle Notification Container Expanding 
 let isNotificationContainerExpanded = ref(false)
@@ -184,20 +191,23 @@ onMounted(async () => {
 <template>
     <header class="header">
         <div class="left-div">
-            <img class="hamburger-img" src="@/assets/icons/header/hamburger-menu.svg" alt="">
+            <button class="w-[50px] h-[50px] bg-white hover:bg-[#f1f1f1] flex justify-center items-center rounded-full">
+                <img @click="toggleWebsiteSideBar" class="hamburger-img" src="@/assets/icons/header/hamburger-menu.svg"
+                    alt="">
+            </button>
             <router-link to="/">
                 <img class="youtube-logo-img" src="@/assets/icons/header/youtube-logo.svg" alt="">
             </router-link>
         </div>
-        <div class="flex flex-col w-[60%] h-full justify-center items-center relative top-1">
+        <div class="center-div flex flex-col w-[60%] h-full justify-center items-center relative top-1">
             <div class="flex flex-row search-div">
                 <input v-model="searchBarText" autocomplete="off" type="text" class="search-bar" placeholder="Search">
                 <button @click="searchVideo(searchBarText)" class="search-btn active:border-black active:border-2ث">
                     <img src="@/assets/icons/header/search.svg" alt="">
                 </button>
-                <button class="audio-search-btn">
+                <!-- <button class="audio-search-btn">
                     <img src="@/assets/icons/header/voice-search-icon.svg" alt="">
-                </button>
+                </button> -->
             </div>
             <div v-if="searchBarText.length >= 3 && isAutoCompleteOpen"
                 class="autocomplete-bar absolute top-[50px] left-[118px] w-[543px] h-[540px] bg-white z-40 rounded-xl custom-shadow-inset">
@@ -298,6 +308,13 @@ onMounted(async () => {
     </header>
 </template>
 <style scoped>
+@media screen and (max-width: 804px) {
+    .center-div {
+        display: none;
+    }
+}
+
+
 .custom-shadow-inset {
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.25);
 }

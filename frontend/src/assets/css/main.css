@@ -46,6 +46,7 @@ body {
 }
 
 .left-div img {
+    object-fit: cover;
     height: 24px;
 }
 
@@ -127,7 +128,9 @@ body {
 .right-div div button {
     margin: 0 auto;
     width: 36px;
+    min-width: 36px;
     height: 36px;
+    min-height: 36px;
     border-radius: 50%;
     margin-right: 10px;
 }
@@ -314,13 +317,6 @@ body {
 .video-preview {
     margin-right: 20px;
     margin-bottom: 20px;
-    width: 25%;
-}
-
-.video-thumbnail {
-    width: 400px;
-    height: 225px;
-    margin-bottom: 10px;
 }
 
 .video-thumbnail img {
@@ -379,8 +375,6 @@ a {
     width: 80%;
     height: auto;
     min-height: 320px;
-    border: 0.2px solid rgb(216, 209, 209);
-    border-radius: 10px;
     position: relative;
     padding-top: 10px;
 }
@@ -390,9 +384,10 @@ a {
 }
 
 .short-video-preview {
-    width: 140px;
-    height: 240px;
-    min-width: 140px;
+    width: 233px;
+    height: 414px;
+    max-width: 233px;
+    max-height: 414px;
     transition: transform 0.3s ease;
 }
 
@@ -428,12 +423,9 @@ a {
 
 .navigate-btn {
     display: flex;
-    /* Add display: flex */
     justify-content: center;
-    /* Add justify-content: center */
     margin-top: 10px;
     margin-bottom: 10px;
-    /* Add margin for spacing */
     cursor: pointer;
     padding: 8px 12px;
     border: none;

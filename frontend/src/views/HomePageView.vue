@@ -1,8 +1,15 @@
 <script setup>
-import { onMounted, reactive, ref } from 'vue';
+import { onMounted, reactive, ref, watch } from 'vue';
 import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
 import ClipLoader from 'vue-spinner/src/ClipLoader.vue';
 import axios from 'axios';
+import { sharedState } from '@/sharedState';
+
+const isSideBarCollapsed = ref(false)
+watch(() => sharedState.isWebsiteSideBarCollapsed, (newVal) => {
+    isSideBarCollapsed.value = newVal
+})
+
 
 const isAtStart = ref(true);
 const isAtEnd = ref(false);
@@ -36,6 +43,7 @@ const handleScrollRight = () => {
 const infiniteIsLoading = ref(false)
 const page = ref(1)
 const size = ref(12)
+
 const checkScroll = () => {
     const endOfPage = window.innerHeight + window.pageYOffset >= document.documentElement.scrollHeight - 150
     const lastPage = page.value == totalPages.value
@@ -80,24 +88,37 @@ const loadMoreVideos = async () => {
         .finally(() => infiniteIsLoading.value = false)
 }
 
+
+const isVideoDeleted = ref(false)
+const handleResize = () => {
+    // const windowWidth = window.innerWidth
+    // if (windowWidth <= 1200 && !isVideoDeleted.value) {
+    //     longVideos.pop()
+    //     isVideoDeleted.value = true
+    // }
+}
+
 onMounted(() => {
     const shortContainerDiv = document.getElementById("shortVideoScrollDiv");
     updateScrollState(shortContainerDiv);
     retrieveVideos()
 
     document.addEventListener("scroll", checkScroll)
+    window.addEventListener("resize", handleResize)
 });
 </script>
 
 <template>
-    <div v-if="!isLoading" class="container mb-10">
-        <div class="regular-videos">
-            <div v-for="video in longVideos.slice(0, 3)" :key="video.id" class="video-preview">
+    <div v-if="!isLoading" class="flex flex-row flex-wrap relative top-[85px] gap-x-[25px] gap-y-[18px] mb-10 w-full"
+        :style="{ left: isSideBarCollapsed === true ? '85px' : '230px' }">
+        <div class="regular-videos flex-wrap w-[80%] gap-y-4">
+            <div v-for="video in longVideos.slice(0, 3)" :key="video.id" class="regular-video"
+                :class="[isSideBarCollapsed ? 'w-[33%] max-w-[450px]' : 'w-[29.5%] max-w-[400px]', isVideoDeleted ? 'w-[49%]' : 'w-[29.5%]']">
                 <router-link :to="`/video/${video.unique_id}`">
-                    <div class="video-thumbnail relative z-0">
-                        <img loading="lazy" :src="video.thumbnail_url" alt="">
-                        <input v-if="video.watch_progress" type="range" :value="video.watch_progress" disabled class="z-10 watch-progress-tracking w-[400px]
-                        bg-transparent absolute -bottom-[10px] left-0">
+                    <div class="video-thumbnail w-full h-[225px] mb-[10px] relative z-0">
+                        <img class="w-full h-full" loading="lazy" :src="video.thumbnail_url" alt="">
+                        <input v-if="video.watch_progress" type="range" :value="video.watch_progress" disabled
+                            class="z-10 watch-progress-tracking w-[400px] bg-transparent absolute -bottom-[10px] left-0">
                     </div>
                 </router-link>
                 <div class="video-info">
@@ -129,10 +150,11 @@ onMounted(() => {
             </button>
 
             <div id="shortVideoScrollDiv" class="flex flex-row overflow-hidden gap-x-[30px] scroll-smooth">
-                <div v-for='short in shortVideos' :key="short.id" class=" select-none short-video-preview">
+                <div v-for='short in shortVideos' :key="short.id" class="select-none short-video-preview">
                     <router-link :to="`/short/${short.unique_id}`">
-                        <div class="short-video-thumbnail">
-                            <img loading="lazy" :src="short.thumbnail_url" alt="">
+                        <div class="short-video-thumbnail w-full h-[80%]">
+                            <img style="height: 331px" class="w-full h-full" loading="lazy" :src="short.thumbnail_url"
+                                alt="">
                         </div>
                     </router-link>
                     <router-link :to="`/short/${short.unique_id}`">
@@ -155,24 +177,28 @@ onMounted(() => {
             </button>
         </div>
 
-        <div v-for="video in longVideos.slice(3)" :key="video.id" class="video-preview">
-            <router-link :to="`/video/${video.unique_id}`">
-                <div class="video-thumbnail relative">
-                    <img :src="video.thumbnail_url" alt="">
-                    <input v-if="video.watch_progress" type="range" :value="video.watch_progress" disabled class="z-10 watch-progress-tracking w-[400px]
-                     bg-transparent absolute -bottom-[10px] left-0">
-                </div>
-            </router-link>
-            <div class="video-info">
-                <div class="channel-logo">
-                    <img loading="lazy" :src="video.channel_profile_picture" alt="">
-                </div>
-                <div class="video-title-div">
-                    <router-link :to="`/video/${video.unique_id}`">
-                        <p class="video-title">{{ video.title }}</p>
+        <div v-if="False" class="flex flex-row flex-wrap gap-x-[15px] flex-grow basis-full w-[80%]">
+            <div v-for="video in longVideos.slice(0)" :key="video.id" class="max-w-[400px] w-[29.5%]">
+                <router-link :to="`/video/${video.unique_id}`">
+                    <div class="video-thumbnail w-full h-[225px] mb-[10px] relative z-0">
+                        <img class="w-full h-full" loading="lazy" :src="video.thumbnail_url" alt="">
+                        <input v-if="video.watch_progress" type="range" :value="video.watch_progress" disabled
+                            class="z-10 watch-progress-tracking w-[400px] bg-transparent absolute -bottom-[10px] left-0">
+                    </div>
+                </router-link>
+                <div class="video-info">
+                    <router-link :to="`/channel-page/${video.channel_unique_identifier}`">
+                        <div class="channel-logo">
+                            <img loading="lazy" :src="video.channel_profile_picture" alt="">
+                        </div>
                     </router-link>
-                    <p class="video-channel-name">{{ video.channel_name }}</p>
-                    <p class="video-stats">{{ video.views }} views . {{ video.created_at }}</p>
+                    <div class="video-title-div ml-2">
+                        <router-link :to="`/video/${video.unique_id}`">
+                            <p class="video-title">{{ video.title }}</p>
+                        </router-link>
+                        <p class="video-channel-name">{{ video.channel_name }}</p>
+                        <p class="video-stats">{{ video.views }} views . {{ video.created_at }}</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -230,6 +256,12 @@ onMounted(() => {
     </div>
 </template>
 <style scoped>
+@media screen and (max-width: 740px) {
+    .regular-video {
+        width: 100%;
+    }
+}
+
 .watch-progress-tracking {
     cursor: default;
 }

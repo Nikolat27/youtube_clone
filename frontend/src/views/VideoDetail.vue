@@ -974,7 +974,7 @@ onMounted(async () => {
     </div>
 
     <div class="mt-16">
-        <h1 class="video-title cursor-pointer">{{ videoInfo.title }}</h1>
+        <h1 class="video-title">{{ videoInfo.title }}</h1>
     </div>
 
     <div class="video-detail-info">
