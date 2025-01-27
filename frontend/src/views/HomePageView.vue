@@ -131,7 +131,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <div v-if="!isLoading" class="flex flex-row flex-wrap relative top-[85px] gap-x-[25px] gap-y-[18px] mb-10 w-full"
+    <div v-if="!isLoading" class="flex flex-row flex-wrap relative top-[85px] gap-x-[25px] gap-y-[18px] w-full pb-24"
         :style="{ left: containerLeftPositionStyles }">
         <div class="regular-videos flex-wrap w-[80%] gap-y-4">
             <div v-for="video in longVideos.slice(0, 3)" :key="video.id" class="regular-video"
@@ -159,48 +159,31 @@ onMounted(() => {
                 </div>
             </div>
         </div>
-        <div class="short-videos-div">
-            <img class="youtube-short-icon-videos" src="@/assets/icons/side-bar/youtube-shorts.jpg" alt="">
-            <button @click="handleScrollLeft"
-                :class="[isAtStart ? 'invisible' : '', 'navigate-btn', 'justify-center', 'items-center', 'ml-12']">
-                <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" shape-rendering="geometricPrecision"
-                    text-rendering="geometricPrecision" image-rendering="optimizeQuality" fill-rule="evenodd"
-                    clip-rule="evenodd" viewBox="0 0 267 512.43">
-                    <path fill-rule="nonzero"
-                        d="M263.78 18.9c4.28-4.3 4.3-11.31.04-15.64a10.865 10.865 0 0 0-15.48-.04L3.22 248.38c-4.28 4.3-4.3 11.31-.04 15.64l245.16 245.2c4.28 4.3 11.22 4.28 15.48-.05s4.24-11.33-.04-15.63L26.5 256.22 263.78 18.9z" />
-                </svg>
-            </button>
-
-            <div id="shortVideoScrollDiv" class="flex flex-row overflow-hidden gap-x-[30px] scroll-smooth">
-                <div v-for='short in shortVideos' :key="short.id" class="select-none short-video-preview">
+        <div class="w-full h-[500px] gap-y-6 flex flex-col mt-14">
+            <div class="justify-start items-center w-full">
+                <img class="w-[45px] h-[35px]" src="/src/assets/icons/side-bar/youtube-shorts.jpg" alt="">
+            </div>
+            <div id="shortVideoScrollDiv"
+                class="flex flex-row w-auto max-w-[1415px] overflow-hidden gap-x-[12px] scroll-smooth justify-start items-center">
+                <div v-for='short in shortVideos.slice(0, 5)' :key="short.id"
+                    class="flex flex-col gap-y-4 flex-shrink-0 w-[233px] h-[414px] max-h-[414px]">
                     <router-link :to="`/short/${short.unique_id}`">
-                        <div class="short-video-thumbnail w-full h-[80%]">
-                            <img style="height: 331px" class="w-full h-full" loading="lazy" :src="short.thumbnail_url"
-                                alt="">
+                        <div class="w-full h-full">
+                            <img style="height: 331px; max-height: 331px;" class="w-full h-full rounded-lg object-cover"
+                                loading="lazy" :src="short.thumbnail_url" alt="">
                         </div>
                     </router-link>
-                    <router-link :to="`/short/${short.unique_id}`">
-                        <div class="short-video-title-div">
-                            <p class="short-video-title">{{ short.title }}</p>
-                            <p class="short-video-views">{{ short.views }} view</p>
-                        </div>
-                    </router-link>
+                    <div>
+                        <p class="short-video-title">{{ short.title }}</p>
+                        <p class="short-video-views">{{ short.views ?? 0 }} view</p>
+                    </div>
                 </div>
             </div>
-
-            <button @click="handleScrollRight"
-                :class="[isAtEnd ? 'invisible' : '', 'navigate-btn', 'justify-center', 'items-center', 'mr-10']">
-                <svg class=" w-5 h-5 rotate-180" xmlns="http://www.w3.org/2000/svg" shape-rendering="geometricPrecision"
-                    text-rendering="geometricPrecision" image-rendering="optimizeQuality" fill-rule="evenodd"
-                    clip-rule="evenodd" viewBox="0 0 267 512.43">
-                    <path fill-rule="nonzero"
-                        d="M263.78 18.9c4.28-4.3 4.3-11.31.04-15.64a10.865 10.865 0 0 0-15.48-.04L3.22 248.38c-4.28 4.3-4.3 11.31-.04 15.64l245.16 245.2c4.28 4.3 11.22 4.28 15.48-.05s4.24-11.33-.04-15.63L26.5 256.22 263.78 18.9z" />
-                </svg>
-            </button>
         </div>
 
-        <div v-if="false" class="flex flex-row flex-wrap gap-x-[15px] flex-grow basis-full w-[80%]">
-            <div v-for="video in longVideos.slice(0)" :key="video.id" class="max-w-[400px] w-[29.5%]">
+        <div v-if="true" class="flex flex-row gap-y-4 flex-wrap gap-x-[15px] flex-grow w-[80%]">
+            <div v-for="video in longVideos.slice(3)" :key="video.id" class="regular-video"
+                :class="[isSideBarCollapsed ? 'w-[33%] max-w-[450px]' : 'w-[29.5%] max-w-[400px]', isVideoDeleted ? 'w-[49%]' : 'w-[29.5%]']">
                 <router-link :to="`/video/${video.unique_id}`">
                     <div class="video-thumbnail w-full h-[225px] mb-[10px] relative z-0">
                         <img class="w-full h-full" loading="lazy" :src="video.thumbnail_url" alt="">
@@ -281,6 +264,13 @@ onMounted(() => {
 @media screen and (max-width: 740px) {
     .regular-video {
         width: 100%;
+    }
+}
+
+
+@media screen and (max-width: 550px) {
+    .short-video-preview {
+        max-width: 70%;
     }
 }
 

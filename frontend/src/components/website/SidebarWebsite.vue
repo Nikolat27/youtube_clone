@@ -100,6 +100,7 @@ const retrieveChannelSubscriptions = (user_session_id) => {
     }).catch((error) => console.error(error))
 }
 
+
 const checkSideBar = () => {
     const windowWidth = window.innerWidth
     if (windowWidth > 650) {
@@ -115,6 +116,7 @@ const checkSideBar = () => {
         isSideBarClosed.value = true
     }
 }
+
 
 onMounted(async () => {
     checkSideBar()

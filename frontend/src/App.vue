@@ -24,11 +24,27 @@ const updateWindowHeight = () => {
   windowHeight.value = document.body.offsetHeight + window.innerHeight
 }
 
+
+const checkSideBar = () => {
+  const windowWidth = window.innerWidth
+  if (windowWidth > 650) {
+    sharedState.isWebsiteSideBarCollapsed = false
+    sharedState.isWebsiteSideBarClosed = false
+  } else if (windowWidth >= 553 && windowWidth <= 650) {
+    sharedState.isWebsiteSideBarCollapsed = true
+    sharedState.isWebsiteSideBarClosed = false
+  } else if (windowWidth < 553) {
+    sharedState.isWebsiteSideBarClosed = true
+  }
+}
+
+
 onMounted(() => {
   nextTick(() => {
     updateWindowHeight();
   });
   window.addEventListener("resize", updateWindowHeight)
+  checkSideBar()
 })
 </script>
 
