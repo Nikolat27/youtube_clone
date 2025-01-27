@@ -197,10 +197,9 @@ onMounted(async () => {
 <template>
     <header class="header mx-auto">
         <div class="left-div">
-            <button
+            <button @click="toggleWebsiteSideBar"
                 class="w-[50px] shrink-0 h-[50px] bg-white hover:bg-[#f1f1f1] flex justify-center items-center rounded-full">
-                <img @click="toggleWebsiteSideBar" class="shrink-0" src="@/assets/icons/header/hamburger-menu.svg"
-                    alt="">
+                <img class="shrink-0" src="@/assets/icons/header/hamburger-menu.svg" alt="">
             </button>
             <router-link to="/">
                 <img class="youtube-logo-img min-w-[108px] w-[108px]" src="@/assets/icons/header/youtube-logo.svg"

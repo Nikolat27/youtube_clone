@@ -1,4 +1,7 @@
 <script setup>
+import { ref, onMounted, nextTick } from "vue";
+
+// Components
 import NavbarWebsite from "@/components/website/NavbarWebsite.vue"
 import SidebarWebsite from "@/components/website/SidebarWebsite.vue";
 import NavbarStudio from "./components/studio/NavbarStudio.vue";
@@ -14,6 +17,19 @@ const route = useRoute();
 const isVideoDetailRoute = computed(() => route.name === "video_detail");
 // const isStudioRoute = computed(() => route.name === 'studio');
 const isStudioRoute = computed(() => route.path.startsWith("/studio/"));
+
+
+let windowHeight = ref(null)
+const updateWindowHeight = () => {
+  windowHeight.value = document.body.offsetHeight + window.innerHeight
+}
+
+onMounted(() => {
+  nextTick(() => {
+    updateWindowHeight();
+  });
+  window.addEventListener("resize", updateWindowHeight)
+})
 </script>
 
 
@@ -21,12 +37,17 @@ const isStudioRoute = computed(() => route.path.startsWith("/studio/"));
   <!-- Studio Components-->
   <NavbarStudio v-if="isStudioRoute" />
   <SidebarStudio v-if="isStudioRoute" />
-  <div v-if="!isStudioRoute && sharedState.isSecondWebsiteSideBarOpen" class="bg z-50 absolute top-0 right-0 left-0 button-0 w-full h-full">
-  </div>
+
   <!-- Regular Website Components-->
   <NavbarWebsite v-if="!isStudioRoute" />
   <SidebarWebsite v-if="!isStudioRoute && !isVideoDetailRoute && !sharedState.isSecondWebsiteSideBarOpen" />
   <SecondSideBarWebsite v-if="!isStudioRoute && sharedState.isSecondWebsiteSideBarOpen"></SecondSideBarWebsite>
 
+  <!-- Layer div -->
+  <div @click="sharedState.isSecondWebsiteSideBarOpen = false"
+    v-if="!isStudioRoute && sharedState.isSecondWebsiteSideBarOpen"
+    class="bg-opacity-50 bg-gray-500 z-50 absolute top-0 right-0 left-0 button-0 w-full"
+    :style="{ height: `${windowHeight}px` }">
+  </div>
   <RouterView />
 </template>
