@@ -115,8 +115,6 @@ watch(sharedState.isVideoCreationOpen, () => {
         formData.thumbnailFile = response.data.data.thumbnailFile;
         formData.subtitleFile = response.data.data.subtitleFile;
         formData.visibility = response.data.data.visibility;
-
-        console.log(response.data.data.thumbnailFile)
     }).catch((error) => {
         console.log(error)
     }).finally(() => isLoading.value = false)
@@ -179,8 +177,7 @@ const submitForm = async () => {
     }).finally(() => isLoading.value = false);
 }
 
-onMounted(() => {
-    // Studio page is just for authenticated Users
+const authenticateUser = () => {
     axios.get("http://localhost:8000/users/is_authenticated", {
         params: {
             user_session_id: sessionStorage.getItem("user_session_id")
@@ -188,6 +185,11 @@ onMounted(() => {
     }).then((response) => {
         if (!response.data) router.push({ name: 'auth' });
     })
+}
+
+onMounted(() => {
+    // Studio page is just for authenticated Users
+    authenticateUser()
 })
 </script>
 
