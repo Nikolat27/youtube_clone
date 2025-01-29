@@ -1112,23 +1112,6 @@ a {
     width: 0;
 }
 
-.notification-container {
-    display: flex;
-    position: absolute;
-    flex-direction: column;
-    top: 55px;
-    right: 135px;
-    height: auto;
-    max-height: 450px;
-    scrollbar-width: thin;
-    overflow-y: auto;
-    overflow-x: hidden;
-    border-radius: 16px;
-    z-index: 100;
-    background-color: white;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25), 0 2px 1px rgba(0, 0, 0, 0.01);
-}
-
 .notification-title {
     width: 480px;
     height: 48.8px;

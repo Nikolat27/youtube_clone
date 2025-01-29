@@ -24,20 +24,6 @@ const updateScrollState = (shortContainerDiv) => {
     isAtEnd.value = scrollLeft >= maxScrollWidth;
 };
 
-const handleScrollLeft = () => {
-    const shortContainerDiv = document.getElementById("shortVideoScrollDiv");
-    scrolledAmount.value -= itemWidth;
-    shortContainerDiv.scrollLeft = scrolledAmount.value;
-    updateScrollState(shortContainerDiv);
-};
-
-const handleScrollRight = () => {
-    const shortContainerDiv = document.getElementById("shortVideoScrollDiv");
-    scrolledAmount.value += itemWidth;
-    shortContainerDiv.scrollLeft = scrolledAmount.value;
-    updateScrollState(shortContainerDiv);
-};
-
 
 // Infinite scrolling Management
 const infiniteIsLoading = ref(false)
@@ -119,22 +105,38 @@ const containerLeftPositionStyles = computed(() => {
 })
 
 
+let maxRegularVideoWidth = 400
+let maxShortVideoWidth = 233
+let totalRegularVideos
+let totalShortVideos
+const calculateDivSizes = () => {
+    // This func is for calculating how many videos should i place in each row.
+    const homeContainer = document.querySelector('.home-page-container')
+    let containerInnerWidth = homeContainer.clientWidth
+    totalRegularVideos = Math.floor(containerInnerWidth / maxRegularVideoWidth)
+    totalShortVideos = Math.floor(containerInnerWidth / maxShortVideoWidth)
+    console.log(totalRegularVideos, totalShortVideos)
+}
+
 const isVideoDeleted = ref(false)
 onMounted(() => {
     const shortContainerDiv = document.getElementById("shortVideoScrollDiv");
     updateScrollState(shortContainerDiv);
     retrieveVideos()
     resizeHandle()
+
+    calculateDivSizes()
     document.addEventListener("scroll", checkScroll)
     window.addEventListener("resize", resizeHandle)
 });
 </script>
 
 <template>
-    <div v-if="!isLoading" class="flex flex-row flex-wrap relative top-[85px] gap-x-[25px] gap-y-[18px] w-full pb-24"
+    <div v-if="!isLoading"
+        class="home-page-container flex flex-row flex-wrap relative top-[85px] gap-x-[25px] gap-y-[18px] w-full pb-24"
         :style="{ left: containerLeftPositionStyles }">
         <div class="regular-videos flex-wrap w-[80%] gap-y-4">
-            <div v-for="video in longVideos.slice(0, 3)" :key="video.id" class="regular-video"
+            <div v-for="video in longVideos.slice(0, totalRegularVideos)" :key="video.id" class="regular-video"
                 :class="[isSideBarCollapsed ? 'w-[33%] max-w-[450px]' : 'w-[29.5%] max-w-[400px]', isVideoDeleted ? 'w-[49%]' : 'w-[29.5%]']">
                 <router-link :to="`/video/${video.unique_id}`">
                     <div class="video-thumbnail w-full h-[225px] mb-[10px] relative z-0">
@@ -163,26 +165,29 @@ onMounted(() => {
             <div class="justify-start items-center w-full">
                 <img class="w-[45px] h-[35px]" src="/src/assets/icons/side-bar/youtube-shorts.jpg" alt="">
             </div>
-            <div id="shortVideoScrollDiv"
-                class="flex flex-row w-auto max-w-[1415px] overflow-hidden gap-x-[12px] scroll-smooth justify-start items-center">
-                <div v-for='short in shortVideos.slice(0, 5)' :key="short.id"
-                    class="flex flex-col gap-y-4 flex-shrink-0 w-[233px] h-[414px] max-h-[414px]">
-                    <router-link :to="`/short/${short.unique_id}`">
-                        <div class="w-full h-full">
-                            <img style="height: 331px; max-height: 331px;" class="w-full h-full rounded-lg object-cover"
-                                loading="lazy" :src="short.thumbnail_url" alt="">
+            <div id="shortVideoScrollDiv" class="w-full">
+                <div
+                    class="flex flex-row w-[92%] overflow-hidden gap-x-[12px] scroll-smooth justify-start items-center">
+                    <div v-for='short in shortVideos.slice(0, totalShortVideos)' :key="short.id"
+                        class="flex flex-col gap-y-4 flex-shrink-0 w-[233px] h-[414px] max-h-[414px]">
+                        <router-link :to="`/short/${short.unique_id}`">
+                            <div class="w-full h-full">
+                                <img style="height: 331px; max-height: 331px;"
+                                    class="w-full h-full rounded-lg object-cover" loading="lazy"
+                                    :src="short.thumbnail_url" alt="">
+                            </div>
+                        </router-link>
+                        <div>
+                            <p class="short-video-title">{{ short.title }}</p>
+                            <p class="short-video-views">{{ short.views ?? 0 }} view</p>
                         </div>
-                    </router-link>
-                    <div>
-                        <p class="short-video-title">{{ short.title }}</p>
-                        <p class="short-video-views">{{ short.views ?? 0 }} view</p>
                     </div>
                 </div>
             </div>
         </div>
 
         <div v-if="true" class="flex flex-row gap-y-4 flex-wrap gap-x-[15px] flex-grow w-[80%]">
-            <div v-for="video in longVideos.slice(3)" :key="video.id" class="regular-video"
+            <div v-for="video in longVideos.slice(totalRegularVideos)" :key="video.id" class="regular-video"
                 :class="[isSideBarCollapsed ? 'w-[33%] max-w-[450px]' : 'w-[29.5%] max-w-[400px]', isVideoDeleted ? 'w-[49%]' : 'w-[29.5%]']">
                 <router-link :to="`/video/${video.unique_id}`">
                     <div class="video-thumbnail w-full h-[225px] mb-[10px] relative z-0">
@@ -208,10 +213,10 @@ onMounted(() => {
             </div>
         </div>
 
-        <!-- <div v-if="infiniteIsLoading" class="w-full flex justify-center items-center mr-[300px] my-16">
+        <div v-if="infiniteIsLoading" class="w-full flex justify-center items-center md:mr-[300px] my-16">
             <ClipLoader size="45px" color="red"></ClipLoader>
-        </div> -->
-        <div v-if="infiniteIsLoading" class="skeleton-loaders flex flex-row">
+        </div>
+        <!-- <div v-if="infiniteIsLoading" class="skeleton-loaders flex flex-row">
             <div>
                 <div class="video-preview">
                     <div class="video-thumbnail bg-gray-300 opacity-70 rounded-lg">
@@ -254,7 +259,7 @@ onMounted(() => {
                     </div>
                 </div>
             </div>
-        </div>
+        </div> -->
     </div>
     <div v-else class="w-full h-[100vh] flex justify-center items-center">
         <PulseLoader color="red" size="20px"></PulseLoader>
@@ -266,7 +271,6 @@ onMounted(() => {
         width: 100%;
     }
 }
-
 
 @media screen and (max-width: 550px) {
     .short-video-preview {

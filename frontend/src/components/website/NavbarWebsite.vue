@@ -111,6 +111,7 @@ const autoCompletes = reactive([])
 const isSearchLoading = ref(false)
 let shouldWatch = true;
 
+
 watch(() => searchBarText.value, () => {
     if (searchBarText.value.length < 3) return;
     if (!shouldWatch) return;
@@ -147,6 +148,7 @@ const searchVideo = (query) => {
 const channelId = ref(null)
 const userId = ref(null)
 const userProfileImgSrc = ref(null)
+
 
 const retrieveUserProfileImg = async (user_session_id) => {
     await axios.get("http://127.0.0.1:8000/users/profile-picture", {
@@ -244,7 +246,7 @@ onMounted(async () => {
                     <span class="icon-button--badge">{{ unreadNotifications ?? 0 }}</span>
                 </button>
                 <div @vue:mounted="markVisibleNotificationsAsRead" v-if="isNotificationContainerExpanded"
-                    class="notification-container">
+                    class="notification-container custom-shadow-inset max-w-[480px]">
                     <div class="notification-title flex w-full items-center flex-row">
                         <p class="mb-1">Notifications</p>
                         <span v-if="notifications.length >= 1" @click="deleteAllNotifications"
@@ -322,7 +324,47 @@ onMounted(async () => {
 }
 
 
+@media screen and (min-width: 646px) {
+    .notification-container {
+        display: flex;
+        position: absolute;
+        flex-direction: column;
+        top: 55px;
+        right: 135px;
+        height: auto;
+        max-height: 450px;
+        scrollbar-width: thin;
+        overflow-y: auto;
+        overflow-x: hidden;
+        border-radius: 16px;
+        z-index: 100;
+        background-color: white;
+    }
+}
+
+
+@media screen and (max-width: 645px) {
+    .notification-container {
+        display: flex;
+        position: fixed;
+        flex-direction: column;
+        top: 55px;
+        left: 0;
+        height: auto;
+        max-width: 100%;
+        max-height: 450px;
+        scrollbar-width: thin;
+        overflow-y: auto;
+        overflow-x: hidden;
+        border-radius: 16px;
+        z-index: 100;
+        background-color: white;
+    }
+}
+
+
+
 .custom-shadow-inset {
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
 }
 </style>
