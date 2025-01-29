@@ -80,8 +80,6 @@ body {
 
 .search-bar {
     outline: none;
-    width: 60%;
-    height: 40px;
     border-radius: 20px 0 0 20px;
     border: 0.5px solid gray;
     border-right: 0.2px solid lightgray;
@@ -124,26 +122,12 @@ body {
     position: relative;
 }
 
-.right-div div button {
-    margin: 0 auto;
-    width: 36px;
-    min-width: 36px;
-    height: 36px;
-    min-height: 36px;
-    border-radius: 50%;
-    margin-right: 10px;
-}
-
 .channel-profile-btn {
     margin-left: 10px;
     border-radius: 50%;
     background-color: white;
     cursor: pointer;
     border: none;
-}
-
-.right-div-buttons {
-    display: flex;
 }
 
 .upload-video-btn,

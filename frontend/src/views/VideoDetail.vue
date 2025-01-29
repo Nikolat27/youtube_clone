@@ -16,6 +16,7 @@ import offSubtitleIcon from '/src/assets/icons/video-player/subtitle-off-icon.pn
 import fullSpeakerIcon from '/src/assets/icons/video-player/full-speaker-icon.png'
 import halfSpeakerIcon from '/src/assets/icons/video-player/half-speaker-icon.png'
 import muteSpeakerIcon from '/src/assets/icons/video-player/mute-speaker-icon.png'
+import videoReplayIcon from '/src/assets/icons/svg-icons/replay-video-icon.svg'
 
 import emptyLikeIcon from '/src/assets/icons/svg-icons/like-empty.svg'
 import fillLikeIcon from '/src/assets/icons/svg-icons/like-fill.svg'
@@ -198,11 +199,12 @@ const startAdCountdown = () => {
 const stopAdCountdown = () => {
     clearInterval(durationInternal); // Stopping the Countdown
 }
-2
+
 
 // Handling Main video
 const isVideoPlayed = ref(false);
 const toggleVideoPlay = () => {
+    console.log("helloworld")
     const video = videoRef.value;
     isVideoPlayed.value = !isVideoPlayed.value;
     if (isVideoPlayed.value) {
@@ -698,6 +700,7 @@ const addWatchHistory = (videoId, user_session_id) => {
     })
 }
 
+
 watch(() => route.params.id, () => {
     MountPage()
 })
@@ -765,6 +768,7 @@ const checkVideoSavedInPlaylist = () => {
 }
 
 
+const isMainVideoEnded = ref(false)
 onMounted(async () => {
     // This 'timeupdate' invokes whenever timeCurrent of the video changes
     await MountPage()
@@ -772,10 +776,12 @@ onMounted(async () => {
     videoRef.value.addEventListener('timeupdate', updateProgress);
     videoRef.value.addEventListener('ended', async () => {
         skipAd()
+        if (!isAdPlaying.value) {
+            isMainVideoEnded.value = true // To show the Replay button
+        }
     });
     videoRef.value.addEventListener('pause', () => {
         if (isAdPlaying.value) return;
-
         let endTime = Date.now()
         let calculateWatchTime = (endTime - startTime) / 1000
         totalWatchedTime += calculateWatchTime
@@ -788,6 +794,7 @@ onMounted(async () => {
         })
     });
     videoRef.value.addEventListener('play', () => {
+        isMainVideoEnded.value = false
         if (isAdPlaying.value) {
             axios.get(`http://127.0.0.1:8000/videos/ads/start/${videoInfo.ad_unique_id}`, {
                 params: {
@@ -824,13 +831,13 @@ onMounted(async () => {
 
 <template>
     <div v-if="!youtubeVideoLink" @mouseover="handleControlBar('open')" @mouseleave="handleControlBar('close')"
-        class="video-container top-14 left-12 relative overflow-hidden w-[920px] h-[480px] flex justify-center items-center rounded-2xl">
+        class="video-container top-14 left-12 relative overflow-hidden w-[68%] max-w-[68%] h-[65%] max-h-[65%] flex justify-center items-center rounded-2xl">
         <video ref="videoRef" :poster="videoInfo.thumbnail_url" :muted="videoMuted" volume="0.5"
             class="main-video cursor-pointer w-full h-full object-fill overflow-hidden">
-            <source v-if="videoInfo.has_ad"
+            <source v-if="videoInfo.has_ad" class="w-full h-full"
                 :src="`http://127.0.0.1:8000/videos/stream/${videoInfo.ad_unique_id}?is_ad=true&random_uuid=${videoInfo.random_uuid}`"
                 type="video/mp4" />
-            <source v-else
+            <source v-else class="w-full h-full"
                 :src="`http://127.0.0.1:8000/videos/stream/${$route.params.id}?is_ad=false&random_uuid=${videoInfo.random_uuid}`"
                 type="video/mp4" />
         </video>
@@ -857,9 +864,9 @@ onMounted(async () => {
                 </router-link>
             </div>
         </div>
-        <div class="bg-transparent z-50 control-bar flex opacity-0 w-full h-[48px] max-h-[48px] absolute bottom-0 justify-center
+        <div class="control-bar bg-transparent z-50 flex opacity-0 w-full h-[48px] max-h-[48px] absolute bottom-0 justify-center
             items-center flex-row bg-gray-200 bg-opacity-80">
-            <div class="video-progress-bar w-[906px] h-[8px] absolute bottom-14">
+            <div class="video-progress-bar w-[98%] h-[8px] absolute bottom-14">
                 <div class="video-img-tracker z-10 overflow-hidden w-[225px] h-[130px] rounded-lg border-[3px] border-white
                     absolute bottom-12" :style="{ left: `${position}px`, display: `${canvasDisplay}`, }">
                     <img class="w-full h-full" id="video-frame-img" loading="lazy" alt="">
@@ -873,10 +880,15 @@ onMounted(async () => {
                     min="0" max="100" :value="videoProgress" id="progress-bar" class="h-full w-full" type="range"
                     @input="seekVideo" :style="rangeInputStyle">
             </div>
-            <div class="w-[618px] h-full left-controls flex flex-row justify-start
-                items-center gap-x-6 pl-2">
+            <div class="w-[77%] h-full left-controls flex flex-row justify-start
+                items-center gap-x-6 pl-3">
                 <button @click="toggleVideoPlay">
-                    <img class="play-video-button" style="width: 20px; height: 20px;"
+                    <svg v-if="isMainVideoEnded" viewBox="0 0 16 20" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M8 4V0L3 5l5 5V6c3.3 0 6 2.7 6 6s-2.7 6-6 6-6-2.7-6-6H0c0 4.4 3.6 8 8 8s8-3.6 8-8-3.6-8-8-8Z"
+                            fill="#ffffff" fill-rule="evenodd" class="fill-000000"></path>
+                    </svg>
+                    <img v-else class="play-video-button" style="width: 20px; height: 20px;"
                         :src="isVideoPlayed ? pauseIcon : playIcon" alt="">
                 </button>
                 <button>
@@ -893,8 +905,8 @@ onMounted(async () => {
                     <span class="end-video-time">{{ videoDuration }}</span>
                 </p>
             </div>
-            <div class="w-[288px] h-full right-controls flex flex-row justify-end
-                items-center gap-x-4 pr-2">
+            <div class="w-[23%] h-full right-controls flex flex-row justify-end
+                items-center gap-x-4 pr-3">
                 <button>
                     <img @click="toggleSubtitle" style="width: 30px; height: 30px;" :src="subtitleIconSrc" alt="">
                 </button>
@@ -902,7 +914,7 @@ onMounted(async () => {
                     <img src="@/assets/icons/video-player/settings-icon.png" alt="">
                 </button>
                 <div v-if="!isPlaybackSpeedDivOpen && isVideoOptionsOpen" class="video-options select-none video-settings flex flex-col text-white items-start justify-center w-[250px] h-auto pb-4 pt-4
-                 rounded-xl text-sm font-medium absolute bottom-16 right-2 bg-[#22191d] bg-opacity-80">
+                 rounded-xl text-sm font-medium absolute bottom-16 right-2 overflow-y-auto bg-[#22191d] bg-opacity-80">
                     <div class="flex flex-row justify-start items-center w-full h-[35px]
                      gap-x-3 pl-2 hover:bg-[#383838]">
                         <img class="w-[26px] h-[26px]" src="@/assets/icons/video-player/double-qoutes-icon.png" alt="">
@@ -967,7 +979,7 @@ onMounted(async () => {
             </div>
         </div>
     </div>
-    <div v-else class="video-container top-14 left-12 relative overflow-hidden w-[920px] h-[480px] flex
+    <div v-else class="video-container top-14 left-12 relative overflow-hidden w-[70%] h-[65%] max-h-[65%] flex
         justify-center items-center rounded-2xl mb-20">
         <iframe class="w-full h-full" :src="youtubeVideoLink">
         </iframe>
