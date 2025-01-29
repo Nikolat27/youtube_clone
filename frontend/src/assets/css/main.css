@@ -578,10 +578,6 @@ a {
     background-color: #e5e5e5;
 }
 
-.comments-header {
-    margin-left: 48px;
-}
-
 .comments-stats {
     font-size: 16px;
     font-family: Roboto, Arial;
@@ -600,7 +596,6 @@ a {
 }
 
 .comment-creation input {
-    width: 300px;
     border-top: none;
     border-right: none;
     border-left: none;
@@ -641,14 +636,11 @@ a {
     background-color: #e5e5e5;
 }
 
-
 .comment-container {
     display: flex;
     flex-direction: column;
     margin-top: 30px;
-    margin-left: 48px;
 }
-
 
 .author-thumbnail {
     width: 40px;
@@ -967,7 +959,7 @@ a {
     display: flex;
     flex-direction: column;
     column-gap: 10px;
-    max-width: 410px;
+    width: 100%;
     max-height: 402px;
     border: solid #E5E5E5;
     border-width: 1px 0 1px 0;
