@@ -855,7 +855,8 @@ onMounted(async () => {
                         type="video/mp4" />
                 </video>
                 <button v-if="isAdPlaying" :disabled="!adFinished" @click="skipAd"
-                    :style="{ backgroundColor: adFinished ? 'black' : 'gray' }" class="skip-ad-btn text-[14px] gap-x-1 font-normal text-white cursor-pointer absolute bottom-36
+                    :style="{ backgroundColor: adFinished ? 'black' : 'gray', cursor: adFinished ? 'pointer' : 'default' }"
+                    class="skip-ad-btn text-[14px] gap-x-1 font-normal text-white cursor-pointer absolute sm:bottom-14 lg:bottom-36
                     right-6 w-20 h-8 rounded-2xl flex justify-center items-center p-2">
                     Skip <span v-if="!adFinished" class="remaining-time">{{ adSkipDuration }}</span>
                     <img style="width: 15px; height: 15px;" src="\src\assets\icons\video-player\arrow-icon.png"

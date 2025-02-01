@@ -146,7 +146,7 @@ watch(() => searchBarText.value, () => {
 const router = useRouter()
 const searchVideo = (query) => {
     if (query.length <= 2) {
-        toast.warning("You have to enter at least one word")
+        toast.warning("You must input at least one word.")
         return
     };
 
@@ -196,6 +196,18 @@ const deleteAllNotifications = () => {
 }
 
 
+const isSmallSearchBarOpen = ref(false)
+const toggleNavSmallSearchBar = () => {
+    isSmallSearchBarOpen.value = !isSmallSearchBarOpen.value
+}
+
+const handleKeyUp = (event) => {
+    if (event.key === "Enter" && searchBarText.value) {
+        searchVideo(searchBarText.value)
+    }
+}
+
+
 onMounted(async () => {
     const user_session_id = sessionStorage.getItem("user_session_id")
     if (user_session_id) {
@@ -205,23 +217,25 @@ onMounted(async () => {
             retrieveNotifications()
         }
     }
+
+    window.addEventListener("keyup", handleKeyUp)
 })
 </script>
 
 <template>
-    <header class="header mx-auto font-roboto">
+    <header v-if="!isSmallSearchBarOpen" class="header mx-auto font-roboto">
         <div class="left-div">
             <button @click="toggleWebsiteSideBar"
                 class="w-[50px] shrink-0 h-[50px] bg-white hover:bg-[#f1f1f1] flex justify-center items-center rounded-full">
                 <img class="shrink-0" src="@/assets/icons/header/hamburger-menu.svg" alt="">
             </button>
             <router-link to="/">
-                <img class="youtube-logo-img min-w-[108px] w-[108px]" src="@/assets/icons/header/youtube-logo.svg"
+                <img class="youtube-logo-img min-w-[108px] w-[108px] z-10" src="@/assets/icons/header/youtube-logo.svg"
                     alt="">
             </router-link>
         </div>
         <div class="center-div bg-transparent flex flex-col w-[60%] h-full justify-center items-center relative top-1">
-            <div class="search-div">
+            <div class="search-div h-[56px] items-center">
                 <div class="w-[60%] h-[40px] flex flex-row relative">
                     <input v-model="searchBarText" autocomplete="off" type="text" class="search-bar w-full h-full"
                         placeholder="Search">
@@ -255,7 +269,7 @@ onMounted(async () => {
                 </div>
             </div>
         </div>
-        <div class="right-div">
+        <div class="right-div items-center md:pr-10" style="justify-content: end;">
             <div class="flex flex-row gap-x-4 items-center">
                 <router-link to="/studio/">
                     <button class="flex flex-row justify-center items-center px-2 ml-4 rounded-3xl bg-[#f2f2f2]
@@ -264,6 +278,16 @@ onMounted(async () => {
                         <span class="text-[14px] font-medium ml-2">Create</span>
                     </button>
                 </router-link>
+                <button @click="toggleNavSmallSearchBar"
+                    class="search-btn-1 hidden justify-center items-center w-8 h-8 rounded-full hover:bg-[#f3f3f3]">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" height="24" viewBox="0 0 24 24"
+                        width="24" focusable="false" aria-hidden="true"
+                        style="pointer-events: none; display: inherit; width: 24px; height: 24px;">
+                        <path clip-rule="evenodd"
+                            d="M16.296 16.996a8 8 0 11.707-.708l3.909 3.91-.707.707-3.909-3.909zM18 11a7 7 0 00-14 0 7 7 0 1014 0z"
+                            fill-rule="evenodd"></path>
+                    </svg>
+                </button>
                 <button @click="toggleNotificationContainer"
                     class="mx-auto w-9 min-w-[40px] h-9 min-h-[40px] rounded-full mr-2 relative hover:bg-[#e5e5e5] flex justify-center items-center">
                     <div class="w-[24px] h-[24px] flex justify-center items-center">
@@ -349,14 +373,61 @@ onMounted(async () => {
             </router-link>
         </div>
     </header>
+    <header v-else class="header mx-auto font-roboto">
+        <div class="bg-transparent flex flex-col w-[100%] h-full justify-center items-center relative top-1">
+            <div class="search-div px-2 gap-x-2" style="justify-content: end;">
+                <button @click="toggleNavSmallSearchBar" class="min-w-10 w-10 h-10 min-h-10 hover:bg-[#f3f3f3] rounded-full
+                 flex justify-center items-center search-btn-2" style="background-color: white; border: none;">
+                    <svg mirror-in-rtl="" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" focusable="false"
+                        aria-hidden="true" style="pointer-events: none; display: inherit; width: 24px; height: 24px;">
+                        <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"></path>
+                    </svg>
+                </button>
+                <div class="w-[90%] h-[40px] flex flex-row relative">
+                    <input v-model="searchBarText" autocomplete="off" type="text" class="search-bar w-full h-full"
+                        placeholder="Search">
+                    <button @click="searchVideo(searchBarText)" class="search-btn active:border-black active:border-2">
+                        <div class="w-[24px] h-[24px] flex justify-center items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" height="24" viewBox="0 0 24 24"
+                                width="24" focusable="false" aria-hidden="true"
+                                style="pointer-events: none; display: inherit; width: 100%; height: 100%;">
+                                <path clip-rule="evenodd"
+                                    d="M16.296 16.996a8 8 0 11.707-.708l3.909 3.91-.707.707-3.909-3.909zM18 11a7 7 0 00-14 0 7 7 0 1014 0z"
+                                    fill-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                    </button>
+                    <div v-if="searchBarText.length >= 3 && isAutoCompleteOpen"
+                        class="autocomplete-bar absolute top-10 w-[90%] h-[540px] bg-white z-40 rounded-xl custom-shadow-inset">
+                        <div v-if="!isSearchLoading"
+                            class="flex flex-col justify-center items-center gap-y-1 py-4 h-full">
+                            <div @click="searchVideo(text)" v-for="(text, index) in autoCompletes" :key="index" class="w-full h-[36px] px-2 flex flex-row justify-start items-center
+                            hover:bg-[#f2f2f2]">
+                                <img class="w-[20px] h-[20px] mr-2" src="@/assets/icons/header/search.svg" alt="">
+                                <p>{{ text }}</p>
+                                <span
+                                    class="text-[13px] font-medium text-blue-600 justify-self-end ml-auto mr-2 cursor-pointer">Remove</span>
+                            </div>
+                        </div>
+                        <div v-if="isSearchLoading" class="flex h-full w-full justify-center items-center">
+                            <ClipLoader color="red" size="45px"></ClipLoader>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
 </template>
 <style scoped>
 @media screen and (max-width: 804px) {
     .center-div {
         display: none;
     }
-}
 
+    .search-btn-1 {
+        display: flex;
+    }
+}
 
 @media screen and (min-width: 646px) {
     .notification-container {
@@ -375,7 +446,6 @@ onMounted(async () => {
         background-color: white;
     }
 }
-
 
 @media screen and (max-width: 645px) {
     .notification-container {
@@ -396,9 +466,11 @@ onMounted(async () => {
     }
 }
 
-
-
 .custom-shadow-inset {
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+}
+
+.search-btn-2:hover {
+    background-color: #f3f3f3 !important;
 }
 </style>
