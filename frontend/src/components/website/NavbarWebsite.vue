@@ -3,6 +3,7 @@ import { ref, reactive, onMounted, watch } from 'vue';
 import { useToast } from 'vue-toastification';
 import { useRouter } from 'vue-router';
 import { sharedState } from '@/sharedState';
+import { useRoute } from 'vue-router';
 
 import axios from 'axios';
 import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
@@ -13,8 +14,18 @@ import plusIcon from '/src/assets/icons/svg-icons/plus-icon.svg'
 import kebabMenuIcon from '/src/assets/icons/svg-icons/kebab-menu.svg'
 import unAuthenticatedUserImg from '/src/assets/img/unauthenticated_user_img.png'
 
+const route = useRoute()
+const routeName = ref(null)
+watch(route, () => {
+    routeName.value = route.name
+})
 
 const toggleWebsiteSideBar = () => {
+    if (routeName.value === 'video_detail') {
+        sharedState.isSecondWebsiteSideBarOpen = !sharedState.isSecondWebsiteSideBarOpen
+        return;
+    }
+
     if (!sharedState.isWebsiteSideBarClosed) {
         sharedState.isWebsiteSideBarCollapsed = !sharedState.isWebsiteSideBarCollapsed
     } else {
@@ -151,8 +162,6 @@ const searchVideo = (query) => {
 const channelId = ref(null)
 const userId = ref(null)
 const userProfileImgSrc = ref(null)
-
-
 const retrieveUserProfileImg = async (user_session_id) => {
     await axios.get("http://127.0.0.1:8000/users/profile-picture", {
         params: {

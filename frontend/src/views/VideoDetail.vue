@@ -1,6 +1,5 @@
 <script setup>
-
-import { ref, computed, onMounted, reactive, watch, watchEffect, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, reactive, watch, watchEffect } from 'vue';
 import { sharedState } from '@/sharedState';
 import { useRoute, useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
@@ -29,6 +28,7 @@ import replyIcon from '/src/assets/icons/svg-icons/reply-icon.svg'
 import fillBellSrc from '/src/assets/icons/svg-icons/notification-alert-icon.svg'
 import emptyBellSrc from '/src/assets/icons/svg-icons/bell-line-icon.svg'
 import closeIconSrc from '/src/assets/icons/svg-icons/close-icon2.svg'
+import { comment } from 'postcss';
 
 const route = useRoute()
 const router2 = useRouter()
@@ -158,7 +158,7 @@ const playListExpandingToggle = () => {
 
 // Styles for related-video div
 const relatedVideosStyle = computed(() => ({
-    top: !route.query.playlist_id ? '56px' : (playlistExpanded.value ? '575px' : '130px'), // Collapsing and Uncollapsing the playlist (Expanding also)
+    top: !route.query.playlist_id ? '0px' : (playlistExpanded.value ? '515px' : '80px'), // Expanding and Unexpanding the playlist (Expanding also)
     transition: 'top 0.1s ease-in-out'
 }));
 
@@ -530,6 +530,8 @@ const subscribeChannel = (channelId) => {
 
 
 const youtubeVideoLink = ref(null)
+
+
 const retrieveVideoDetail = async (videoId, user_session_id) => {
     await axios.get(`http://127.0.0.1:8000/videos/detail/${videoId}`, {
         params: {
@@ -540,7 +542,6 @@ const retrieveVideoDetail = async (videoId, user_session_id) => {
         if (response.status == 200) {
             Object.assign(videoInfo, response.data.data)
             videoDuration.value = calculateTime(videoInfo.duration)
-            console.log("UUID: ", videoInfo.random_uuid)
         } else {
             youtubeVideoLink.value = response.data.data
         }
@@ -639,7 +640,6 @@ const retrievePlaylist = (playlistId, filter) => {
     })
 }
 
-
 const isSaveDivOpen = ref(false)
 const toggleSaveDiv = () => isSaveDivOpen.value = !isSaveDivOpen.value
 
@@ -681,6 +681,7 @@ const shufflePlaylistVideo = (playlistId) => {
 // This function is used for getting the current video index in playlist and the next video title
 const currentVideoIndex = ref(null)
 const nextVideoTitle = ref(null)
+
 const retrievePlaylistVideoInfo = (videoId, playlistId) => {
     axios.get(`http://127.0.0.1:8000/playlist/video-info/${playlistId}/${videoId}`).then((response) => {
         if (response.status == 200) {
@@ -704,12 +705,10 @@ watch(() => route.params.id, () => {
     MountPage()
 })
 
-
 const MountPage = async () => {
     const user_session_id = sessionStorage.getItem("user_session_id")
     const videoId = route.params.id // Current Video Id
     await retrieveVideoDetail(videoId, user_session_id)
-
     const playlistId = route.query.playlist_id
     if (playlistId) {
         retrievePlaylist(playlistId, 'all')
@@ -731,7 +730,8 @@ const MountPage = async () => {
 
 // Dynamic color styles for 'range input field' for the main video time tracker input
 const rangeInputStyle = computed(() => ({
-    '--track-color': isAdPlaying.value ? 'yellow' : 'red'
+    '--track-color': isAdPlaying.value ? 'yellow' : 'red',
+    "cursor": isAdPlaying.value ? 'default' : 'pointer',
 }));
 
 
@@ -766,11 +766,32 @@ const checkVideoSavedInPlaylist = () => {
     }).catch((error) => console.error(error))
 }
 
+const handleWindowResize = () => {
+    const windowWidth = window.innerWidth
+    const commentContainer = document.querySelector('.comment-container')
+    if (windowWidth <= 1080) {
+        const bottomContainerHeight = document.querySelector('.related-videos').offsetHeight;
+        commentContainer.style.marginTop = `${bottomContainerHeight}px` // For Responsivity
+    } else {
+        commentContainer.style.marginTop = '0px'
+    }
+}
+
 
 const isMainVideoEnded = ref(false)
 onMounted(async () => {
     // This 'timeupdate' invokes whenever timeCurrent of the video changes
     await MountPage()
+    watchEffect(() => {
+        if (videoRef.value) {
+            if (videoInfo.has_ad && !adFinished.value && videoInfo.random_uuid) {
+                isAdPlaying.value = true;
+                videoRef.value.src = `http://127.0.0.1:8000/videos/stream/${videoInfo.ad_unique_id}?is_ad=true&random_uuid=${videoInfo.random_uuid}`;
+            } else {
+                videoRef.value.src = `http://127.0.0.1:8000/videos/stream/${route.params.id}?is_ad=false&random_uuid=${videoInfo.random_uuid}`;
+            }
+        }
+    });
 
     videoRef.value.addEventListener('timeupdate', updateProgress);
     videoRef.value.addEventListener('ended', async () => {
@@ -813,22 +834,15 @@ onMounted(async () => {
         videoHasAd.value = true
     }
 
-    // Update the video source logic
-    watchEffect(() => {
-        if (videoRef.value) {
-            if (videoInfo.has_ad && !adFinished.value && videoInfo.random_uuid) {
-                isAdPlaying.value = true;
-                videoRef.value.src = `http://127.0.0.1:8000/videos/stream/${videoInfo.ad_unique_id}?is_ad=true&random_uuid=${videoInfo.random_uuid}`;
-            } else {
-                videoRef.value.src = `http://127.0.0.1:8000/videos/stream/${route.params.id}?is_ad=false&random_uuid=${videoInfo.random_uuid}`;
-            }
-        }
-    });
+    window.addEventListener("resize", () => {
+        handleWindowResize()
+    })
 });
 </script>
+
 <template>
-    <div class="flex flex-row gap-x-[12px] w-full h-full relative mt-4">
-        <div class="left-side-container relative top-14 left-12 flex flex-col w-[70.5%] h-full">
+    <div class="main-container flex flex-row w-full h-full relative top-14 left-12 mt-4">
+        <div class="left-side-container relative flex flex-col w-[70.5%] h-full">
             <div v-if="!youtubeVideoLink" @mouseover="handleControlBar('open')" @mouseleave="handleControlBar('close')"
                 class="video-container relative overflow-hidden w-full max-w-full h-[65%] max-h-[65%] flex justify-center items-center rounded-2xl">
                 <video ref="videoRef" :poster="videoInfo.thumbnail_url" :muted="videoMuted" volume="0.5"
@@ -866,10 +880,10 @@ onMounted(async () => {
                     </div>
                 </div>
                 <div class="control-bar bg-transparent z-50 flex opacity-0 w-full h-[48px] max-h-[48px] absolute bottom-0 justify-center
-            items-center flex-row bg-gray-200 bg-opacity-80">
+                    items-center flex-row bg-gray-200 bg-opacity-80">
                     <div class="video-progress-bar w-[98%] h-[8px] absolute bottom-14">
                         <div class="video-img-tracker z-10 overflow-hidden w-[225px] h-[130px] rounded-lg border-[3px] border-white
-                    absolute bottom-12" :style="{ left: `${position}px`, display: `${canvasDisplay}`, }">
+                        absolute bottom-12" :style="{ left: `${position}px`, display: `${canvasDisplay}`, }">
                             <img class="w-full h-full" id="video-frame-img" loading="lazy" alt="">
                         </div>
                         <p class="text-[13px] text-white absolute bottom-4 font-medium"
@@ -1100,8 +1114,8 @@ onMounted(async () => {
             </div>
             <socialShare></socialShare>
 
-            <div class="bottom-side-container hidden relative w-full">
-                <div v-if="$route.query.playlist_id" class="absolute top-6 w-full h-[66px] bg-[#e4dfec] hover:bg-[#d1c2e9] flex flex-col justify-center
+            <div class="bottom-side-container mt-6 hidden flex-col relative w-full h-auto">
+                <div v-if="$route.query.playlist_id" class="w-full h-[66px] bg-[#e4dfec] hover:bg-[#d1c2e9] flex flex-col justify-center
                     rounded-xl pl-3 transition-all duration-300 ease-in-out">
                     <div v-if="currentVideoIndex + 1 < playlistInfo.total_videos"
                         class="flex flex-row items-center text-base">
@@ -1120,7 +1134,7 @@ onMounted(async () => {
                         <img class="w-3 h-3" src="@/assets/icons/svg-icons/thin-chevron-arrow-bottom-icon.svg" alt="">
                     </button>
                 </div>
-                <div v-if="playlistExpanded" class="absolute top-6 bg-white z-20 flex flex-col w-full h-[500px] border-[#ededed] border-[1px]
+                <div v-if="playlistExpanded" class="absolute top-26 bg-white z-20 flex flex-col w-full h-[500px] border-[#ededed] border-[1px]
                     mb-10 rounded-xl transition-all duration-300 ease-in-out">
                     <div class="pl-3 pt-2">
                         <p class="font-bold text-xl pt-2 mb-2">{{ playlistInfo.title }}</p>
@@ -1171,7 +1185,6 @@ onMounted(async () => {
                         </div>
                     </div>
                 </div>
-
                 <div class="related-videos flex flex-col absolute w-full" :style="relatedVideosStyle">
                     <div class="related-video">
                         <div class="related-video-thumbnail">
@@ -1204,86 +1217,6 @@ onMounted(async () => {
                                     <p class="video-info"><span>5M</span> Views</p>
                                 </div>
                             </div>
-                            <div class="related-short-video">
-                                <div class="related-short-video-thumbnail">
-                                    <img src="@/assets/img/Django.png" alt="">
-                                </div>
-                                <div class="related-short-video-title">
-                                    <p class="video-title" style="margin-bottom: 3px;"><a href="">Django tutorial</a>
-                                    </p>
-                                    <p class="video-info"><span>5M</span> Views</p>
-                                </div>
-                            </div>
-                            <div class="related-short-video">
-                                <div class="related-short-video-thumbnail">
-                                    <img src="@/assets/img/Django.png" alt="">
-                                </div>
-                                <div class="related-short-video-title">
-                                    <p class="video-title" style="margin-bottom: 3px;"><a href="">Django tutorial</a>
-                                    </p>
-                                    <p class="video-info"><span>5M</span> Views</p>
-                                </div>
-                            </div>
-                            <div class="related-short-video">
-                                <div class="related-short-video-thumbnail">
-                                    <img src="@/assets/img/Django.png" alt="">
-                                </div>
-                                <div class="related-short-video-title">
-                                    <p class="video-title" style="margin-bottom: 3px;"><a href="">Django tutorial</a>
-                                    </p>
-                                    <p class="video-info"><span>5M</span> Views</p>
-                                </div>
-                            </div>
-                            <div class="related-short-video">
-                                <div class="related-short-video-thumbnail">
-                                    <img src="@/assets/img/Django.png" alt="">
-                                </div>
-                                <div class="related-short-video-title">
-                                    <p class="video-title" style="margin-bottom: 3px;"><a href="">Django tutorial</a>
-                                    </p>
-                                    <p class="video-info"><span>5M</span> Views</p>
-                                </div>
-                            </div>
-                            <div class="related-short-video">
-                                <div class="related-short-video-thumbnail">
-                                    <img src="@/assets/img/Django.png" alt="">
-                                </div>
-                                <div class="related-short-video-title">
-                                    <p class="video-title" style="margin-bottom: 3px;"><a href="">Django tutorial</a>
-                                    </p>
-                                    <p class="video-info"><span>5M</span> Views</p>
-                                </div>
-                            </div>
-                            <div class="related-short-video">
-                                <div class="related-short-video-thumbnail">
-                                    <img src="@/assets/img/Django.png" alt="">
-                                </div>
-                                <div class="related-short-video-title">
-                                    <p class="video-title" style="margin-bottom: 3px;"><a href="">Django tutorial</a>
-                                    </p>
-                                    <p class="video-info"><span>5M</span> Views</p>
-                                </div>
-                            </div>
-                            <div class="related-short-video">
-                                <div class="related-short-video-thumbnail">
-                                    <img src="@/assets/img/Django.png" alt="">
-                                </div>
-                                <div class="related-short-video-title">
-                                    <p class="video-title" style="margin-bottom: 3px;"><a href="">Django tutorial</a>
-                                    </p>
-                                    <p class="video-info"><span>5M</span> Views</p>
-                                </div>
-                            </div>
-                            <div class="related-short-video">
-                                <div class="related-short-video-thumbnail">
-                                    <img src="@/assets/img/Django.png" alt="">
-                                </div>
-                                <div class="related-short-video-title">
-                                    <p class="video-title" style="margin-bottom: 3px;"><a href="">Django tutorial</a>
-                                    </p>
-                                    <p class="video-info"><span>5M</span> Views</p>
-                                </div>
-                            </div>
                         </div>
                         <button class="prev" @click="scrollHorizontally('prev')">❮</button>
                         <button class="next" @click="scrollHorizontally('next')">❯</button>
@@ -1306,7 +1239,7 @@ onMounted(async () => {
                 </div>
             </div>
 
-            <div class="mb-12">
+            <div class="comment-container mb-12">
                 <div v-if="isUserAuthenticated && !commentRetrievingLoading">
                     <div class="comments-header mt-4">
                         <div class="comments-stats">
@@ -1320,9 +1253,10 @@ onMounted(async () => {
                         <div v-if="videoCommentButtonsShow" class="comment-btns justify-end font-medium mt-2">
                             <button @click="cancelUserComment" class="cancel-comment-btn">Cancel</button>
                             <button v-if="userCommentText === null"
-                                class="text-gray-400 text-[14px] font-medium bg-[#f2f2f2]" style="cursor: default !important;">Comment</button>
-                            <button v-else :disabled="userCommentText === null || userCommentText.length <= 0" @click="submitVideoComment(null)"
-                                class="add-comment-btn">Comment</button>
+                                class="text-gray-400 text-[14px] font-medium bg-[#f2f2f2]"
+                                style="cursor: default !important;">Comment</button>
+                            <button v-else :disabled="userCommentText === null || userCommentText.length <= 0"
+                                @click="submitVideoComment(null)" class="add-comment-btn">Comment</button>
                         </div>
                     </div>
                     <div class="comment-container gap-y-6">
@@ -1423,7 +1357,6 @@ onMounted(async () => {
                         </div>
                     </div>
                 </div>
-
                 <div v-if="!isUserAuthenticated" class="w-[70%] flex justify-center items-center my-6">
                     <router-link to="/auth/">
                         <p class="font-medium text-[14px]">For seeing the Comments you have to be Logged in! <span
@@ -1435,9 +1368,9 @@ onMounted(async () => {
                 </div>
             </div>
         </div>
-        <div class="right-side-container ml-[60px] w-[29.5%] max-w-[426px]">
+        <div class="right-side-container flex flex-col ml-[20px] w-[29.5%] max-w-[426px] h-auto">
             <div v-if="$route.query.playlist_id"
-                class="absolute top-14 w-[400px] h-[66px] bg-[#e4dfec] hover:bg-[#d1c2e9] flex flex-col justify-center rounded-xl pl-3 transition-all duration-300 ease-in-out">
+                class="w-[400px] h-[66px] py-4 bg-[#e4dfec] hover:bg-[#d1c2e9] flex flex-col justify-center rounded-xl pl-3 transition-all duration-300 ease-in-out">
                 <div v-if="currentVideoIndex + 1 < playlistInfo.total_videos"
                     class="flex flex-row items-center text-base">
                     <p class="font-semibold">Next:&nbsp;</p>
@@ -1449,14 +1382,14 @@ onMounted(async () => {
                 <div class="flex flex-row font-normal text-xs">
                     <a href="#">{{ playlistInfo.title }} -&nbsp;</a>
                     <p>{{ currentVideoIndex + 1 }}&nbsp;/&nbsp;{{ playlistInfo.total_videos }}</p>
+                    <button @click="playListExpandingToggle" class="w-10 h-10
+                        rounded-full bg-inherit hover:bg-[#cdc8d4] flex justify-center items-center ml-auto mr-2">
+                        <img class="w-3 h-3" src="@/assets/icons/svg-icons/thin-chevron-arrow-bottom-icon.svg" alt="">
+                    </button>
                 </div>
-                <button @click="playListExpandingToggle" class="absolute right-0 top-1/2 transform -translate-y-1/2 w-10 h-10
-                rounded-full bg-inherit hover:bg-[#cdc8d4] flex justify-center items-center">
-                    <img class="w-3 h-3" src="@/assets/icons/svg-icons/thin-chevron-arrow-bottom-icon.svg" alt="">
-                </button>
             </div>
             <div v-if="playlistExpanded" class="bg-white z-20 flex flex-col w-[400px] h-[500px] border-[#ededed] border-[1px]
-                mb-10 absolute top-14 rounded-xl transition-all duration-300 ease-in-out">
+                mb-10 rounded-xl transition-all duration-300 ease-in-out absolute top-26">
                 <div class="pl-3 pt-2">
                     <a href="#" class="font-bold text-xl pt-2 mb-2">{{ playlistInfo.title }}</a>
                     <div class="flex flex-row text-xs font-normal">
@@ -1476,16 +1409,16 @@ onMounted(async () => {
                         <img class="w-4 h-4" src="@/assets/icons/svg-icons/kebab-menu.svg" alt="">
                     </button>
                     <a v-if="isPlaylistDivisonOpen" href="#" class="bg-white my-shadow w-[200px] h-[52px] rounded-xl flex items-center justify-center absolute
-                    right-0 top-[100px]">
+                        right-0 top-[100px]">
                         <div class="flex flex-row justify-center items-center cursor-pointer hover:bg-[#e5e5e5]
-                     w-[200px] h-9">
+                        w-[200px] h-9">
                             <img class="w-6 h-6 pr-1" src="@/assets/icons/svg-icons/save-btn.svg" alt="">
                             <span class="font-normal text-sm">Save playlist to Library</span>
                         </div>
                     </a>
                 </div>
                 <div class="playlist-videos-container overflow-x-hidden overflow-y-auto flex flex-col
-                        gap-y-2 max-h-[422px]">
+                    gap-y-2 max-h-[422px]">
                     <div @click="playPlaylistVideo(video.unique_id, $route.query.playlist_id)"
                         v-for="(video, index) in playlistInfo.videos" :key="video.id" class="playlist-video pl-4 cursor-pointer
                         hover:bg-[#f2f2f2] py-2" :class="[video.unique_id === $route.params.id ? 'active' : '']">
@@ -1649,6 +1582,9 @@ onMounted(async () => {
 
     .left-side-container {
         width: 100%;
+    }
+
+    .main-container {
         left: 24px;
         padding-right: 48px;
     }

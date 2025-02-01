@@ -14,6 +14,7 @@ const router2 = useRouter()
 const isSideBarCollapsed = ref(false)
 watch(() => sharedState.isWebsiteSideBarCollapsed, (newVal) => {
     isSideBarCollapsed.value = newVal
+    console.log(isSideBarClosed.value)
 })
 
 const isSideBarClosed = ref(false)
@@ -56,6 +57,7 @@ const likedVideosPlaylist = () => {
         }
     }).catch((error) => { toast.error("Error: ", error) })
 }
+
 
 const isUserAuthenticated = ref(false)
 const userAuthentication = async (user_session_id) => {
@@ -198,7 +200,7 @@ onMounted(async () => {
                     <p>{{ channel.name }}</p>
                 </router-link>
             </div>
-            <router-link to="/feed/channels">
+            <router-link to="/feed/channels" key="all-subscriptions">
                 <div v-if="isCollapsed" class="side-bar-links subscriptions-div">
                     <div class="w-[24px] h-[24px]">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" height="24" viewBox="0 0 24 24"
