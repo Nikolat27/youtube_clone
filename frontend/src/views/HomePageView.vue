@@ -13,8 +13,6 @@ watch(() => sharedState.isWebsiteSideBarCollapsed, (newVal) => {
 
 const isAtStart = ref(true);
 const isAtEnd = ref(false);
-let scrolledAmount = ref(0);
-const itemWidth = 300;
 
 
 const updateScrollState = (shortContainerDiv) => {
@@ -57,7 +55,7 @@ const retrieveVideos = () => {
             longVideos.splice(0, longVideos.length, ...response.data.data.long_videos.items)
         }
     }).catch((error) => {
-        console.log(error)
+        console.error(error)
     }).finally(() => isLoading.value = false)
 }
 
@@ -71,7 +69,7 @@ const loadMoreVideos = async () => {
         }
     }).then((response) => {
         longVideos.splice(longVideos.length, 0, ...response.data.data.long_videos.items)
-    }).catch((error) => console.log(error))
+    }).catch((error) => console.error(error))
         .finally(() => infiniteIsLoading.value = false)
 }
 
@@ -115,7 +113,6 @@ const calculateDivSizes = () => {
     let containerInnerWidth = homeContainer.clientWidth
     totalRegularVideos = Math.floor(containerInnerWidth / maxRegularVideoWidth)
     totalShortVideos = Math.floor(containerInnerWidth / maxShortVideoWidth)
-    console.log(totalRegularVideos, totalShortVideos)
 }
 
 const isVideoDeleted = ref(false)
@@ -155,7 +152,9 @@ onMounted(() => {
                         <router-link :to="`/video/${video.unique_id}`">
                             <p class="video-title">{{ video.title }}</p>
                         </router-link>
-                        <p class="video-channel-name">{{ video.channel_name }}</p>
+                        <router-link :to="`/channel-page/${video.channel_unique_identifier}`">
+                            <p class="video-channel-name">{{ video.channel_name }}</p>
+                        </router-link>
                         <p class="video-stats">{{ video.views }} views . {{ video.created_at }}</p>
                     </div>
                 </div>

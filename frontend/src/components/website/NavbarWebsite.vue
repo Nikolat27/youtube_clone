@@ -65,7 +65,7 @@ const userAuthentication = async (user_session_id) => {
             isUserAuthenticated.value = true
         }
     }).catch((error) => {
-        toast.error(error)
+        console.error("Error: ", error)
     })
 }
 

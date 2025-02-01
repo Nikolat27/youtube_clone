@@ -14,7 +14,6 @@ const router2 = useRouter()
 const isSideBarCollapsed = ref(false)
 watch(() => sharedState.isWebsiteSideBarCollapsed, (newVal) => {
     isSideBarCollapsed.value = newVal
-    console.log(isSideBarClosed.value)
 })
 
 const isSideBarClosed = ref(false)

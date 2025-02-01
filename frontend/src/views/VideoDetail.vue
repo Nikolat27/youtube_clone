@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted, reactive, watch, watchEffect } from 'vue';
+import { ref, computed, onMounted, onUnmounted, reactive, watch, watchEffect, nextTick } from 'vue';
 import { sharedState } from '@/sharedState';
 import { useRoute, useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
@@ -16,7 +16,7 @@ import offSubtitleIcon from '/src/assets/icons/video-player/subtitle-off-icon.pn
 import fullSpeakerIcon from '/src/assets/icons/video-player/full-speaker-icon.png'
 import halfSpeakerIcon from '/src/assets/icons/video-player/half-speaker-icon.png'
 import muteSpeakerIcon from '/src/assets/icons/video-player/mute-speaker-icon.png'
-import videoReplayIcon from '/src/assets/icons/svg-icons/replay-video-icon.svg'
+import videoReplayIcon from '/src/assets/icons/svg-icons/replay.png'
 
 import emptyLikeIcon from '/src/assets/icons/svg-icons/like-empty.svg'
 import fillLikeIcon from '/src/assets/icons/svg-icons/like-fill.svg'
@@ -28,7 +28,6 @@ import replyIcon from '/src/assets/icons/svg-icons/reply-icon.svg'
 import fillBellSrc from '/src/assets/icons/svg-icons/notification-alert-icon.svg'
 import emptyBellSrc from '/src/assets/icons/svg-icons/bell-line-icon.svg'
 import closeIconSrc from '/src/assets/icons/svg-icons/close-icon2.svg'
-import { comment } from 'postcss';
 
 const route = useRoute()
 const router2 = useRouter()
@@ -203,7 +202,6 @@ const stopAdCountdown = () => {
 // Handling Main video
 const isVideoPlayed = ref(false);
 const toggleVideoPlay = () => {
-    console.log("helloworld")
     const video = videoRef.value;
     isVideoPlayed.value = !isVideoPlayed.value;
     if (isVideoPlayed.value) {
@@ -214,6 +212,7 @@ const toggleVideoPlay = () => {
         stopAdCountdown();
     }
 }
+
 
 // Handling the video`s subtitle
 const subtitleIconSrc = ref(offSubtitleIcon)
@@ -270,7 +269,7 @@ const currentVideoTime = ref('0:00')
 const videoDuration = ref(null)
 // This func is to know what percentage of the video are we at (When video is played) e.g sec5 of 10sec duration is 50% of it
 // So what`s the usage? to update the range input field (for see the progress of the video)
-const updateProgress = () => {
+const handleVideoProgress = () => {
     if (videoRef.value) {
         videoProgress.value = (videoRef.value.currentTime / videoRef.value.duration) * 100
         currentVideoTime.value = calculateTime(videoRef.value.currentTime)
@@ -530,8 +529,6 @@ const subscribeChannel = (channelId) => {
 
 
 const youtubeVideoLink = ref(null)
-
-
 const retrieveVideoDetail = async (videoId, user_session_id) => {
     await axios.get(`http://127.0.0.1:8000/videos/detail/${videoId}`, {
         params: {
@@ -543,10 +540,13 @@ const retrieveVideoDetail = async (videoId, user_session_id) => {
             Object.assign(videoInfo, response.data.data)
             videoDuration.value = calculateTime(videoInfo.duration)
         } else {
+            videoRef.value = null
             youtubeVideoLink.value = response.data.data
         }
-        if (videoRef.value) { videoRef.value.currentTime = response.data.data.current_time }
-        isChannelSubscribed.value = videoInfo.is_channel_subed
+        if (videoRef.value) {
+            if (videoRef.value) { videoRef.value.currentTime = response.data.data.current_time }
+            isChannelSubscribed.value = videoInfo.is_channel_subed
+        }
     }).catch((error) => {
         console.error(error)
     })
@@ -705,10 +705,15 @@ watch(() => route.params.id, () => {
     MountPage()
 })
 
+
 const MountPage = async () => {
     const user_session_id = sessionStorage.getItem("user_session_id")
     const videoId = route.params.id // Current Video Id
     await retrieveVideoDetail(videoId, user_session_id)
+
+    if (youtubeVideoLink) {
+        return;
+    }
     const playlistId = route.query.playlist_id
     if (playlistId) {
         retrievePlaylist(playlistId, 'all')
@@ -718,11 +723,11 @@ const MountPage = async () => {
     if (user_session_id) {
         await userAuthentication(user_session_id)
         if (isUserAuthenticated.value) {
-            addWatchHistory(videoId, user_session_id)
             userLikeSituation(videoId, user_session_id)
             await retrieveUserProfileImg(user_session_id)
             retrieveVideoComments(videoId)
             checkVideoSavedInPlaylist()
+            addWatchHistory(videoId, user_session_id)
         }
     }
 }
@@ -736,26 +741,25 @@ const rangeInputStyle = computed(() => ({
 
 
 const skipAd = async () => { // a.k.a finish the ad
-    if (isAdPlaying.value) {
-        // Set the ad as finished
-        adFinished.value = true;
-        isAdPlaying.value = false;
+    if (!isAdPlaying.value) return;
+    // Set the ad as finished
+    adFinished.value = true;
+    isAdPlaying.value = false;
+    await axios.get(`http://127.0.0.1:8000/videos/ads/complete/${videoInfo.ad_unique_id}`, {
+        params: {
+            user_session_id: sessionStorage.getItem("user_session_id"),
+            random_uuid: videoInfo.random_uuid
+        }
+    });
+    videoRef.value.load(); // Reload the video tag
+    videoRef.value.play(); // Autoplay the main video
 
-        await axios.get(`http://127.0.0.1:8000/videos/ads/complete/${videoInfo.ad_unique_id}`, {
-            params: {
-                user_session_id: sessionStorage.getItem("user_session_id"),
-                random_uuid: videoInfo.random_uuid
-            }
-        });
-        videoRef.value.load(); // Reload the video tag
-        videoRef.value.play(); // Autoplay the main video
-    }
 }
 
 
 const isVideoSavedInPlaylist = ref(false)
 const checkVideoSavedInPlaylist = () => {
-    axios.get(`http://127.0.0.1:8000/playlist/check-video-saved/${videoInfo.id}`, {
+    axios.get(`http://127.0.0.1:8000/playlist/check-video-saved/${route.params.id}`, {
         params: {
             user_session_id: sessionStorage.getItem("user_session_id")
         }
@@ -766,9 +770,11 @@ const checkVideoSavedInPlaylist = () => {
     }).catch((error) => console.error(error))
 }
 
+
 const handleWindowResize = () => {
     const windowWidth = window.innerWidth
     const commentContainer = document.querySelector('.comment-container')
+    if (!commentContainer) return;
     if (windowWidth <= 1080) {
         const bottomContainerHeight = document.querySelector('.related-videos').offsetHeight;
         commentContainer.style.marginTop = `${bottomContainerHeight}px` // For Responsivity
@@ -777,56 +783,62 @@ const handleWindowResize = () => {
     }
 }
 
+const handleVideoPlay = () => {
+    isMainVideoEnded.value = false
+    if (isAdPlaying.value) {
+        axios.get(`http://127.0.0.1:8000/videos/ads/start/${videoInfo.ad_unique_id}`, {
+            params: {
+                user_session_id: sessionStorage.getItem("user_session_id")
+            }
+        })
+    } else {
+        startTime = Date.now()
+    }
+}
+
+const handleVideoPause = () => {
+    if (isAdPlaying.value) return;
+    let endTime = Date.now()
+    let calculateWatchTime = (endTime - startTime) / 1000
+    totalWatchedTime += calculateWatchTime
+    startTime = null
+    axios.get(`http://127.0.0.1:8000/videos/stream/watch-time/${route.params.id}?random_uuid=${videoInfo.random_uuid}`, {
+        params: {
+            watch_time: totalWatchedTime,
+            duration: videoRef.value.duration
+        }
+    })
+}
+
+const handleVideoEnding = () => {
+    if (!isAdPlaying.value) {
+        isMainVideoEnded.value = true // To show the Re Play button
+        return;
+    }
+    skipAd()
+}
+
 
 const isMainVideoEnded = ref(false)
 onMounted(async () => {
     // This 'timeupdate' invokes whenever timeCurrent of the video changes
     await MountPage()
-    watchEffect(() => {
-        if (videoRef.value) {
-            if (videoInfo.has_ad && !adFinished.value && videoInfo.random_uuid) {
-                isAdPlaying.value = true;
-                videoRef.value.src = `http://127.0.0.1:8000/videos/stream/${videoInfo.ad_unique_id}?is_ad=true&random_uuid=${videoInfo.random_uuid}`;
-            } else {
-                videoRef.value.src = `http://127.0.0.1:8000/videos/stream/${route.params.id}?is_ad=false&random_uuid=${videoInfo.random_uuid}`;
-            }
-        }
-    });
+    if (youtubeVideoLink) {
+        return;
+    }
 
-    videoRef.value.addEventListener('timeupdate', updateProgress);
-    videoRef.value.addEventListener('ended', async () => {
-        skipAd()
-        if (!isAdPlaying.value) {
-            isMainVideoEnded.value = true // To show the Replay button
-        }
-    });
-    videoRef.value.addEventListener('pause', () => {
-        if (isAdPlaying.value) return;
-        let endTime = Date.now()
-        let calculateWatchTime = (endTime - startTime) / 1000
-        totalWatchedTime += calculateWatchTime
-        startTime = null
-        axios.get(`http://127.0.0.1:8000/videos/stream/watch-time/${route.params.id}?random_uuid=${videoInfo.random_uuid}`, {
-            params: {
-                watch_time: totalWatchedTime,
-                duration: videoRef.value.duration
-            }
-        })
-    });
-    videoRef.value.addEventListener('play', () => {
-        isMainVideoEnded.value = false
-        if (isAdPlaying.value) {
-            axios.get(`http://127.0.0.1:8000/videos/ads/start/${videoInfo.ad_unique_id}`, {
-                params: {
-                    user_session_id: sessionStorage.getItem("user_session_id")
-                }
-            })
-        } else {
-            startTime = Date.now()
-        }
-    });
+    // watchEffect(() => {
+    //     if (videoRef.value) {
+    //         if (videoInfo.has_ad && !adFinished.value) {
+    //             isAdPlaying.value = true;
+    //             videoRef.value.src = `http://127.0.0.1:8000/videos/stream/${videoInfo.ad_unique_id}?is_ad=true&random_uuid=${videoInfo.random_uuid}`;
+    //         } else {
+    //             videoRef.value.src = `http://127.0.0.1:8000/videos/stream/${route.params.id}?is_ad=false&random_uuid=${videoInfo.random_uuid}`;
+    //         }
+    //     }
+    // });
 
-    if (videoInfo.video_type === 'short_video') {
+    if (videoInfo.video_type === 'short_video') { // This page is only for long videos
         router2.push({ name: "short_detail", params: { id: route.params.id } })
     }
 
@@ -835,9 +847,15 @@ onMounted(async () => {
     }
 
     window.addEventListener("resize", () => {
-        handleWindowResize()
+        handleWindowResize() // For Responsivity
     })
 });
+
+onUnmounted(() => {
+    window.removeEventListener("resize", () => {
+
+    })
+})
 </script>
 
 <template>
@@ -845,13 +863,15 @@ onMounted(async () => {
         <div class="left-side-container relative flex flex-col w-[70.5%] h-full">
             <div v-if="!youtubeVideoLink" @mouseover="handleControlBar('open')" @mouseleave="handleControlBar('close')"
                 class="video-container relative overflow-hidden w-full max-w-full h-[65%] max-h-[65%] flex justify-center items-center rounded-2xl">
-                <video ref="videoRef" :poster="videoInfo.thumbnail_url" :muted="videoMuted" volume="0.5"
+                <video v-if="videoInfo.id && videoInfo.random_uuid" ref="videoRef" :poster="videoInfo.thumbnail_url"
+                    :muted="videoMuted" volume="0.5" @play="handleVideoPlay" @pause="handleVideoPause"
+                    @timeupdate="handleVideoProgress" @ended="handleVideoEnding"
                     class="main-video cursor-pointer w-full h-full object-fill overflow-hidden">
                     <source v-if="videoInfo.has_ad" class="w-full h-full"
                         :src="`http://127.0.0.1:8000/videos/stream/${videoInfo.ad_unique_id}?is_ad=true&random_uuid=${videoInfo.random_uuid}`"
-                        type="video/mp4" />
+                        type="video/mp4" /> <!-- Change the random_uuid to ad_random_uuid -->
                     <source v-else class="w-full h-full"
-                        :src="`http://127.0.0.1:8000/videos/stream/${$route.params.id}?is_ad=false&random_uuid=${videoInfo.random_uuid}`"
+                        :src="`http://127.0.0.1:8000/videos/stream/${videoInfo.id}?is_ad=false&random_uuid=${videoInfo.random_uuid}`"
                         type="video/mp4" />
                 </video>
                 <button v-if="isAdPlaying" :disabled="!adFinished" @click="skipAd"
@@ -897,13 +917,10 @@ onMounted(async () => {
                             type="range" @input="seekVideo" :style="rangeInputStyle">
                     </div>
                     <div class="w-[77%] h-full left-controls flex flex-row justify-start
-                items-center gap-x-6 pl-3">
+                    items-center gap-x-6 pl-3">
                         <button @click="toggleVideoPlay">
-                            <svg v-if="isMainVideoEnded" viewBox="0 0 16 20" xmlns="http://www.w3.org/2000/svg">
-                                <path
-                                    d="M8 4V0L3 5l5 5V6c3.3 0 6 2.7 6 6s-2.7 6-6 6-6-2.7-6-6H0c0 4.4 3.6 8 8 8s8-3.6 8-8-3.6-8-8-8Z"
-                                    fill="#ffffff" fill-rule="evenodd" class="fill-000000"></path>
-                            </svg>
+                            <img @click="toggleVideoPlay" v-if="isMainVideoEnded" style="width: 22px; height: 22px;"
+                                :src="videoReplayIcon" alt="">
                             <img v-else class="play-video-button" style="width: 20px; height: 20px;"
                                 :src="isVideoPlayed ? pauseIcon : playIcon" alt="">
                         </button>
@@ -921,8 +938,7 @@ onMounted(async () => {
                             <span class="end-video-time">{{ videoDuration }}</span>
                         </p>
                     </div>
-                    <div class="w-[23%] h-full right-controls flex flex-row justify-end
-                items-center gap-x-4 pr-3">
+                    <div class="w-[23%] h-full right-controls flex flex-row justify-end items-center gap-x-4 pr-3">
                         <button>
                             <img @click="toggleSubtitle" style="width: 30px; height: 30px;" :src="subtitleIconSrc"
                                 alt="">
@@ -930,10 +946,11 @@ onMounted(async () => {
                         <button :disabled="isAdPlaying" @click="toggleVideoOptions" class="setting-btn">
                             <img src="@/assets/icons/video-player/settings-icon.png" alt="">
                         </button>
-                        <div v-if="!isPlaybackSpeedDivOpen && isVideoOptionsOpen" class="video-options select-none video-settings flex flex-col text-white items-start justify-center w-[250px] h-auto pb-4 pt-4
-                 rounded-xl text-sm font-medium absolute bottom-16 right-2 overflow-y-auto bg-[#22191d] bg-opacity-80">
+                        <div v-if="!isPlaybackSpeedDivOpen && isVideoOptionsOpen"
+                            class="video-options select-none video-settings flex flex-col text-white items-start justify-center w-[250px] h-auto pb-4 pt-4
+                            rounded-xl text-sm font-medium absolute bottom-16 right-2 overflow-y-auto bg-[#22191d] bg-opacity-80">
                             <div class="flex flex-row justify-start items-center w-full h-[35px]
-                     gap-x-3 pl-2 hover:bg-[#383838]">
+                                gap-x-3 pl-2 hover:bg-[#383838]">
                                 <img class="w-[26px] h-[26px]" src="@/assets/icons/video-player/double-qoutes-icon.png"
                                     alt="">
                                 <p class="text-center">Annotations</p>
@@ -1002,349 +1019,363 @@ onMounted(async () => {
                 <iframe class="w-full h-full" :src="youtubeVideoLink">
                 </iframe>
             </div>
-            <div class="video-title mt-4">
-                <h1 class="text-[20px] font-bold">{{ videoInfo.title }}</h1>
-            </div>
-            <div class="video-detail-info w-full">
-                <router-link :to="`/channel-page/${videoInfo.channel_unique_identifier}`">
-                    <img class="video-detail-channel-logo" loading="eager" :src="videoInfo.channel_profile_url" alt="">
-                </router-link>
-                <router-link :to="`/channel-page/${videoInfo.channel_unique_identifier}`">
-                    <div class="video-detail-upload-info">
-                        <p class="video-detail-channel-name">{{ videoInfo.channel_name }}</p>
-                        <p class="video-detail-channel-sub-count">{{ videoInfo.channel_total_subs }} subscribers</p>
-                    </div>
-                </router-link>
-                <button v-if="isChannelSubscribed" @click="toggleChannelOptions" class="w-[150px] h-[36px] rounded-2xl bg-[#f2f2f2] hover:bg-[#e5e5e5]
-                flex justify-center items-center">
-                    <img class="w-5 h-6" :src="channelNotification ? fillBellSrc : emptyBellSrc" alt="">
-                    <span class="text-black text-sm font-medium ml-2">Subscribed</span>
-                    <img class="w-3 h-3 ml-5" src="@/assets/icons/svg-icons/thin-chevron-arrow-bottom-icon.svg" alt="">
-                </button>
-                <button v-else @click="subscribeChannel(videoInfo.channel_id)"
-                    class="w-[94px] h-[36px] rounded-3xl bg-black">
-                    <span class="text-sm font-medium text-white">Subscribe</span>
-                </button>
-                <div v-if="isChannelSubscribed && isChannelOptionsOpen" class="channel-options w-[256px]
-            h-[140px] flex flex-col my-shadow rounded-xl text-sm font-normal z-40 bg-white -mt-3">
-                    <button @click="toggleChannelNotification(videoInfo.channel_id, 'all')"
-                        class="w-[100%] h-[40px] mt-2">
-                        <img :src="fillBellSrc" alt="">
-                        <span>All</span>
-                    </button>
-                    <button @click="toggleChannelNotification(videoInfo.channel_id, 'none')" class="w-[100%] h-[40px]">
-                        <img src="@/assets/icons/svg-icons/remove-bell-notification-icon.svg" alt="">
-                        <span>None</span>
-                    </button>
-                    <button @click="subscribeChannel(videoInfo.channel_id)" class="w-[100%] h-[40px] mb-2">
-                        <img src="@/assets/icons/svg-icons/remove-male-user-icon.svg" alt="">
-                        <span>Unsubscribe</span>
-                    </button>
+
+            <div v-if="youtubeVideoLink" class="flex flex-col">
+                <div class="video-title mt-4">
+                    <h1 class="text-[20px] font-bold">{{ videoInfo.title }}</h1>
                 </div>
-                <div class="video-detail-other-btn flex flex-row ml-auto relative">
-                    <button @click="likeVideo(true)" class="like-btn"><img
-                            :src="likeSituation === true ? fillLikeIcon : emptyLikeIcon" alt="">
-                        <span class="like-amount">{{ totalLikes }}</span>
+
+                <div class="video-detail-info w-full">
+                    <router-link :to="`/channel-page/${videoInfo.channel_unique_identifier}`">
+                        <img class="video-detail-channel-logo" loading="eager" :src="videoInfo.channel_profile_url"
+                            alt="">
+                    </router-link>
+                    <router-link :to="`/channel-page/${videoInfo.channel_unique_identifier}`">
+                        <div class="video-detail-upload-info">
+                            <p class="video-detail-channel-name">{{ videoInfo.channel_name }}</p>
+                            <p class="video-detail-channel-sub-count">{{ videoInfo.channel_total_subs }} subscribers</p>
+                        </div>
+                    </router-link>
+                    <button v-if="isChannelSubscribed" @click="toggleChannelOptions" class="w-[150px] h-[36px] rounded-2xl bg-[#f2f2f2] hover:bg-[#e5e5e5]
+                flex justify-center items-center">
+                        <img class="w-5 h-6" :src="channelNotification ? fillBellSrc : emptyBellSrc" alt="">
+                        <span class="text-black text-sm font-medium ml-2">Subscribed</span>
+                        <img class="w-3 h-3 ml-5" src="@/assets/icons/svg-icons/thin-chevron-arrow-bottom-icon.svg"
+                            alt="">
                     </button>
-                    <button @click="likeVideo(false)" class="dislike-btn"><img
-                            :src="likeSituation === false ? fillDislikeIcon : emptyDislikeIcon" alt=""></button>
-                    <button @click="toggleSharingTab" class="share-btn"><img
-                            src="@/assets/icons/svg-icons/share-btn.svg" alt="">
-                        <span>&nbsp;Share</span>
+                    <button v-else @click="subscribeChannel(videoInfo.channel_id)"
+                        class="w-[94px] h-[36px] rounded-3xl bg-black">
+                        <span class="text-sm font-medium text-white">Subscribe</span>
                     </button>
-                    <button @click="toggleSaveDiv" class="save-btn"><img
-                            :src="isVideoSavedInPlaylist ? unSaveIcon : saveIcon">
-                        <span>Save</span>
-                    </button>
-                    <div v-if="isSaveDivOpen"
-                        class="save-div z-[1000] w-[200px] h-auto min-h-[200px] rounded-xl flex flex-col absolute gap-y-2 bg-white pl-2 pt-4 -top-40 left-10">
-                        <div class="flex flex-row mb-2">
-                            <p class="text-[16px] font-normal pl-4">Save video to...</p>
-                            <button @click="isSaveDivOpen = false" style="background-color: white;"
-                                class="flex justify-center justify-self-end ml-auto mr-4 rounded-full items-center">
-                                <img class="w-[18px] h-[18px]" :src="closeIconSrc" alt="">
+                    <div v-if="isChannelSubscribed && isChannelOptionsOpen" class="channel-options w-[256px]
+                    h-[140px] flex flex-col my-shadow rounded-xl text-sm font-normal z-40 bg-white -mt-3">
+                        <button @click="toggleChannelNotification(videoInfo.channel_id, 'all')"
+                            class="w-[100%] h-[40px] mt-2">
+                            <img :src="fillBellSrc" alt="">
+                            <span>All</span>
+                        </button>
+                        <button @click="toggleChannelNotification(videoInfo.channel_id, 'none')"
+                            class="w-[100%] h-[40px]">
+                            <img src="@/assets/icons/svg-icons/remove-bell-notification-icon.svg" alt="">
+                            <span>None</span>
+                        </button>
+                        <button @click="subscribeChannel(videoInfo.channel_id)" class="w-[100%] h-[40px] mb-2">
+                            <img src="@/assets/icons/svg-icons/remove-male-user-icon.svg" alt="">
+                            <span>Unsubscribe</span>
+                        </button>
+                    </div>
+                    <div class="video-detail-other-btn flex flex-row ml-auto relative">
+                        <button @click="likeVideo(true)" class="like-btn"><img
+                                :src="likeSituation === true ? fillLikeIcon : emptyLikeIcon" alt="">
+                            <span class="like-amount">{{ totalLikes }}</span>
+                        </button>
+                        <button @click="likeVideo(false)" class="dislike-btn"><img
+                                :src="likeSituation === false ? fillDislikeIcon : emptyDislikeIcon" alt=""></button>
+                        <button @click="toggleSharingTab" class="share-btn"><img
+                                src="@/assets/icons/svg-icons/share-btn.svg" alt="">
+                            <span>&nbsp;Share</span>
+                        </button>
+                        <button @click="toggleSaveDiv" class="save-btn"><img
+                                :src="isVideoSavedInPlaylist ? unSaveIcon : saveIcon">
+                            <span>Save</span>
+                        </button>
+                        <div v-if="isSaveDivOpen"
+                            class="save-div z-[1000] w-[200px] h-auto min-h-[200px] rounded-xl flex flex-col absolute gap-y-2 bg-white pl-2 pt-4 -top-40 left-10">
+                            <div class="flex flex-row mb-2">
+                                <p class="text-[16px] font-normal pl-4">Save video to...</p>
+                                <button @click="isSaveDivOpen = false" style="background-color: white;"
+                                    class="flex justify-center justify-self-end ml-auto mr-4 rounded-full items-center">
+                                    <img class="w-[18px] h-[18px]" :src="closeIconSrc" alt="">
+                                </button>
+                            </div>
+                            <div v-for="playlist in allPlaylists" :key="playlist.id"
+                                class="playlist flex flex-row justify-start px-4 items-center gap-x-4">
+                                <input v-model="playlistSaves" :value="playlist.id" type="checkbox"
+                                    name="playlist-saving" class="w-[20px] h-[20px] cursor-pointer">
+                                <p>{{ playlist.title }}</p>
+                                <div v-if="playlist.visibility === 'private'"
+                                    class="w-[18px] h-[18px] flex justify-center justify-self-end ml-auto items-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" height="18" viewBox="0 0 18 18" width="18"
+                                        focusable="false" aria-hidden="true"
+                                        style="pointer-events: none; display: inherit; width: 100%; height: 100%;">
+                                        <path
+                                            d="M13 5c0-2.21-1.79-4-4-4S5 2.79 5 5v1H3v11h12V6h-2V5zM6 5c0-1.65 1.35-3 3-3s3 1.35 3 3v1H6V5zm8 2v9H4V7h10zm-7 4c0-1.1.9-2 2-2s2 .9 2 2-.9 2-2 2-2-.9-2-2z">
+                                        </path>
+                                    </svg>
+                                </div>
+                                <div v-else
+                                    class="w-[18px] h-[18px] flex justify-self-end ml-auto justify-center items-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" height="18" viewBox="0 0 18 18" width="18"
+                                        focusable="false" aria-hidden="true"
+                                        style="pointer-events: none; display: inherit; width: 100%; height: 100%;">
+                                        <path
+                                            d="M9 1C4.58 1 1 4.58 1 9s3.58 8 8 8 8-3.58 8-8-3.58-8-8-8zm7 8c0 1.31-.37 2.54-1 3.59V11h-2c-.55 0-1-.45-1-1 0-1.1-.9-2-2-2H8.73c.17-.29.27-.64.27-1V5h1c1.1 0 2-.9 2-2v-.31c2.36 1.12 4 3.52 4 6.31zm-13.98.45L7 12.77V13c0 1.1.9 2 2 2v1c-3.71 0-6.74-2.9-6.98-6.55zM10 15.92V14H9c-.55 0-1-.45-1-1v-.77L2.04 8.26C2.41 4.75 5.39 2 9 2c.7 0 1.37.11 2 .29V3c0 .55-.45 1-1 1H8v3c0 .55-.45 1-1 1H5.5v1H10c.55 0 1 .45 1 1 0 1.1.9 2 2 2h1v1.89c-1.05 1.07-2.44 1.81-4 2.03z">
+                                        </path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <button @click="saveVideoToPlaylist"
+                                class="w-[70px] h-[30px] rounded-2xl bg-white my-2 justify-self-end ml-auto mr-4 hover:bg-[#e2e2e2]">
+                                Save
                             </button>
                         </div>
-                        <div v-for="playlist in allPlaylists" :key="playlist.id"
-                            class="playlist flex flex-row justify-start px-4 items-center gap-x-4">
-                            <input v-model="playlistSaves" :value="playlist.id" type="checkbox" name="playlist-saving"
-                                class="w-[20px] h-[20px] cursor-pointer">
-                            <p>{{ playlist.title }}</p>
-                            <div v-if="playlist.visibility === 'private'"
-                                class="w-[18px] h-[18px] flex justify-center justify-self-end ml-auto items-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" height="18" viewBox="0 0 18 18" width="18"
-                                    focusable="false" aria-hidden="true"
-                                    style="pointer-events: none; display: inherit; width: 100%; height: 100%;">
-                                    <path
-                                        d="M13 5c0-2.21-1.79-4-4-4S5 2.79 5 5v1H3v11h12V6h-2V5zM6 5c0-1.65 1.35-3 3-3s3 1.35 3 3v1H6V5zm8 2v9H4V7h10zm-7 4c0-1.1.9-2 2-2s2 .9 2 2-.9 2-2 2-2-.9-2-2z">
-                                    </path>
-                                </svg>
-                            </div>
-                            <div v-else
-                                class="w-[18px] h-[18px] flex justify-self-end ml-auto justify-center items-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" height="18" viewBox="0 0 18 18" width="18"
-                                    focusable="false" aria-hidden="true"
-                                    style="pointer-events: none; display: inherit; width: 100%; height: 100%;">
-                                    <path
-                                        d="M9 1C4.58 1 1 4.58 1 9s3.58 8 8 8 8-3.58 8-8-3.58-8-8-8zm7 8c0 1.31-.37 2.54-1 3.59V11h-2c-.55 0-1-.45-1-1 0-1.1-.9-2-2-2H8.73c.17-.29.27-.64.27-1V5h1c1.1 0 2-.9 2-2v-.31c2.36 1.12 4 3.52 4 6.31zm-13.98.45L7 12.77V13c0 1.1.9 2 2 2v1c-3.71 0-6.74-2.9-6.98-6.55zM10 15.92V14H9c-.55 0-1-.45-1-1v-.77L2.04 8.26C2.41 4.75 5.39 2 9 2c.7 0 1.37.11 2 .29V3c0 .55-.45 1-1 1H8v3c0 .55-.45 1-1 1H5.5v1H10c.55 0 1 .45 1 1 0 1.1.9 2 2 2h1v1.89c-1.05 1.07-2.44 1.81-4 2.03z">
-                                    </path>
-                                </svg>
-                            </div>
-                        </div>
-                        <button @click="saveVideoToPlaylist"
-                            class="w-[70px] h-[30px] rounded-2xl bg-white my-2 justify-self-end ml-auto mr-4 hover:bg-[#e2e2e2]">
-                            Save
+                        <button @click="downloadVideo($route.params.id)" class="download-btn"><img
+                                src="@/assets/icons/svg-icons/download-icon.svg" alt="">
+                            <span>Download</span>
                         </button>
                     </div>
-                    <button @click="downloadVideo($route.params.id)" class="download-btn"><img
-                            src="@/assets/icons/svg-icons/download-icon.svg" alt="">
-                        <span>Download</span>
+                </div>
+
+                <div class="video-description w-full">
+                    <p class="video-detail-stats"><span class="view-amount">{{ videoInfo.views }}&nbsp;</span>views
+                        <span class="upload-date">{{ videoInfo.created_at }} </span>ago
+                        <span class="hashtags">#some #random #tags</span>
+                    </p>
+                    <p id="shortDescription">{{ truncatedDescription }}</p>
+                    <button v-if="videoInfo.description.length > 60" @click="toggleFullDescription" id="readMoreButton">
+                        {{ showFullDescription ? "Read less" : "Read more" }}
                     </button>
                 </div>
-            </div>
+                <socialShare></socialShare>
 
-            <div class="video-description w-full">
-                <p class="video-detail-stats"><span class="view-amount">{{ videoInfo.views }}&nbsp;</span>views
-                    <span class="upload-date">{{ videoInfo.created_at }} </span>ago
-                    <span class="hashtags">#some #random #tags</span>
-                </p>
-                <p id="shortDescription">{{ truncatedDescription }}</p>
-                <button v-if="videoInfo.description.length > 60" @click="toggleFullDescription" id="readMoreButton">
-                    {{ showFullDescription ? "Read less" : "Read more" }}
-                </button>
-            </div>
-            <socialShare></socialShare>
-
-            <div class="bottom-side-container mt-6 hidden flex-col relative w-full h-auto">
-                <div v-if="$route.query.playlist_id" class="w-full h-[66px] bg-[#e4dfec] hover:bg-[#d1c2e9] flex flex-col justify-center
+                <div class="bottom-side-container mt-6 hidden flex-col relative w-full h-auto">
+                    <div v-if="$route.query.playlist_id" class="w-full h-[66px] bg-[#e4dfec] hover:bg-[#d1c2e9] flex flex-col justify-center
                     rounded-xl pl-3 transition-all duration-300 ease-in-out">
-                    <div v-if="currentVideoIndex + 1 < playlistInfo.total_videos"
-                        class="flex flex-row items-center text-base">
-                        <p class="font-semibold">Next:&nbsp;</p>
-                        <p class="font-normal">{{ nextVideoTitle }}</p>
-                    </div>
-                    <div v-else class="flex flex-row items-center text-base">
-                        <p class="font-semibold">End of video list</p>
-                    </div>
-                    <div class="flex flex-row font-normal text-xs">
-                        <a href="#">{{ playlistInfo.title }} -&nbsp;</a>
-                        <p>{{ currentVideoIndex + 1 }}&nbsp;/&nbsp;{{ playlistInfo.total_videos }}</p>
-                    </div>
-                    <button @click="playListExpandingToggle" class="absolute right-0 top-1/2 transform -translate-y-1/2 w-10 h-10
+                        <div v-if="currentVideoIndex + 1 < playlistInfo.total_videos"
+                            class="flex flex-row items-center text-base">
+                            <p class="font-semibold">Next:&nbsp;</p>
+                            <p class="font-normal">{{ nextVideoTitle }}</p>
+                        </div>
+                        <div v-else class="flex flex-row items-center text-base">
+                            <p class="font-semibold">End of video list</p>
+                        </div>
+                        <div class="flex flex-row font-normal text-xs">
+                            <a href="#">{{ playlistInfo.title }} -&nbsp;</a>
+                            <p>{{ currentVideoIndex + 1 }}&nbsp;/&nbsp;{{ playlistInfo.total_videos }}</p>
+                        </div>
+                        <button @click="playListExpandingToggle" class="absolute right-0 top-1/2 transform -translate-y-1/2 w-10 h-10
                         rounded-full bg-inherit hover:bg-[#cdc8d4] flex justify-center items-center">
-                        <img class="w-3 h-3" src="@/assets/icons/svg-icons/thin-chevron-arrow-bottom-icon.svg" alt="">
-                    </button>
-                </div>
-                <div v-if="playlistExpanded" class="absolute top-26 bg-white z-20 flex flex-col w-full h-[500px] border-[#ededed] border-[1px]
+                            <img class="w-3 h-3" src="@/assets/icons/svg-icons/thin-chevron-arrow-bottom-icon.svg"
+                                alt="">
+                        </button>
+                    </div>
+                    <div v-if="playlistExpanded" class="absolute top-26 bg-white z-20 flex flex-col w-full h-[500px] border-[#ededed] border-[1px]
                     mb-10 rounded-xl transition-all duration-300 ease-in-out">
-                    <div class="pl-3 pt-2">
-                        <p class="font-bold text-xl pt-2 mb-2">{{ playlistInfo.title }}</p>
-                        <div class="flex flex-row text-xs font-normal">
-                            <a href="#" class="text-[#304354]">{{ playlistInfo.title }} -&nbsp;</a>
-                            <span class="text-[#858c9c]">{{ currentVideoIndex + 1 }}/{{ playlistInfo.total_videos
-                                }}</span>
-                        </div>
-                        <button @click="playListExpandingToggle"
-                            class="absolute right-1 top-3 w-10 h-10 rounded-full hover:bg-[#e5e5e5] flex justify-center items-center">
-                            <img class="w-4 h-4" src="@/assets/icons/svg-icons/x-mark-icon.svg" alt="">
-                        </button>
-                        <button @click="shufflePlaylistVideo($route.query.playlist_id)"
-                            class="w-10 h-10 rounded-full hover:bg-[#e5e5e5] flex justify-center items-center">
-                            <img class="w-5 h-5" src="@/assets/icons/svg-icons/shuffle-icon.svg" alt="">
-                        </button>
-                        <button @click="togglePlaylistDivision" class="playlist-div-toggle flex justify-center items-center absolute top-[60px] right-[3px] w-10 h-10
+                        <div class="pl-3 pt-2">
+                            <p class="font-bold text-xl pt-2 mb-2">{{ playlistInfo.title }}</p>
+                            <div class="flex flex-row text-xs font-normal">
+                                <a href="#" class="text-[#304354]">{{ playlistInfo.title }} -&nbsp;</a>
+                                <span class="text-[#858c9c]">{{ currentVideoIndex + 1 }}/{{ playlistInfo.total_videos
+                                    }}</span>
+                            </div>
+                            <button @click="playListExpandingToggle"
+                                class="absolute right-1 top-3 w-10 h-10 rounded-full hover:bg-[#e5e5e5] flex justify-center items-center">
+                                <img class="w-4 h-4" src="@/assets/icons/svg-icons/x-mark-icon.svg" alt="">
+                            </button>
+                            <button @click="shufflePlaylistVideo($route.query.playlist_id)"
+                                class="w-10 h-10 rounded-full hover:bg-[#e5e5e5] flex justify-center items-center">
+                                <img class="w-5 h-5" src="@/assets/icons/svg-icons/shuffle-icon.svg" alt="">
+                            </button>
+                            <button @click="togglePlaylistDivision" class="playlist-div-toggle flex justify-center items-center absolute top-[60px] right-[3px] w-10 h-10
                         rounded-full hover:bg-[#e5e5e5]">
-                            <img class="w-4 h-4" src="@/assets/icons/svg-icons/kebab-menu.svg" alt="">
-                        </button>
-                        <a v-if="isPlaylistDivisonOpen" href="#" class="bg-white my-shadow w-[200px] h-[52px] rounded-xl flex items-center justify-center absolute
+                                <img class="w-4 h-4" src="@/assets/icons/svg-icons/kebab-menu.svg" alt="">
+                            </button>
+                            <a v-if="isPlaylistDivisonOpen" href="#" class="bg-white my-shadow w-[200px] h-[52px] rounded-xl flex items-center justify-center absolute
                                 right-0 top-[100px]">
-                            <div class="flex flex-row justify-center items-center cursor-pointer hover:bg-[#e5e5e5]
+                                <div class="flex flex-row justify-center items-center cursor-pointer hover:bg-[#e5e5e5]
                                 w-[200px] h-9">
-                                <img class="w-6 h-6 pr-1" src="@/assets/icons/svg-icons/save-btn.svg" alt="">
-                                <span class="font-normal text-sm">Save playlist to Library</span>
-                            </div>
-                        </a>
-                    </div>
+                                    <img class="w-6 h-6 pr-1" src="@/assets/icons/svg-icons/save-btn.svg" alt="">
+                                    <span class="font-normal text-sm">Save playlist to Library</span>
+                                </div>
+                            </a>
+                        </div>
 
-                    <div class="playlist-videos-container overflow-x-hidden overflow-y-auto flex flex-col
+                        <div class="playlist-videos-container overflow-x-hidden overflow-y-auto flex flex-col
                         gap-y-2 max-h-[422px]">
-                        <div @click="playPlaylistVideo(video.unique_id, $route.query.playlist_id)"
-                            v-for="(video, index) in playlistInfo.videos" :key="video.id" class="playlist-video pl-4 cursor-pointer
+                            <div @click="playPlaylistVideo(video.unique_id, $route.query.playlist_id)"
+                                v-for="(video, index) in playlistInfo.videos" :key="video.id" class="playlist-video pl-4 cursor-pointer
                             hover:bg-[#f2f2f2] py-2" :class="[video.unique_id === $route.params.id ? 'active' : '']">
-                            <div class="flex flex-row">
-                                <span class="ml-[-10px] flex justify-center items-center text-gray-500 text-sm">
-                                    {{ index + 1 }}
-                                </span>
-                                <img class="flex-shrink-0 w-[100px] h-[56px] rounded-xl ml-2" :src="video.thumbnail_url"
-                                    alt="">
-                                <div class="flex flex-col ml-2">
-                                    <p class="font-semibold text-sm mb-2">{{ video.title }}</p>
-                                    <p class="font-normal text-xs text-gray-600">{{ video.channel_name }}</p>
-                                </div>
-                            </div>
-
-                        </div>
-                    </div>
-                </div>
-                <div class="related-videos flex flex-col absolute w-full" :style="relatedVideosStyle">
-                    <div class="related-video">
-                        <div class="related-video-thumbnail">
-                            <img src="@/assets/img/Django.png" alt="">
-                        </div>
-                        <div class="related-video-details">
-                            <p><a href="">Django tutorial</a></p>
-                            <p style="color: #6a6360; font-size: 13px;">channel name</p>
-                            <p style="color: #6a6360; font-size: 13px;"><span class="related-video-views">2.4M</span>
-                                views
-                                .
-                                <span class="related-video-created_at">2 years</span> ago
-                            </p>
-                        </div>
-                    </div>
-
-                    <div class="related-short-videos" style="width: 100%;">
-                        <div class="title-container">
-                            <img class="youtube-short-icon" src="@/assets/icons/svg-icons/shorts-icon.svg" alt="">
-                            <p style="font-weight: bold; font-size: 16px;">Shorts</p>
-                        </div>
-                        <div class="short-video-groups gap-x-1 scroll-smooth" style="max-width: 100% !important;">
-                            <div class="related-short-video">
-                                <div class="related-short-video-thumbnail">
-                                    <img src="@/assets/img/Django.png" alt="">
-                                </div>
-                                <div class="related-short-video-title h-auto">
-                                    <p class="video-title" style="margin-bottom: 3px;"><a href="">Django tutorial</a>
-                                    </p>
-                                    <p class="video-info"><span>5M</span> Views</p>
-                                </div>
-                            </div>
-                        </div>
-                        <button class="prev" @click="scrollHorizontally('prev')">❮</button>
-                        <button class="next" @click="scrollHorizontally('next')">❯</button>
-                    </div>
-
-                    <div class="related-video">
-                        <div class="related-video-thumbnail">
-                            <img src="@/assets/img/Django.png" alt="">
-                        </div>
-                        <div class="related-video-details">
-                            <p><a href="">Django tutorial</a></p>
-                            <p style="color: #6a6360; font-size: 13px;">channel name</p>
-                            <p style="color: #6a6360; font-size: 13px;"><span class="related-video-views">2.4M</span>
-                                views
-                                .
-                                <span class="related-video-created_at">2 years</span> ago
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="comment-container mb-12">
-                <div v-if="isUserAuthenticated && !commentRetrievingLoading">
-                    <div class="comments-header mt-4">
-                        <div class="comments-stats">
-                            <p class="total-comments">{{ comments.length }} Comments</p>
-                        </div>
-                        <div class="comment-creation w-full mt-6">
-                            <img class="user-profile-img" :src="userProfileImgSrc ?? ''" alt="">
-                            <input v-model="userCommentText" @click="toggleVideoCommentButtons" type="text"
-                                placeholder="Add a Comment..." class="border-b w-full">
-                        </div>
-                        <div v-if="videoCommentButtonsShow" class="comment-btns justify-end font-medium mt-2">
-                            <button @click="cancelUserComment" class="cancel-comment-btn">Cancel</button>
-                            <button v-if="userCommentText === null"
-                                class="text-gray-400 text-[14px] font-medium bg-[#f2f2f2]"
-                                style="cursor: default !important;">Comment</button>
-                            <button v-else :disabled="userCommentText === null || userCommentText.length <= 0"
-                                @click="submitVideoComment(null)" class="add-comment-btn">Comment</button>
-                        </div>
-                    </div>
-                    <div class="comment-container gap-y-6">
-                        <div v-for="comment in comments" :key="comment.id" class="comment flex flex-row">
-                            <div class="author-thumbnail">
-                                <img :src="comment.user_profile_picrure" alt="">
-                            </div>
-                            <div class="comment-detail">
-                                <div class="author-info">@{{ comment.username ?? 'Anonymous User' }}
-                                    <span class="created_at">{{
-                                        comment.created_at }} days ago</span>
-                                </div>
-                                <div class="comment-text -mt-2">{{ comment.text }}</div>
-                                <div class="comment-container-button">
-                                    <button @click="likeComment(comment.id, true)" class="comment-like-button"
-                                        style="outline: none;">
-                                        <img :src="comment.is_liked === true ? fillLikeIcon : emptyLikeIcon">
-                                    </button>
-                                    <button @click="likeComment(comment.id, false)" class="comment-dislike-button"
-                                        style="outline: none;">
-                                        <img :src="comment.is_liked === false ? fillDislikeIcon : emptyDislikeIcon">
-                                    </button>
-                                    <button @click="toggleUserCommentReplyButtons(comment.id)"
-                                        class="user-comment-reply-button" style="outline: none;">
-                                        <img class="w-8 h-8" :src="replyIcon" alt="">
-                                    </button>
-                                </div>
-                                <div v-if="commentStates[comment.id]?.repliesVisible"
-                                    class="w-auto flex justify-start items-center relative">
-                                    <div class="reply-creation">
-                                        <img class="user-profile-img" :src="userProfileImgSrc" alt="">
-                                        <input v-model="userReplyText" type="text" placeholder="Add a Reply...">
+                                <div class="flex flex-row">
+                                    <span class="ml-[-10px] flex justify-center items-center text-gray-500 text-sm">
+                                        {{ index + 1 }}
+                                    </span>
+                                    <img class="flex-shrink-0 w-[100px] h-[56px] rounded-xl ml-2"
+                                        :src="video.thumbnail_url" alt="">
+                                    <div class="flex flex-col ml-2">
+                                        <p class="font-semibold text-sm mb-2">{{ video.title }}</p>
+                                        <p class="font-normal text-xs text-gray-600">{{ video.channel_name }}</p>
                                     </div>
-                                    <div class="reply-btns flex justify-center items-center">
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                    <div class="related-videos flex flex-col absolute w-full" :style="relatedVideosStyle">
+                        <div class="related-video">
+                            <div class="related-video-thumbnail">
+                                <img src="@/assets/img/Django.png" alt="">
+                            </div>
+                            <div class="related-video-details">
+                                <p><a href="">Django tutorial</a></p>
+                                <p style="color: #6a6360; font-size: 13px;">channel name</p>
+                                <p style="color: #6a6360; font-size: 13px;"><span
+                                        class="related-video-views">2.4M</span>
+                                    views
+                                    .
+                                    <span class="related-video-created_at">2 years</span> ago
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="related-short-videos" style="width: 100%;">
+                            <div class="title-container">
+                                <img class="youtube-short-icon" src="@/assets/icons/svg-icons/shorts-icon.svg" alt="">
+                                <p style="font-weight: bold; font-size: 16px;">Shorts</p>
+                            </div>
+                            <div class="short-video-groups gap-x-1 scroll-smooth" style="max-width: 100% !important;">
+                                <div class="related-short-video">
+                                    <div class="related-short-video-thumbnail">
+                                        <img src="@/assets/img/Django.png" alt="">
+                                    </div>
+                                    <div class="related-short-video-title h-auto">
+                                        <p class="video-title" style="margin-bottom: 3px;"><a href="">Django
+                                                tutorial</a>
+                                        </p>
+                                        <p class="video-info"><span>5M</span> Views</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <button class="prev" @click="scrollHorizontally('prev')">❮</button>
+                            <button class="next" @click="scrollHorizontally('next')">❯</button>
+                        </div>
+
+                        <div class="related-video">
+                            <div class="related-video-thumbnail">
+                                <img src="@/assets/img/Django.png" alt="">
+                            </div>
+                            <div class="related-video-details">
+                                <p><a href="">Django tutorial</a></p>
+                                <p style="color: #6a6360; font-size: 13px;">channel name</p>
+                                <p style="color: #6a6360; font-size: 13px;"><span
+                                        class="related-video-views">2.4M</span>
+                                    views
+                                    .
+                                    <span class="related-video-created_at">2 years</span> ago
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="comment-container mb-12">
+                    <div v-if="isUserAuthenticated && !commentRetrievingLoading">
+                        <div class="comments-header mt-4">
+                            <div class="comments-stats">
+                                <p class="total-comments">{{ comments.length }} Comments</p>
+                            </div>
+                            <div class="comment-creation w-full mt-6">
+                                <img class="user-profile-img" :src="userProfileImgSrc ?? ''" alt="">
+                                <input v-model="userCommentText" @click="toggleVideoCommentButtons" type="text"
+                                    placeholder="Add a Comment..." class="border-b w-full">
+                            </div>
+                            <div v-if="videoCommentButtonsShow" class="comment-btns justify-end font-medium mt-2">
+                                <button @click="cancelUserComment" class="cancel-comment-btn">Cancel</button>
+                                <button v-if="userCommentText === null"
+                                    class="text-gray-400 text-[14px] font-medium bg-[#f2f2f2]"
+                                    style="cursor: default !important;">Comment</button>
+                                <button v-else :disabled="userCommentText === null || userCommentText.length <= 0"
+                                    @click="submitVideoComment(null)" class="add-comment-btn">Comment</button>
+                            </div>
+                        </div>
+                        <div class="comment-container gap-y-6">
+                            <div v-for="comment in comments" :key="comment.id" class="comment flex flex-row">
+                                <div class="author-thumbnail">
+                                    <img :src="comment.user_profile_picrure" alt="">
+                                </div>
+                                <div class="comment-detail">
+                                    <div class="author-info">@{{ comment.username ?? 'Anonymous User' }}
+                                        <span class="created_at">{{
+                                            comment.created_at }} days ago</span>
+                                    </div>
+                                    <div class="comment-text -mt-2">{{ comment.text }}</div>
+                                    <div class="comment-container-button">
+                                        <button @click="likeComment(comment.id, true)" class="comment-like-button"
+                                            style="outline: none;">
+                                            <img :src="comment.is_liked === true ? fillLikeIcon : emptyLikeIcon">
+                                        </button>
+                                        <button @click="likeComment(comment.id, false)" class="comment-dislike-button"
+                                            style="outline: none;">
+                                            <img :src="comment.is_liked === false ? fillDislikeIcon : emptyDislikeIcon">
+                                        </button>
                                         <button @click="toggleUserCommentReplyButtons(comment.id)"
-                                            class="cancel-reply-btn">Cancel</button>
-                                        <button @click="submitVideoComment(comment.id)"
-                                            class="submit-reply-btn">Reply</button>
+                                            class="user-comment-reply-button" style="outline: none;">
+                                            <img class="w-8 h-8" :src="replyIcon" alt="">
+                                        </button>
                                     </div>
-                                </div>
-                                <div v-if="comment.replies_count > 0" @click="retrieveCommentReplies(comment.id)"
-                                    class="comment-reply-button">
-                                    <i
-                                        :class="['arrow', commentStates[comment.id]?.replyContainerVisible ? 'button-reversed' : 'button']">
-                                    </i><span class="reply-count">&nbsp;&nbsp;{{ comment.replies_count
-                                        }}&nbsp;</span>replies
-                                </div>
-                                <div v-if="commentStates[comment.id]?.replyContainerVisible" class="replies-container">
-                                    <div v-for="reply in comment.replies" :key="reply.id" class="reply">
-                                        <div class="reply-author-img">
-                                            <img :src="reply.user_profile_picrure" alt="">
+                                    <div v-if="commentStates[comment.id]?.repliesVisible"
+                                        class="w-auto flex justify-start items-center relative">
+                                        <div class="reply-creation">
+                                            <img class="user-profile-img" :src="userProfileImgSrc" alt="">
+                                            <input v-model="userReplyText" type="text" placeholder="Add a Reply...">
                                         </div>
-                                        <div class="reply-detail">
-                                            <div class="reply-author-info">
-                                                <p>@</p>
-                                                <p>{{ reply.username }}</p>
-                                                <span>&nbsp;{{ reply.created_at }} days </span>ago
+                                        <div class="reply-btns flex justify-center items-center">
+                                            <button @click="toggleUserCommentReplyButtons(comment.id)"
+                                                class="cancel-reply-btn">Cancel</button>
+                                            <button @click="submitVideoComment(comment.id)"
+                                                class="submit-reply-btn">Reply</button>
+                                        </div>
+                                    </div>
+                                    <div v-if="comment.replies_count > 0" @click="retrieveCommentReplies(comment.id)"
+                                        class="comment-reply-button">
+                                        <i
+                                            :class="['arrow', commentStates[comment.id]?.replyContainerVisible ? 'button-reversed' : 'button']">
+                                        </i><span class="reply-count">&nbsp;&nbsp;{{ comment.replies_count
+                                            }}&nbsp;</span>replies
+                                    </div>
+                                    <div v-if="commentStates[comment.id]?.replyContainerVisible"
+                                        class="replies-container">
+                                        <div v-for="reply in comment.replies" :key="reply.id" class="reply">
+                                            <div class="reply-author-img">
+                                                <img :src="reply.user_profile_picrure" alt="">
                                             </div>
-                                            <p class="reply-value"><span class="text-blue-600 font-medium mr-2">@{{
-                                                reply.parent_username
-                                                    }}</span>{{ reply.text }}</p>
-                                            <div class="reply-toolbar">
-                                                <button @click="likeComment(comment.id, true, reply.id)"
-                                                    class="reply-like-button" style="outline: none;">
-                                                    <img :src="reply.is_liked === true ? fillLikeIcon : emptyLikeIcon">
-                                                </button>
-                                                <button @click="likeComment(comment.id, false, reply.id)"
-                                                    class="reply-dislike-button" style="outline: none;">
-                                                    <img :src="reply.is_liked === false ? fillDislikeIcon : emptyDislikeIcon"
-                                                        alt="">
-                                                </button>
-                                                <button @click="toggleReplyCommentButtons(reply.id)"
-                                                    class="reply-comment-button" style="outline: none;">
-                                                    Reply
-                                                </button>
-                                                <div v-if="commentStates[reply.id]?.replyCommentButtonVisible"
-                                                    class="reply-division">
-                                                    <div class="reply-creation mt-3">
-                                                        <img class="user-profile-img" :src="userProfileImgSrc" alt="">
-                                                        <input v-model="userReplyText" type="text"
-                                                            placeholder="Add a Reply...">
-                                                    </div>
-                                                    <div class="reply-btns">
-                                                        <button @click="toggleReplyCommentButtons(reply.id)"
-                                                            class="cancel-reply-btn">Cancel</button>
-                                                        <button @click="submitVideoComment(reply.id)"
-                                                            class="submit-reply-btn">Reply</button>
+                                            <div class="reply-detail">
+                                                <div class="reply-author-info">
+                                                    <p>@</p>
+                                                    <p>{{ reply.username }}</p>
+                                                    <span>&nbsp;{{ reply.created_at }} days </span>ago
+                                                </div>
+                                                <p class="reply-value"><span class="text-blue-600 font-medium mr-2">@{{
+                                                    reply.parent_username
+                                                        }}</span>{{ reply.text }}</p>
+                                                <div class="reply-toolbar">
+                                                    <button @click="likeComment(comment.id, true, reply.id)"
+                                                        class="reply-like-button" style="outline: none;">
+                                                        <img
+                                                            :src="reply.is_liked === true ? fillLikeIcon : emptyLikeIcon">
+                                                    </button>
+                                                    <button @click="likeComment(comment.id, false, reply.id)"
+                                                        class="reply-dislike-button" style="outline: none;">
+                                                        <img :src="reply.is_liked === false ? fillDislikeIcon : emptyDislikeIcon"
+                                                            alt="">
+                                                    </button>
+                                                    <button @click="toggleReplyCommentButtons(reply.id)"
+                                                        class="reply-comment-button" style="outline: none;">
+                                                        Reply
+                                                    </button>
+                                                    <div v-if="commentStates[reply.id]?.replyCommentButtonVisible"
+                                                        class="reply-division">
+                                                        <div class="reply-creation mt-3">
+                                                            <img class="user-profile-img" :src="userProfileImgSrc"
+                                                                alt="">
+                                                            <input v-model="userReplyText" type="text"
+                                                                placeholder="Add a Reply...">
+                                                        </div>
+                                                        <div class="reply-btns">
+                                                            <button @click="toggleReplyCommentButtons(reply.id)"
+                                                                class="cancel-reply-btn">Cancel</button>
+                                                            <button @click="submitVideoComment(reply.id)"
+                                                                class="submit-reply-btn">Reply</button>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1352,20 +1383,20 @@ onMounted(async () => {
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                        <div v-if="commentScrollLoading" class="w-[50%] my-10">
-                            <ClipLoader color="red" size="45px"></ClipLoader>
+                            <div v-if="commentScrollLoading" class="w-[50%] my-10">
+                                <ClipLoader color="red" size="45px"></ClipLoader>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div v-if="!isUserAuthenticated" class="w-[70%] flex justify-center items-center my-6">
-                    <router-link to="/auth/">
-                        <p class="font-medium text-[14px]">For seeing the Comments you have to be Logged in! <span
-                                class="underline text-blue-500">Click Here</span></p>
-                    </router-link>
-                </div>
-                <div v-if="commentRetrievingLoading" class="w-[70%] my-10">
-                    <ClipLoader color="red" size="45px"></ClipLoader>
+                    <div v-if="!isUserAuthenticated" class="w-[70%] flex justify-center items-center my-6">
+                        <router-link to="/auth/">
+                            <p class="font-medium text-[14px]">For seeing the Comments you have to be Logged in! <span
+                                    class="underline text-blue-500">Click Here</span></p>
+                        </router-link>
+                    </div>
+                    <div v-if="commentRetrievingLoading" class="w-[70%] my-10">
+                        <ClipLoader color="red" size="45px"></ClipLoader>
+                    </div>
                 </div>
             </div>
         </div>

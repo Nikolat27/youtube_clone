@@ -1,10 +1,11 @@
 <script setup>
-import { ref, reactive, onMounted, watch } from 'vue';
+import { ref, reactive, onMounted, watch, computed } from 'vue';
 import axios from 'axios';
 import { useToast } from 'vue-toastification';
 import { useRoute } from 'vue-router';
 import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
 
+import { sharedState } from '@/sharedState';
 import kebabMenuSrc from '@/assets/icons/svg-icons/kebab-menu.svg'
 import djangoIcon from '@/assets/img/Django.png'
 
@@ -36,11 +37,25 @@ const retrieveSearchVideos = async (searchQuery) => {
 }
 
 const downloadVideo = (videoId) => {
-    console.log(videoId)
     axios.get(`http://127.0.0.1:8000/videos/download/${videoId}`).then((response) => {
         console.log(response.data.data)
     }).catch((error) => console.log(error))
 }
+
+const isSideBarCollapsed = ref(false)
+watch(() => sharedState.isWebsiteSideBarCollapsed, (newVal) => {
+    isSideBarCollapsed.value = newVal
+})
+const containerLeftPositionStyles = computed(() => {
+    if (isSideBarCollapsed.value && !isSideBarClosed.value) {
+        return '85px'
+    } else if (!isSideBarCollapsed.value && !isSideBarClosed.value) {
+        return '230px'
+    } else if (isSideBarClosed.value) {
+        return '8px'
+    }
+})
+
 
 watch(() => router.query.query, () => {
     const searchQuery = router.query.query
@@ -49,7 +64,29 @@ watch(() => router.query.query, () => {
     }
 })
 
+
+const isSideBarClosed = ref(false)
+const resizeHandle = () => {
+    const windowWidth = window.innerWidth
+    if (windowWidth > 650) {
+        sharedState.isWebsiteSideBarCollapsed = false
+        sharedState.isWebsiteSideBarClosed = false
+        isSideBarClosed.value = false
+    } else if (windowWidth >= 553 && windowWidth <= 650) {
+        sharedState.isWebsiteSideBarCollapsed = true
+        sharedState.isWebsiteSideBarClosed = false
+        isSideBarClosed.value = false
+    } else if (windowWidth < 553) {
+        sharedState.isWebsiteSideBarClosed = true
+        isSideBarClosed.value = true
+    }
+}
+
+
 onMounted(() => {
+    resizeHandle()
+    window.addEventListener("resize", resizeHandle)
+
     const searchQuery = router.query.query
     if (searchQuery) {
         retrieveSearchVideos(searchQuery)
@@ -57,13 +94,15 @@ onMounted(() => {
 })
 </script>
 <template>
-    <div v-if="!isLoading" class="flex flex-col gap-y-6 relative top-24 left-[240px] font-roboto">
-        <div v-for="video in videos" :key="video.id" class="max-w-[1231px] w-[1231px] h-[280px] flex gap-x-4 flex-row">
-            <div class="min-w-[500px] w-[500px] h-[281px]">
+    <div v-if="!isLoading" class="flex flex-col w-full sm:w-[75%] gap-y-6 relative top-24 font-roboto"
+        :style="{ left: containerLeftPositionStyles }">
+        <div v-for="video in videos" :key="video.id" class="w-full h-[280px] flex flex-row">
+            <router-link :to="`/video/${video.video_id}`"
+                class="w-[40%] min-w-[240px] min-h-[130px] max-w-[500px] h-[281px]">
                 <img loading="lazy" draggable="false" class="w-full h-full object-fit rounded-xl" :src="video.thumbnail"
                     alt="">
-            </div>
-            <div class="flex flex-col w-full max-w-[1231px] pr-4 gap-y-2">
+            </router-link>
+            <div class="flex flex-col ml-4 w-[60%] gap-y-2">
                 <div class="flex flex-row justify-start items-center">
                     <router-link @click="downloadVideo(video.video_id)" :to="`/video/${video.video_id}`">
                         <p class="text-[18px] font-normal">{{ video.title }}</p>
@@ -75,11 +114,6 @@ onMounted(() => {
                         </button>
                         <div v-if="isKebabMenuOpen"
                             class="absolute flex flex-col w-[211px] h-auto rounded-xl top-10 right-0 py-4 bg-white z-20 custom-shadow-inset">
-                            <div
-                                class="w-[211px] h-[36px] flex flex-row justify-start items-center pl-4 hover:bg-[#e5e5e5]">
-                                <img src="" alt="">
-                                <p>Add to queue</p>
-                            </div>
                             <div
                                 class="w-[211px] h-[36px] flex flex-row justify-start items-center pl-4 hover:bg-[#e5e5e5]">
                                 <img src="" alt="">
@@ -99,7 +133,7 @@ onMounted(() => {
                     </div>
                 </div>
                 <div class="text-gray-600 text-[12px] font-normal">
-                    <span>1.9M views&nbsp;</span>.<span>&nbsp;{{ video.published_date }}</span>
+                    <span>{{ video.views ?? 0 }} views&nbsp;</span>.<span>&nbsp;{{ video.published_date }}</span>
                 </div>
                 <div
                     class="cursor-pointer flex flex-row gap-x-2 text-gray-600 text-[12px] font-normal justify-start items-center">

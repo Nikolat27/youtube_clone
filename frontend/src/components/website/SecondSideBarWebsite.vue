@@ -173,7 +173,7 @@ onMounted(async () => {
                     <p>{{ channel.name }}</p>
                 </router-link>
             </div>
-            <router-link to="/feed/channels">
+            <router-link to="/feed/channels" key="all-channels">
                 <div v-if="isCollapsed" class="side-bar-links subscriptions-div">
                     <div class="w-[24px] h-[24px]">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" height="24" viewBox="0 0 24 24"

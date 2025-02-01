@@ -50,6 +50,8 @@ async def check_channel_notification(user_session_id, channel_id):
         .filter_by(user_id=user_id, channel_id=channel_id)
         .first()
     )
+    if not notification:
+        return None
     return notification.notification
 
 
@@ -98,7 +100,9 @@ async def get_user_subscriptions_list(user_session_id: str = Query()):
             ),
             "description": channel.channel.description,
             "total_subs": await total_channel_subscribers(channel.channel_id),
-            "notification_type": await check_channel_notification(user_session_id, channel.channel_id)
+            "notification_type": await check_channel_notification(
+                user_session_id, channel.channel_id
+            ),
         }
         for channel in subscriptions
     ]

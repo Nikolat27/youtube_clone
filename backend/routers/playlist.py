@@ -183,7 +183,6 @@ async def get_playlist(
     filter: str = Query(),
     user_session_id: str = Query(None),
 ):
-    print("SessionId: ", user_session_id)
     playlist = Playlist.query.filter_by(id=playlist_id).first()
 
     if (

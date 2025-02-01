@@ -123,27 +123,6 @@ async def get_users_ip():
     return socket.gethostbyname(hostname)
 
 
-@router.get("/generate/fake")  # Usage: Generate testing and random data to our DB
-def generate_fake_data():
-    title = "Hello world"
-    video_type = "long_video"
-    file_name = ""
-    file_url = ""
-    thumbnail_url = "uploaded_videos/3/thumbnail/pic1.jpg"
-
-    for i in range(100):
-        video = Video(
-            title=f"{title} {i + 1}",
-            user_id=3,
-            video_type=video_type,
-            file_name=file_name,
-            file_url=file_url,
-            thumbnail_url=thumbnail_url,
-        )
-        session.add(video)
-        session.commit()
-
-
 @router.get("/")
 async def videos_list() -> Page:
     long_videos = paginate(
@@ -260,7 +239,9 @@ async def load_more_videos() -> Page:
 
 async def choose_ad():
     total_ads = Ad.query.count()
-    random_id = random.randint(1, total_ads)
+    if total_ads <= 0:
+        return None
+    random_id = random.randint(1, 1)
     ad = Ad.query.with_entities(Ad.unique_id).filter_by(id=random_id).first()
     return ad.unique_id
 
@@ -325,14 +306,14 @@ async def video_detail(
     else:
         decode_current_time = 0
 
-    random_uuid = uuid.uuid4()
-    redis_client.set(str(random_uuid), "ad_video_path", ex=600)
+    random_uuid = str(uuid.uuid4())
+    redis_client.set(random_uuid, "ad_video_path", ex=600)
     serializer = {
         "id": video.unique_id,
         "unique_id": video.unique_id,
         "title": video.title,
         "views": video.views,
-        "has_ad": True,
+        "has_ad": True if ad_unique_id else False,
         "ad_unique_id": ad_unique_id,
         "video_type": video.video_type,
         "user_id": video.user_id,
@@ -351,7 +332,7 @@ async def video_detail(
         "is_channel_subed": is_channel_subed(channel.id, user_id),
         "total_likes": await total_video_likes(video.unique_id),
         "total_comments": await get_total_comments(video.unique_id),
-        "random_uuid": str(random_uuid),
+        "random_uuid": random_uuid,
     }
     return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)
 
@@ -907,9 +888,7 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 
 @router.get("/download/{video_id}")
 def download_video(video_id: str = Path_parameter()):
-    # The URL of the YouTube video
     video_url = f"https://www.youtube.com/watch?v={video_id}"
-
     UPLOAD_DIR_VIDEO = Path(UPLOAD_DIR / video_id)
     check_video_exist = UPLOAD_DIR_VIDEO.exists()
     if not check_video_exist:
