@@ -8,7 +8,6 @@ import axios from 'axios';
 import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
 import ClipLoader from 'vue-spinner/src/ClipLoader.vue';
 
-
 // Icons
 import emptyLikeIcon from '/src/assets/icons/svg-icons/like-empty.svg'
 import fillLikeIcon from '/src/assets/icons/svg-icons/like-fill.svg'
@@ -411,40 +410,79 @@ const videoWatchTimeTracker = () => {
 }
 
 
+const shortVideoMinSizes = () => {
+    const windowWidth = window.innerWidth
+    const windowHeight = window.innerHeight
+
+    const shortVideo = document.getElementById("main-short-video")
+    const shortVideoButtons = document.querySelector(".short-video-buttons")
+    const shortVideoWidth = (25 * windowWidth) / 100
+    const shortVideoHeight = (85 * windowHeight) / 100
+
+    shortVideo.style.minWidth = `${shortVideoWidth}px`
+    shortVideo.style.minHeight = `${shortVideoHeight}px`
+    shortVideoButtons.style.minWidth = `${shortVideoWidth}px`
+}
+
+
+const isSideBarClosed = ref(false)
+const resizeHandle = () => {
+    const windowWidth = window.innerWidth
+    if (windowWidth > 650) {
+        sharedState.isWebsiteSideBarCollapsed = false
+        sharedState.isWebsiteSideBarClosed = false
+        isSideBarClosed.value = false
+    } else if (windowWidth >= 553 && windowWidth <= 650) {
+        sharedState.isWebsiteSideBarCollapsed = true
+        sharedState.isWebsiteSideBarClosed = false
+        isSideBarClosed.value = false
+    } else if (windowWidth < 553) {
+        sharedState.isWebsiteSideBarClosed = true
+        isSideBarClosed.value = true
+    }
+}
+
+
 onMounted(async () => {
     await MountPage()
+    shortVideoMinSizes()
+    resizeHandle()
     if (videoInfo.video_type === 'long_video') {
         router2.push({ name: "video_detail", params: { id: router1.params.id } })
     }
-
     videoRef.value.addEventListener("ended", videoWatchTimeTracker)
     window.addEventListener("popstate", videoWatchTimeTracker)
+    window.addEventListener("resize", resizeHandle)
 })
 </script>
 
 <template>
-    <div v-if="!isPageLoading" class="flex flex-col justify-center items-center mt-16 gap-y-7">
-        <div class="short-video-wrapper">
-            <div class="short-video w-[350px] h-[600px] relative">
-                <video :poster="videoInfo.thumbnail_url" ref="videoRef" oncontextmenu="return false;" volume="0.5"
-                    class="w-[100%] h-[100%] object-cover rounded-2xl">
+    <div v-if="!isPageLoading" class="flex flex-col w-screen h-screen justify-center gap-y-7"
+        :class="[isSideBarClosed ? 'items-start' : 'items-center']">
+        <div class="short-video-wrapper w-[25%] h-[85%]">
+            <div class="short-video w-full h-full relative">
+                <video id="main-short-video" :poster="videoInfo.thumbnail_url" ref="videoRef"
+                    oncontextmenu="return false;" volume="0.5" class="w-full h-full object-cover rounded-2xl">
                     <source :src="`http://127.0.0.1:8000/videos/stream/${$route.params.id}/`" type="video/mp4" />
                 </video>
-                <button @click="toggleVideoPlay" class="w-[48px] h-[48px] flex justify-center items-center bg-opacity-75 rounded-full absolute top-2 left-4
+                <div
+                    class="short-video-buttons flex flex-row items-center absolute top-2 left-4 gap-x-2 w-full min-w-full">
+                    <button @click="toggleVideoPlay" class="w-[48px] h-[48px] flex justify-center items-center bg-opacity-75 rounded-full 
                      bg-[#b2b1b2] hover:bg-[#797879]">
-                    <img class="w-[15px] h-[17px]" :src="videoPlayIcon" alt="">
-                </button>
-                <button class="volume-button w-[48px] hover:w-[201px] h-[48px] flex justify-center items-center bg-opacity-75 rounded-full absolute top-2 left-20
+                        <img class="w-[15px] h-[17px]" :src="videoPlayIcon" alt="">
+                    </button>
+                    <button class="volume-button w-[48px] hover:w-[201px] h-[48px] flex justify-center items-center bg-opacity-75 rounded-full
                      bg-[#b2b1b2] hover:bg-[#797879]">
-                    <img @click="toggleVideoMute" class="w-[22px] h-[22px] cursor-pointer" :src="videoVolumeIcon"
-                        alt="">
-                    <input id="volume-value" @input="updateVolume" v-model="volumeValue" type="range" min="0" max="100"
-                        class="hidden ml-4 w-[132px] h-[29.3] bg-black outline-none">
-                </button>
-                <button @click="toggleVideoFullscreen" class="fullscreen-btn w-[48px] h-[48px] flex justify-center items-center bg-opacity-75 rounded-full absolute top-2 right-4
-                     bg-[#b2b1b2] hover:bg-[#797879] cursor-pointer">
-                    <img class="w-[22px] h-[22px]" src="@/assets/icons/svg-icons/fullscreen-icon.png" alt="">
-                </button>
+                        <img @click="toggleVideoMute" class="w-[22px] h-[22px] cursor-pointer" :src="videoVolumeIcon"
+                            alt="">
+                        <input id="volume-value" @input="updateVolume" v-model="volumeValue" type="range" min="0"
+                            max="100" class="hidden ml-4 w-[132px] h-[29.3] bg-black outline-none">
+                    </button>
+                    <button @click="toggleVideoFullscreen" class="fullscreen-btn ml-auto mr-6 w-[48px] h-[48px] flex justify-center items-center
+                     bg-opacity-75 rounded-full bg-[#b2b1b2] hover:bg-[#797879] cursor-pointer">
+                        <img class="w-[22px] h-[22px]" src="@/assets/icons/svg-icons/fullscreen-icon.png" alt="">
+                    </button>
+                </div>
                 <div class="short-video-info flex flex-col absolute bottom-7 left-4 text-white">
                     <div class="flex flex-row justify-center items-center gap-x-3">
                         <router-link :to="`/channel-page/${videoInfo.channel_unique_identifier}`">
@@ -462,7 +500,7 @@ onMounted(async () => {
                     <h2 class="text-[14px] font-normal mt-4">{{ videoInfo.title }}</h2>
                 </div>
                 <div class="flex flex-col gap-y-4 justify-center items-center
-                 absolute right-[-65px] bottom-[30px]">
+                        absolute left-[410px] sm:left-[490px] bottom-[30px]">
                     <button @click="likeVideo(true)" class="w-12 h-12 bg-[#f2f2f2] rounded-full hover:bg-[#e5e5e5]">
                         <img :src="likeSituation === true ? fillLikeIcon : emptyLikeIcon" class="h-[80%] w-[80%] m-auto"
                             alt="">
@@ -512,8 +550,9 @@ onMounted(async () => {
                                 <div class="flex flex-col flex-1 ml-2">
                                     <div class="flex flex-row justify-start items-center">
                                         <p class="text-[13px] font-medium">@{{ comment.username }}</p>
-                                        <span class="text-[12px] font-normal ml-2 text-[#918b8b]">{{ comment.created_at
-                                            }} days ago</span>
+                                        <span class="text-[12px] font-normal ml-2 text-[#918b8b]">{{
+                                            comment.created_at
+                                        }} days ago</span>
                                         <div v-if="comment.user_id === userId"
                                             class="flex justify-self-end ml-auto mr-4">
                                             <button @click="deleteComment(comment.id)">
@@ -629,7 +668,7 @@ onMounted(async () => {
                         <PulseLoader color="red" size="20px"></PulseLoader>
                     </div>
                     <div class="max-h-[56.8px] flex flex-row mt-10 absolute bottom-0 left-0 gap-x-4 w-full
-                     border-t pt-2 pl-2 pb-2">
+                            border-t pt-2 pl-2 pb-2">
                         <div class="w-10 h-10">
                             <img class="w-[100%] h-[100%] rounded-full cursor-pointer" :src="userProfileImgSrc" alt="">
                         </div>
