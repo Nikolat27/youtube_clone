@@ -46,7 +46,8 @@ const retrieveVideos = () => {
     axios.get("http://127.0.0.1:8000/videos/", {
         params: {
             size: size.value,
-            page: page.value
+            page: page.value,
+            user_session_id: sessionStorage.getItem("user_session_id")
         }
     }).then((response) => {
         if (response.status == 200) {
@@ -139,7 +140,7 @@ onMounted(() => {
                     <div class="video-thumbnail w-full h-[225px] mb-[10px] relative z-0">
                         <img class="w-full h-full" loading="lazy" :src="video.thumbnail_url" alt="">
                         <input v-if="video.watch_progress" type="range" :value="video.watch_progress" disabled
-                            class="z-10 watch-progress-tracking w-[400px] bg-transparent absolute -bottom-[10px] left-0">
+                            class="z-10 watch-progress-tracking w-full bg-transparent absolute -bottom-[10px] left-0">
                     </div>
                 </router-link>
                 <div class="video-info">

@@ -100,8 +100,8 @@ const prevStep = () => {
     }
 }
 
-const isLoading = ref(false)
-watch(sharedState.isVideoCreationOpen, () => {
+
+const retrieveVideoDetail = () => {
     currentStep.value = 0
     isLoading.value = true
     if (!sharedState.isVideoCreationOpen.open) return;
@@ -118,6 +118,11 @@ watch(sharedState.isVideoCreationOpen, () => {
     }).catch((error) => {
         console.log(error)
     }).finally(() => isLoading.value = false)
+}
+
+const isLoading = ref(false)
+watch(sharedState.isVideoCreationOpen, () => {
+    retrieveVideoDetail()
 })
 
 const formData = reactive({
@@ -188,7 +193,8 @@ const authenticateUser = () => {
 }
 
 onMounted(() => {
-    // Studio page is just for authenticated Users
+    retrieveVideoDetail()
+    // Studio page is just for Authenticated Users
     authenticateUser()
 })
 </script>

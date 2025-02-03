@@ -91,6 +91,10 @@ async def get_username(user_id):
     return user.username
 
 
+async def video_ownership(user_id, channel_owner_id):
+    return user_id == channel_owner_id
+
+
 def get_channel_name(user_id):
     user = User.query.filter_by(id=user_id).first()
     return user.channel.name or user.username
@@ -118,13 +122,8 @@ def is_channel_subed(channel_id, user_id):
     )
 
 
-async def get_users_ip():
-    hostname = socket.gethostname()
-    return socket.gethostbyname(hostname)
-
-
 @router.get("/")
-async def videos_list() -> Page:
+async def videos_list(user_session_id: str = Query(None)) -> Page:
     long_videos = paginate(
         session,
         select(
@@ -150,7 +149,10 @@ async def videos_list() -> Page:
         .all()
     )
 
-    user_ip = await get_users_ip()
+    user_id = None
+    if user_session_id:
+        user_id = await get_current_user_id(user_session_id)
+
     response_data = {
         "long_videos": {
             "total": long_videos.total,
@@ -163,10 +165,13 @@ async def videos_list() -> Page:
                     "unique_id": video.unique_id,
                     "title": video.title,
                     "views": video.views,
-                    "watch_progress": await get_current_video_time(
-                        user_ip, video.unique_id, video.file_url
+                    "watch_progress": (
+                        await get_current_video_time(
+                            user_id, video.unique_id, video.file_url
+                        )
+                        if user_id
+                        else None
                     ),
-                    # "watch_progress": None,
                     "thumbnail_url": await static_file(video.thumbnail_url),
                     "created_at": f"{await time_difference(video.created_at)} days",
                     "channel_profile_picture": get_channel_profile(video.user_id),
@@ -189,7 +194,6 @@ async def videos_list() -> Page:
             for video in short_videos
         ],
     }
-
     return JSONResponse({"data": response_data}, status_code=status.HTTP_200_OK)
 
 
@@ -250,10 +254,6 @@ async def choose_ad():
 async def video_detail(
     unique_id: str = Path_parameter(), user_session_id: str = Query(None)
 ):
-    user_id = None
-    if user_session_id:
-        user_id = await get_current_user_id(user_session_id)
-
     video = (
         Video.query.with_entities(
             Video.id,
@@ -270,7 +270,6 @@ async def video_detail(
         .filter_by(unique_id=unique_id)
         .first()
     )
-
     if not video:
         DIR = Path("youtube_videos")
         FILE_PATH = Path(DIR / unique_id / f"{unique_id}.mp4")
@@ -284,9 +283,10 @@ async def video_detail(
                 status_code=status.HTTP_202_ACCEPTED,
             )
 
-    channel = (
+    video_channel = (
         Channel.query.with_entities(
             Channel.id,
+            Channel.owner_id,
             Channel.name,
             Channel.profile_picture_url,
             Channel.video_watermark_url,
@@ -295,19 +295,22 @@ async def video_detail(
         .first()
     )
 
-    ad_unique_id = await choose_ad()
-    user_ip = await get_users_ip()
+    user_id = None
+    is_video_for_user = False
+    if user_session_id:
+        user_id = await get_current_user_id(user_session_id)
+        is_video_for_user = await video_ownership(user_id, video_channel.owner_id)
 
-    current_time = redis_client.get(
-        f"{video.unique_id}-{user_ip}-current_time"
-    )  # this one is in bytes
-    if current_time:
-        decode_current_time = float(current_time)
-    else:
-        decode_current_time = 0
+    ad_unique_id = await choose_ad()
+
+    decode_current_time = None
+    if user_id:
+        current_time = redis_client.get(f"{video.unique_id}-{user_id}-current_time")
+        decode_current_time = float(current_time) if current_time else 0
 
     random_uuid = str(uuid.uuid4())
-    redis_client.set(random_uuid, "ad_video_path", ex=600)
+    if random_uuid:
+        redis_client.set(random_uuid, "ad_video_path", ex=600)
     serializer = {
         "id": video.unique_id,
         "unique_id": video.unique_id,
@@ -323,15 +326,18 @@ async def video_detail(
         "current_time": decode_current_time,
         "duration": await get_video_duration(video.file_url),
         "created_at": f"{await time_difference(video.created_at)} days ",
-        "channel_id": channel.id,
-        "channel_unique_identifier": get_channel_unique_identifier(channel.id),
-        "channel_name": channel.name or "",
-        "channel_profile_url": await static_file(channel.profile_picture_url) or "",
-        "channel_watermark_url": await static_file(channel.video_watermark_url) or "",
-        "channel_total_subs": get_channel_total_subs(channel.id),
-        "is_channel_subed": is_channel_subed(channel.id, user_id),
+        "channel_id": video_channel.id,
+        "channel_unique_identifier": get_channel_unique_identifier(video_channel.id),
+        "channel_name": video_channel.name or "",
+        "channel_profile_url": await static_file(video_channel.profile_picture_url)
+        or "",
+        "channel_watermark_url": await static_file(video_channel.video_watermark_url)
+        or "",
+        "channel_total_subs": get_channel_total_subs(video_channel.id),
+        "is_channel_subed": is_channel_subed(video_channel.id, user_id),
         "total_likes": await total_video_likes(video.unique_id),
         "total_comments": await get_total_comments(video.unique_id),
+        "is_video_for_user": is_video_for_user,
         "random_uuid": random_uuid,
     }
     return JSONResponse({"data": serializer}, status_code=status.HTTP_200_OK)
@@ -399,8 +405,8 @@ async def video_stream(
         return Response(data, status_code=206, headers=headers, media_type="video/mp4")
 
 
-@router.get("/stream/watch-time/{unique_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def video_watch_time(
+@router.get("/stream/track-views/{unique_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def video_track_views(
     unique_id: str = Path_parameter(),
     watch_time: float = Query(),
     duration: float = Query(),
@@ -528,18 +534,17 @@ async def get_next_video(
 async def set_current_video_time(
     unique_id: str = Path_parameter,
     current_time: float = Query(),
+    user_id: int = Query(),
 ):
-    user_ip = await get_users_ip()
     current_time = round(current_time, 1)
-    redis_client.set(f"{unique_id}-{user_ip}-current_time", current_time)
+    redis_client.set(f"{unique_id}-{user_id}-current_time", current_time)
 
 
-async def get_current_video_time(user_ip, unique_id, file_url):
+async def get_current_video_time(user_id, unique_id, file_url):
     try:
-        current_time = redis_client.get(f"{unique_id}-{user_ip}-current_time")
-        decode_current_time = float(current_time.decode("utf-8"))
+        current_time = redis_client.get(f"{unique_id}-{user_id}-current_time")
         video_duration = await get_video_duration(file_url)
-        progress_percentage = (decode_current_time * 100) / video_duration
+        progress_percentage = (float(current_time) * 100) / video_duration
         return progress_percentage
     except:
         return None

@@ -179,7 +179,7 @@ const togglePlaylistDivision = () => {
 // Advertisement and such...
 let videoHasAd = ref(false)
 let adSkipDuration = ref(5) // in seconds
-let adFinished = ref(false)
+let adFinished = ref(true) // When there isnt any ad we its also considered as finish
 let isAdPlaying = ref(false)
 let durationInternal = null; // Interval for advertisement
 
@@ -275,12 +275,13 @@ const handleVideoProgress = () => {
         currentVideoTime.value = calculateTime(videoRef.value.currentTime)
         videoDuration.value = calculateTime(videoRef.value.duration)
 
-        // Sending some information to the backend such as current time for managing the watch progress tracking
+        // This part is for tracking the video`s watch time for users
         if (adFinished.value) {
             axios.get(`http://127.0.0.1:8000/videos/stream/current-time/${route.params.id}?random_uuid=${videoInfo.random_uuid}`, {
                 params: {
                     current_time: videoRef.value.currentTime,
-                    video_duration: videoRef.value.duration
+                    video_duration: videoRef.value.duration,
+                    user_id: videoInfo.user_id
                 }
             })
         }
@@ -449,6 +450,7 @@ let videoInfo = reactive({
     channel_profile_url: '',
     channel_watermark_url: '',
     random_uuid: '',
+    is_video_for_user: false,
 })
 
 const likeSituation = ref(null)
@@ -462,6 +464,7 @@ const userLikeSituation = async (video_id, user_session_id) => {
         console.log(error)
     })
 }
+
 
 const saveVideoToPlaylist = async () => {
     const user_session_id = sessionStorage.getItem("user_session_id")
@@ -539,13 +542,14 @@ const retrieveVideoDetail = async (videoId, user_session_id) => {
         if (response.status == 200) {
             Object.assign(videoInfo, response.data.data)
             videoDuration.value = calculateTime(videoInfo.duration)
+            isChannelSubscribed.value = videoInfo.is_channel_subed
+
+            nextTick(() => { // Wait DOM to render
+                videoRef.value.currentTime = response.data.data.current_time
+            })
         } else {
             videoRef.value = null
             youtubeVideoLink.value = response.data.data
-        }
-        if (videoRef.value) {
-            if (videoRef.value) { videoRef.value.currentTime = response.data.data.current_time }
-            isChannelSubscribed.value = videoInfo.is_channel_subed
         }
     }).catch((error) => {
         console.error(error)
@@ -710,10 +714,10 @@ const MountPage = async () => {
     const user_session_id = sessionStorage.getItem("user_session_id")
     const videoId = route.params.id // Current Video Id
     await retrieveVideoDetail(videoId, user_session_id)
-
-    if (youtubeVideoLink) {
+    if (youtubeVideoLink.value) {
         return;
     }
+
     const playlistId = route.query.playlist_id
     if (playlistId) {
         retrievePlaylist(playlistId, 'all')
@@ -802,7 +806,7 @@ const handleVideoPause = () => {
     let calculateWatchTime = (endTime - startTime) / 1000
     totalWatchedTime += calculateWatchTime
     startTime = null
-    axios.get(`http://127.0.0.1:8000/videos/stream/watch-time/${route.params.id}?random_uuid=${videoInfo.random_uuid}`, {
+    axios.get(`http://127.0.0.1:8000/videos/stream/track-views/${route.params.id}?random_uuid=${videoInfo.random_uuid}`, {
         params: {
             watch_time: totalWatchedTime,
             duration: videoRef.value.duration
@@ -819,24 +823,20 @@ const handleVideoEnding = () => {
 }
 
 
+const editUserVideo = () => {
+    sharedState.isVideoCreationOpen.open = true
+    sharedState.isVideoCreationOpen.video_id = route.params.id
+    router2.push({ name: "studio" })
+}
+
+
 const isMainVideoEnded = ref(false)
 onMounted(async () => {
     // This 'timeupdate' invokes whenever timeCurrent of the video changes
     await MountPage()
-    if (youtubeVideoLink) {
+    if (youtubeVideoLink.value) {
         return;
     }
-
-    // watchEffect(() => {
-    //     if (videoRef.value) {
-    //         if (videoInfo.has_ad && !adFinished.value) {
-    //             isAdPlaying.value = true;
-    //             videoRef.value.src = `http://127.0.0.1:8000/videos/stream/${videoInfo.ad_unique_id}?is_ad=true&random_uuid=${videoInfo.random_uuid}`;
-    //         } else {
-    //             videoRef.value.src = `http://127.0.0.1:8000/videos/stream/${route.params.id}?is_ad=false&random_uuid=${videoInfo.random_uuid}`;
-    //         }
-    //     }
-    // });
 
     if (videoInfo.video_type === 'short_video') { // This page is only for long videos
         router2.push({ name: "short_detail", params: { id: route.params.id } })
@@ -851,10 +851,9 @@ onMounted(async () => {
     })
 });
 
-onUnmounted(() => {
-    window.removeEventListener("resize", () => {
 
-    })
+onUnmounted(() => {
+    window.removeEventListener("resize", () => { })
 })
 </script>
 
@@ -1014,13 +1013,13 @@ onUnmounted(() => {
                     </div>
                 </div>
             </div>
-            <div v-else class="video-container top-14 left-12 relative overflow-hidden w-[70%] h-[65%] max-h-[65%] flex
+            <div v-else class="video-container overflow-hidden w-[100%] h-[65%] max-h-[65%] flex
                 justify-center items-center rounded-2xl mb-20">
-                <iframe class="w-full h-full" :src="youtubeVideoLink">
+                <iframe class="w-full h-full" :src="youtubeVideoLink" allowfullscreen>
                 </iframe>
             </div>
 
-            <div v-if="youtubeVideoLink" class="flex flex-col">
+            <div v-if="!youtubeVideoLink" class="flex flex-col">
                 <div class="video-title mt-4">
                     <h1 class="text-[20px] font-bold">{{ videoInfo.title }}</h1>
                 </div>
@@ -1030,25 +1029,30 @@ onUnmounted(() => {
                         <img class="video-detail-channel-logo" loading="eager" :src="videoInfo.channel_profile_url"
                             alt="">
                     </router-link>
-                    <router-link :to="`/channel-page/${videoInfo.channel_unique_identifier}`">
+                    <router-link :to="`/channel-page/${videoInfo.channel_unique_identifier}`" class="mr-4">
                         <div class="video-detail-upload-info">
-                            <p class="video-detail-channel-name">{{ videoInfo.channel_name }}</p>
-                            <p class="video-detail-channel-sub-count">{{ videoInfo.channel_total_subs }} subscribers</p>
+                            <p class="w-auto">{{ videoInfo.channel_name }}</p>
+                            <p class="w-auto">{{ videoInfo.channel_total_subs }} subscribers</p>
                         </div>
                     </router-link>
-                    <button v-if="isChannelSubscribed" @click="toggleChannelOptions" class="w-[150px] h-[36px] rounded-2xl bg-[#f2f2f2] hover:bg-[#e5e5e5]
-                flex justify-center items-center">
+                    <button @click="editUserVideo" v-if="videoInfo.is_video_for_user" class="w-[93px] h-[36px] rounded-3xl text-white bg-[#065fd4]
+                     hover:bg-[#0556bf] text-[14px] font-medium">
+                        Edit video
+                    </button>
+                    <button v-if="isChannelSubscribed && !videoInfo.is_video_for_user" @click="toggleChannelOptions"
+                        class="w-[150px] h-[36px] rounded-2xl bg-[#f2f2f2] hover:bg-[#e5e5e5]
+                        flex justify-center items-center">
                         <img class="w-5 h-6" :src="channelNotification ? fillBellSrc : emptyBellSrc" alt="">
                         <span class="text-black text-sm font-medium ml-2">Subscribed</span>
                         <img class="w-3 h-3 ml-5" src="@/assets/icons/svg-icons/thin-chevron-arrow-bottom-icon.svg"
                             alt="">
                     </button>
-                    <button v-else @click="subscribeChannel(videoInfo.channel_id)"
-                        class="w-[94px] h-[36px] rounded-3xl bg-black">
+                    <button v-if="!isChannelSubscribed && !videoInfo.is_video_for_user"
+                        @click="subscribeChannel(videoInfo.channel_id)" class="w-[94px] h-[36px] rounded-3xl bg-black">
                         <span class="text-sm font-medium text-white">Subscribe</span>
                     </button>
                     <div v-if="isChannelSubscribed && isChannelOptionsOpen" class="channel-options w-[256px]
-                    h-[140px] flex flex-col my-shadow rounded-xl text-sm font-normal z-40 bg-white -mt-3">
+                        h-[140px] flex flex-col my-shadow rounded-xl text-sm font-normal z-40 bg-white -mt-3">
                         <button @click="toggleChannelNotification(videoInfo.channel_id, 'all')"
                             class="w-[100%] h-[40px] mt-2">
                             <img :src="fillBellSrc" alt="">
@@ -1216,7 +1220,7 @@ onUnmounted(() => {
                                 <img src="@/assets/img/Django.png" alt="">
                             </div>
                             <div class="related-video-details">
-                                <p><a href="">Django tutorial</a></p>
+                                <p><a href="">{{ youtubeVideoLink }}</a></p>
                                 <p style="color: #6a6360; font-size: 13px;">channel name</p>
                                 <p style="color: #6a6360; font-size: 13px;"><span
                                         class="related-video-views">2.4M</span>
