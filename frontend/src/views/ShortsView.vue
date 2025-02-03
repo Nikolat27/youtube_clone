@@ -552,7 +552,7 @@ onMounted(async () => {
                                         <p class="text-[13px] font-medium">@{{ comment.username }}</p>
                                         <span class="text-[12px] font-normal ml-2 text-[#918b8b]">{{
                                             comment.created_at
-                                        }} days ago</span>
+                                            }} days ago</span>
                                         <div v-if="comment.user_id === userId"
                                             class="flex justify-self-end ml-auto mr-4">
                                             <button @click="deleteComment(comment.id)">
