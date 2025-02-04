@@ -5,7 +5,6 @@ import { onClickOutside } from '@vueuse/core'
 import PlaylistCreation from './PlaylistCreation.vue';
 import { sharedState } from '@/sharedState.js'; // Shared states (aka global variables)
 import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
-import { sharedState } from '@/sharedState.js';
 
 // Icons
 import uploadIcon from '/src/assets/icons/svg-icons/upload-icon.svg'
