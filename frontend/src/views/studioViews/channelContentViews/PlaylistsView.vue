@@ -4,6 +4,7 @@ import axios from 'axios';
 import { sharedState } from '@/sharedState';
 import { useToast } from 'vue-toastification';
 import PlaylistCreation from '@/components/studio/video_creation/PlaylistCreation.vue';
+import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
 
 // Icons
 import youtubeIcon from '@/assets/icons/svg-icons/youtube-icon.svg'

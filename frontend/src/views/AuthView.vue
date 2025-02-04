@@ -65,10 +65,6 @@ onMounted(() => {
 
 onUnmounted(() => {
     document.title = "YouTube"
-
-    loginPassword.value = ''
-    registerPassword.value = ''
-    registerPassword2.value = ''
 })
 </script>
 
