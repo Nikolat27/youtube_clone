@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, computed, onMounted, watch } from 'vue';
+import { ref, reactive, computed, onMounted } from 'vue';
 import { RouterLink } from 'vue-router';
 import axios from 'axios';
 import { useToast } from 'vue-toastification';
@@ -25,7 +25,7 @@ const toggleSubscriptionChannels = () => {
 };
 
 const watchLaterPlaylist = () => {
-    axios.get("http://127.0.0.1:8000/playlist/watch/later", {
+    axios.get(`${sharedState.websiteUrl}/playlist/watch/later`, {
         params: {
             user_session_id: sessionStorage.getItem("user_session_id")
         }
@@ -37,7 +37,7 @@ const watchLaterPlaylist = () => {
 }
 
 const likedVideosPlaylist = () => {
-    axios.get("http://127.0.0.1:8000/playlist/liked/videos", {
+    axios.get(`${sharedState.websiteUrl}/playlist/liked/videos`, {
         params: {
             user_session_id: sessionStorage.getItem("user_session_id")
         }
@@ -50,7 +50,7 @@ const likedVideosPlaylist = () => {
 
 const isUserAuthenticated = ref(false)
 const userAuthentication = async (user_session_id) => {
-    await axios.get("http://127.0.0.1:8000/users/is_authenticated", {
+    await axios.get(`${sharedState.websiteUrl}/users/is_authenticated`, {
         params: {
             user_session_id: user_session_id
         }
@@ -64,7 +64,7 @@ const userAuthentication = async (user_session_id) => {
 }
 
 const openShortsPage = () => {
-    axios.get("http://127.0.0.1:8000/videos/short-video").then((response) => {
+    axios.get(`${sharedState.websiteUrl}/videos/short-video`).then((response) => {
         if (response.status == 200) {
             router2.push({
                 name: "short_detail", params: { id: response.data.unique_id }, state: {
@@ -79,7 +79,7 @@ const openShortsPage = () => {
 let totalChannels = ref(null)
 const subscriptionChannels = reactive([])
 const retrieveChannelSubscriptions = (user_session_id) => {
-    axios.get("http://127.0.0.1:8000/channel/subscriptions", {
+    axios.get(`${sharedState.websiteUrl}/channel/subscriptions`, {
         params: {
             user_session_id: user_session_id
         }

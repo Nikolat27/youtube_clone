@@ -1,6 +1,4 @@
 <script setup>
-import { ref } from 'vue';
-
 import uploadIcon from '/src/assets/icons/svg-icons/upload-icon.svg'
 import editIcon from '@/assets/icons/svg-icons/edit-icon.svg'
 import uploadImage from '/src/assets/img/upload-video-img.svg'

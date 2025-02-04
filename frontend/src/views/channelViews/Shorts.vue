@@ -3,7 +3,7 @@ import { ref, reactive, onMounted } from 'vue';
 import axios from 'axios';
 import { useRoute, useRouter } from 'vue-router';
 import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
-
+import { sharedState } from '@/sharedState';
 
 const router1 = useRoute()
 const router2 = useRouter()
@@ -17,7 +17,7 @@ const currentSortBy = ref(null)
 
 const retrieveVideos = (channelId, page, sortBy) => {
     isLoading.value = true
-    axios.get(`http://127.0.0.1:8000/channel/${channelId}/shorts/`, {
+    axios.get(`${sharedState.websiteUrl}/channel/${channelId}/shorts/`, {
         params: {
             page: page,
             size: size,

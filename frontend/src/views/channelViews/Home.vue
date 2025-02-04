@@ -1,7 +1,8 @@
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
+import { reactive, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import axios from 'axios';
+import { sharedState } from '@/sharedState';
 
 const router = useRoute();
 

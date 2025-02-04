@@ -82,7 +82,6 @@ import advertisingIcon from '/src/assets/icons/svg-icons/advertising-icon.svg'
         </div>
     </aside>
 </template>
-
 <style scoped>
 @media (min-width: 1200px) {
     #large-aside {

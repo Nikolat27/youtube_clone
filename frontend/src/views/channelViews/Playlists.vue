@@ -3,6 +3,7 @@ import { ref, reactive, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import axios from 'axios';
 import PacmanLoader from 'vue-spinner/src/PacmanLoader.vue';
+import { sharedState } from '@/sharedState';
 
 const router = useRoute()
 
@@ -18,7 +19,7 @@ let total_pages = ref(0)
 
 const retrievePlaylists = (channelId, page, sortBy) => {
     isLoading.value = true
-    axios.get(`http://127.0.0.1:8000/channel/${channelId}/playlists/`, {
+    axios.get(`${sharedState.websiteUrl}/channel/${channelId}/playlists/`, {
         params: {
             page: page,
             size: size,

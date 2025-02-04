@@ -56,7 +56,7 @@ const toggleNotificationOptions = (notificationId) => {
 
 const isUserAuthenticated = ref(false)
 const userAuthentication = async (user_session_id) => {
-    await axios.get("http://127.0.0.1:8000/users/is_authenticated", {
+    await axios.get(`${sharedState.websiteUrl}/users/is_authenticated`, {
         params: {
             user_session_id: user_session_id
         }
@@ -71,7 +71,7 @@ const userAuthentication = async (user_session_id) => {
 
 
 const hideNotification = async (notificationId) => {
-    await axios.delete(`http://127.0.0.1:8000/users/notifications/delete/${notificationId}`, {
+    await axios.delete(`${sharedState.websiteUrl}/users/notifications/delete/${notificationId}`, {
         params: {
             "user_session_id": sessionStorage.getItem("user_session_id")
         }
@@ -89,7 +89,7 @@ const hideNotification = async (notificationId) => {
 
 const markVisibleNotificationsAsRead = () => {
     if (unreadNotifications.value <= 0) return;
-    axios.patch(`http://127.0.0.1:8000/users/notifications/read?user_session_id=${sessionStorage.getItem("user_session_id")}`).then((response) => {
+    axios.patch(`${sharedState.websiteUrl}/users/notifications/read?user_session_id=${sessionStorage.getItem("user_session_id")}`).then((response) => {
         if (response.status == 204) {
             unreadNotifications.value = 0
         }
@@ -103,7 +103,7 @@ const notifications = reactive([])
 const unreadNotifications = ref(null)
 const retrieveNotifications = () => {
     isLoading.value = true
-    axios.get("http://127.0.0.1:8000/users/notifications", {
+    axios.get(`${sharedState.websiteUrl}/users/notifications`, {
         params: {
             user_session_id: sessionStorage.getItem("user_session_id")
         }
@@ -131,7 +131,7 @@ watch(() => searchBarText.value, () => {
 
     isSearchLoading.value = true
     isAutoCompleteOpen.value = true
-    axios.get("http://127.0.0.1:8000/videos/search/autocomplete", {
+    axios.get(`${sharedState.websiteUrl}/videos/search/autocomplete`, {
         params: {
             query: searchBarText.value
         }
@@ -163,7 +163,7 @@ const channelId = ref(null)
 const userId = ref(null)
 const userProfileImgSrc = ref(null)
 const retrieveUserProfileImg = async (user_session_id) => {
-    await axios.get("http://127.0.0.1:8000/users/profile-picture", {
+    await axios.get(`${sharedState.websiteUrl}/users/profile-picture`, {
         params: {
             user_session_id: user_session_id
         }
@@ -180,7 +180,7 @@ const retrieveUserProfileImg = async (user_session_id) => {
 
 
 const deleteAllNotifications = () => {
-    axios.delete("http://127.0.0.1:8000/users/notifications/delete-all", {
+    axios.delete(`${sharedState.websiteUrl}/users/notifications/delete-all`, {
         params: {
             user_session_id: sessionStorage.getItem("user_session_id")
         }

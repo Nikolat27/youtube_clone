@@ -30,9 +30,7 @@ const userReplyText = ref(null)
 const submitVideoComment = (parentId = null) => {
     const commentText = userCommentText.value;
     const replyText = userReplyText.value;
-
     const user_session_id = sessionStorage.getItem("user_session_id")
-
     const submitFormData = new FormData()
     submitFormData.append("user_session_id", user_session_id)
     submitFormData.append("comment_text", commentText ?? replyText) // We either use comment or reply text!
@@ -464,7 +462,7 @@ onMounted(async () => {
             <div class="short-video w-full h-full relative">
                 <video id="main-short-video" :poster="videoInfo.thumbnail_url" ref="videoRef"
                     oncontextmenu="return false;" volume="0.5" class="w-full h-full object-cover rounded-2xl">
-                    <source :src="`http://127.0.0.1:8000/videos/stream/${$route.params.id}/`" type="video/mp4" />
+                    <source :src="`${sharedState.websiteUrl}/videos/stream/${$route.params.id}/`" type="video/mp4" />
                 </video>
                 <div
                     class="short-video-buttons flex flex-row items-center absolute top-2 left-4 gap-x-2 w-full min-w-full">

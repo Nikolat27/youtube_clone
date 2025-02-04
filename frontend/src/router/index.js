@@ -10,7 +10,6 @@ import ChannelPageView from "@/views/ChannelPageView.vue";
 import AuthView from "@/views/AuthView.vue";
 import HistoryView from "@/views/HistoryView.vue";
 import NotFoundView from "@/views/NotFoundView.vue";
-import TestView from "@/views/TestView.vue";
 import PlaylistFeedVideosView from "@/views/PlaylistsFeedView.vue";
 import PlaylistVideosView from "@/views/PlaylistVideosView.vue";
 
@@ -80,7 +79,6 @@ const routes = [
             { path: "create-ads", name: 'create-ads', component: CreateAdsView },
         ]
     },
-    { path: "/test", name: "test", component: TestView, },
     { path: '/:pathMatch(.*)*', name: 'NotFound', component: NotFoundView },
 ]
 

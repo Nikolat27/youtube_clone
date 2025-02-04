@@ -363,7 +363,7 @@ const getVideoFrame = debounce((event) => {
 
     const hiddenVideo = document.createElement('video');
     hiddenVideo.crossOrigin = "anonymous"; // This is necassary for CORS origin
-    hiddenVideo.src = `http://127.0.0.1:8000/videos/stream/${videoInfo.id}?is_ad=false&random_uuid=${videoInfo.random_uuid}`;
+    hiddenVideo.src = `${sharedState.websiteUrl}/videos/stream/${videoInfo.id}?is_ad=false&random_uuid=${videoInfo.random_uuid}`;
     hiddenVideo.currentTime = mouseValue.value;
 
     hiddenVideo.addEventListener('loadeddata', () => {
@@ -867,10 +867,10 @@ onUnmounted(() => {
                     @timeupdate="handleVideoProgress" @ended="handleVideoEnding"
                     class="main-video cursor-pointer w-full h-full object-fill overflow-hidden">
                     <source v-if="videoInfo.has_ad" class="w-full h-full"
-                        :src="`http://127.0.0.1:8000/videos/stream/${videoInfo.ad_unique_id}?is_ad=true&random_uuid=${videoInfo.random_uuid}`"
+                        :src="`${sharedState.websiteUrl}/videos/stream/${videoInfo.ad_unique_id}?is_ad=true&random_uuid=${videoInfo.random_uuid}`"
                         type="video/mp4" /> <!-- Change the random_uuid to ad_random_uuid -->
                     <source v-else class="w-full h-full"
-                        :src="`http://127.0.0.1:8000/videos/stream/${videoInfo.id}?is_ad=false&random_uuid=${videoInfo.random_uuid}`"
+                        :src="`${sharedState.websiteUrl}/videos/stream/${videoInfo.id}?is_ad=false&random_uuid=${videoInfo.random_uuid}`"
                         type="video/mp4" />
                 </video>
                 <button v-if="isAdPlaying" :disabled="!adFinished" @click="skipAd"

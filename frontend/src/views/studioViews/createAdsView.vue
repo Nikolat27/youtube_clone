@@ -4,6 +4,7 @@ import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
 import axios from 'axios';
 import uploadImage from '/src/assets/img/upload-video-img.svg' // Default preview image for tags
 import { useToast } from 'vue-toastification';
+import { sharedState } from '@/sharedState';
 
 const cancelPublishing = () => location.reload()
 
@@ -46,7 +47,7 @@ const submitForm = () => {
     submitFormData.append('company_picture_file', adInfo.company_picture_url)
     submitFormData.append('ad_video_file', adInfo.file_url)
 
-    axios.post("http://127.0.0.1:8000/videos/create-ad", submitFormData, {
+    axios.post(`${sharedState.websiteUrl}/videos/create-ad`, submitFormData, {
         headers: {
             'Content-Type': 'multipart/form-data'
         }

@@ -1,10 +1,11 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted, defineProps, reactive } from 'vue'
+import { ref, computed, onMounted, onUnmounted, defineProps } from 'vue'
 import axios from 'axios';
 import { onClickOutside } from '@vueuse/core'
 import PlaylistCreation from './PlaylistCreation.vue';
 import { sharedState } from '@/sharedState.js'; // Shared states (aka global variables)
 import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
+import { sharedState } from '@/sharedState.js';
 
 // Icons
 import uploadIcon from '/src/assets/icons/svg-icons/upload-icon.svg'
@@ -48,7 +49,7 @@ const playlistIsLoading = ref(false)
 let playlists = ref([])
 const retrieveAllUserPlaylists = async () => {
     playlistIsLoading.value = true
-    await axios.get('http://127.0.0.1:8000/studio/playlist/list', {
+    await axios.get(`${sharedState.websiteUrl}/studio/playlist/list`, {
         params: {
             user_session_id: sessionStorage.getItem("user_session_id")
         }

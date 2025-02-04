@@ -61,7 +61,7 @@ const uploadFile = async (event) => {
     fileFormData.append("user_session_id", sessionStorage.getItem("user_session_id"));
     fileFormData.append("video_type", formData.video_type);
     try {
-        await axios.post("http://localhost:8000/studio/upload", fileFormData, {
+        await axios.post(`${sharedState.websiteUrl}/studio/upload`, fileFormData, {
             headers: {
                 "Content-Type": "multipart/form-data" // This type is necessary for sending files
             }
@@ -105,7 +105,7 @@ const retrieveVideoDetail = () => {
     currentStep.value = 0
     isLoading.value = true
     if (!sharedState.isVideoCreationOpen.open) return;
-    axios.get("http://127.0.0.1:8000/studio/get", {
+    axios.get(`${sharedState.websiteUrl}/studio/get`, {
         params: {
             video_id: sharedState.isVideoCreationOpen.video_id
         }
@@ -167,7 +167,7 @@ const submitForm = async () => {
     formDataToSend.append('details', JSON.stringify(formData.details));
     formDataToSend.append('visibility', JSON.stringify(formData.visibility));
 
-    await axios.post("http://127.0.0.1:8000/studio/update", formDataToSend, {
+    await axios.post(`${sharedState.websiteUrl}/studio/update`, formDataToSend, {
         headers: {
             'Content-Type': 'multipart/form-data' // Important for file uploads
         }
@@ -183,7 +183,7 @@ const submitForm = async () => {
 }
 
 const authenticateUser = () => {
-    axios.get("http://localhost:8000/users/is_authenticated", {
+    axios.get(`${sharedState.websiteUrl}/users/is_authenticated`, {
         params: {
             user_session_id: sessionStorage.getItem("user_session_id")
         }

@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import axios from 'axios';
 import ClipLoader from 'vue-spinner/src/ClipLoader.vue';
+import { sharedState } from '@/sharedState';
 
 const toast = useToast()
 const props = defineProps({
@@ -22,7 +23,7 @@ let isLoading = ref(false)
 const communities = reactive([])
 
 const retrieveCommunities = (channelId) => {
-    axios.get(`http://127.0.0.1:8000/channel/${channelId}/communities`, {
+    axios.get(`${sharedState.websiteUrl}/channel/${channelId}/communities`, {
         params: {
             user_session_id: sessionStorage.getItem("user_session_id")
         }
@@ -37,7 +38,7 @@ const retrieveCommunities = (channelId) => {
 const likeCommunity = (communityId, action) => {
     let action_type = action === "like" ? true : false
     let user_session_id = sessionStorage.getItem("user_session_id")
-    axios.get(`http://127.0.0.1:8000/channel/like/${communityId}/${action_type}/${user_session_id}`).then((response) => {
+    axios.get(`${sharedState.websiteUrl}/channel/like/${communityId}/${action_type}/${user_session_id}`).then((response) => {
         if (response.status == 201) { // true, false, null
             communities.find(community => community.id === communityId).total_likes = response.data.total_likes
             communities.find(community => community.id === communityId).is_liked = response.data.data

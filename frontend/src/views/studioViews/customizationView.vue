@@ -4,6 +4,7 @@ import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
 import axios from 'axios';
 import uploadImage from '/src/assets/img/upload-video-img.svg'
 import { useToast } from 'vue-toastification';
+import { sharedState } from '@/sharedState';
 
 const cancelPublishing = () => location.reload()
 
@@ -20,7 +21,7 @@ const removeBannerImg = async () => {
         return;
     }
     try {
-        await axios.delete("http://127.0.0.1:8000/studio/channel/customization/remove", {
+        await axios.delete(`${sharedState.websiteUrl}/studio/channel/customization/remove`, {
             params: {
                 user_session_id: sessionStorage.getItem("user_session_id"),
                 image_type: 'banner_img',
@@ -46,7 +47,7 @@ const removeProfilePicture = async () => {
         return;
     }
     try {
-        await axios.delete("http://127.0.0.1:8000/studio/channel/customization/remove", {
+        await axios.delete(`${sharedState.websiteUrl}/studio/channel/customization/remove`, {
             params: {
                 user_session_id: sessionStorage.getItem("user_session_id"),
                 image_type: 'profile_img',
@@ -73,7 +74,7 @@ const removeChannelWatermark = async () => {
         return;
     }
     try {
-        await axios.delete("http://127.0.0.1:8000/studio/channel/customization/remove", {
+        await axios.delete(`${sharedState.websiteUrl}/studio/channel/customization/remove`, {
             params: {
                 user_session_id: sessionStorage.getItem("user_session_id"),
                 image_type: 'watermark_img',
@@ -117,7 +118,7 @@ const submitForm = () => {
     if (typeof channelInfo.video_watermark === 'object' && channelInfo.video_watermark !== null) {
         submitFormData.append("watermark_img", channelInfo.video_watermark)
     }
-    axios.put("http://127.0.0.1:8000/studio/channel/customization/update", submitFormData, {
+    axios.put(`${sharedState.websiteUrl}/studio/channel/customization/update`, submitFormData, {
         headers: {
             'Content-Type': 'multipart/form-data'
         }
@@ -133,7 +134,7 @@ const submitForm = () => {
 
 const retrieveChannelInfo = () => {
     isLoading.value = true
-    axios.get("http://127.0.0.1:8000/studio/channel/customization", {
+    axios.get(`${sharedState.websiteUrl}/studio/channel/customization`, {
         params: {
             "user_session_id": sessionStorage.getItem("user_session_id")
         }
