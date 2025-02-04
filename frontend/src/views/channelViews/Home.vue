@@ -92,7 +92,7 @@ const VideoSlider = {
 onMounted(() => {
     const channelId = router.params.id
     if (channelId) {
-        axios.get(`http://127.0.0.1:8000/channel/${channelId}/home-videos`).then((response) => {
+        axios.get(`${sharedState.websiteUrl}/channel/${channelId}/home-videos`).then((response) => {
             if (response.status == 200) {
                 Object.assign(regularVideos, response.data.data)
             }
