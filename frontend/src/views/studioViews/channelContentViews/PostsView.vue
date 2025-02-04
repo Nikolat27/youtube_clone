@@ -8,6 +8,7 @@ import axios from 'axios';
 import editIcon from '@/assets/icons/svg-icons/edit-icon.svg'
 import kebabMenuIcon from '@/assets/icons/svg-icons/kebab-menu.svg'
 import uninstallIcon from '@/assets/icons/svg-icons/uninstall-icon.svg'
+import { sharedState } from '@/sharedState';
 
 
 // Edit Video Title Management
@@ -44,7 +45,7 @@ watch(router, () => {
 })
 
 const deleteCommunity = (id) => {
-    axios.delete(`http://127.0.0.1:8000/studio/community/delete/${id}`).then((response) => {
+    axios.delete(`${sharedState.websiteUrl}/studio/community/delete/${id}`).then((response) => {
         if (response.status == 204) {
             toast.success("Post deleted successfully!")
             retrieveAllPosts()
@@ -54,7 +55,7 @@ const deleteCommunity = (id) => {
 
 let posts = reactive([])
 const retrieveAllPosts = async () => {
-    await axios.get("http://127.0.0.1:8000/studio/community/list", {
+    await axios.get(`${sharedState.websiteUrl}/studio/community/list`, {
         params: {
             'user_session_id': sessionStorage.getItem('user_session_id'),
             'queries': router.query
@@ -74,7 +75,7 @@ const submitFormData = (community_id) => {
     newFormData.append("community_id", community_id)
     newFormData.append("community_text", communityText.value)
 
-    axios.post("http://127.0.0.1:8000/studio/community/edit", newFormData).then((response) => {
+    axios.post(`${sharedState.websiteUrl}/studio/community/edit`, newFormData).then((response) => {
         if (response.status == 200) {
             toast.success("Community updated successfully!");
             toggleCommunityEdit(community_id, communityText.value);

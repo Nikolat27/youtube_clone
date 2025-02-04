@@ -186,7 +186,6 @@ onMounted(async () => {
             <img src="@/assets\icons\svg-icons\like-empty.svg" alt="">
             <p>Liked</p>
         </div>
-
         <div class="side-bar-links">
             <p style="margin-left: 0;">Subscriptions</p>
         </div>

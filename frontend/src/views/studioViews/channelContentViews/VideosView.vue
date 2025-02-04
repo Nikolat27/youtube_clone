@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, computed, onMounted, watch } from 'vue';
+import { ref, reactive, onMounted, watch } from 'vue';
 import axios from 'axios';
 import { sharedState } from '@/sharedState';
 import { useRoute } from 'vue-router';
@@ -37,7 +37,7 @@ const isVideoRetrievingLoading = ref(false)
 
 
 const downloadVideo = (video_id) => {
-    axios.get(`http://127.0.0.1:8000/videos/download/${video_id}`).then((response) => {
+    axios.get(`${sharedState.websiteUrl}/videos/download/${video_id}`).then((response) => {
         toast.info("Your download started...")
         if (response.status == 200) {
             toast.success(response.data.data)
@@ -47,7 +47,7 @@ const downloadVideo = (video_id) => {
 
 
 const deleteVideo = (video_id) => {
-    axios.delete(`http://127.0.0.1:8000/videos/delete/${video_id}`).then((response) => {
+    axios.delete(`${sharedState.websiteUrl}/videos/delete/${video_id}`).then((response) => {
         if (response.status == 204) {
             toast.success("Video have been deleted")
             retrieveAllVideos()
@@ -67,7 +67,7 @@ watch(() => router.query, () => {
 
 const retrieveAllVideos = async () => {
     isVideoRetrievingLoading.value = true
-    await axios.get(`http://127.0.0.1:8000/studio/list`, {
+    await axios.get(`${sharedState.websiteUrl}/studio/list`, {
         params: {
             user_session_id: sessionStorage.getItem("user_session_id"),
             queries: router.query,
@@ -121,11 +121,6 @@ onMounted(() => {
                         </button>
                         <div v-if="videoOptionStates[video.id]?.optionDiv" class="absolute left-40 top-0 video-edit-options w-[226px] h-auto rounded-xl bg-white flex flex-col
                             justify-start items-center py-4">
-                            <!-- <div @click="toggleVideoEdit(video.id, video.title, video.description)" class="cursor-pointer w-full h-[32px] hover:bg-[#f9f9f9] flex flex-row justify-start items-center
-                            text-[15px] font-normal font-roboto">
-                                <img class="w-[17px] h-[17px] mx-4" :src="editIcon" alt="">
-                                <p>Edit title and description</p>
-                            </div> -->
                             <div @click="downloadVideo(video.unique_id)" class="w-[226px] cursor-pointer z-50 h-[32px] hover:bg-[#f9f9f9] flex flex-row justify-start items-center
                                 text-[15px] font-normal font-roboto">
                                 <img class="w-[17px] h-[17px] mx-4" :src="downloadIcon" alt="">
@@ -137,39 +132,6 @@ onMounted(() => {
                                 <p>Delete forever</p>
                             </div>
                         </div>
-                        <!-- <div v-if="videoOptionStates[video.id]?.editDiv" class="edit-title-description bg-white z-40 w-[488px] h-[368px] rounded-lg
-                        flex flex-col justify-start pt-2 items-center gap-y-4 absolute left-2 top-6">
-                            <div class="w-[464px] h-[91px] rounded-lg border border-solid box-border border-[#d6d6d6] hover:border-black hover:border-2
-                        focus:border-2 relative pl-2 pt-2"
-                                :style="{ borderColor: userAbleToSave ? 'black' : 'red', borderWidth: !userAbleToSave ? '2px' : '1px' }">
-                                <span class="text-[12px] font-medium text-gray-600">Title (required)</span>
-                                <textarea @input="videoTitleEdit" v-model="video.title"
-                                    class="mt-1 edit-title-input w-[440px] h-[41px] outline-none text-[15px] font-normal overflow-hidden leading-4"
-                                    placeholder="Add title" minlength="1" required maxlength="100"></textarea>
-                                <span class="text-[12px] font-normal absolute right-1 bottom-1 text-gray-700"><span
-                                        class="title-char-counter">{{ videoTitleLength }}</span>/100</span>
-                            </div>
-                            <div
-                                class="w-[464px] relative max-w-[464px] h-[201px] max-h-[201px] rounded-lg border border-[#d6d6d6] pl-2 pt-2 hover:border-black hover:border-2">
-                                <span class="text-[12px] font-medium text-gray-600">Description</span>
-                                <textarea style="scrollbar-width: thin;" @input="videoDescriptionEdit"
-                                    v-model="video.description"
-                                    class="mt-1 edit-title-input w-[440px] h-[151px] outline-none text-[15px] font-normal overflow-y-auto leading-4"
-                                    placeholder="Add description" maxlength="5000"></textarea>
-                                <span class="text-[12px] font-normal absolute right-1 bottom-1 text-gray-700"><span
-                                        class="title-char-counter">{{ videoDescriptionLength }}</span>/5000</span>
-                            </div>
-                            <div class="flex flex-row w-full self-end justify-end items-center font-roboto 
-                     gap-x-2 pr-2 pb-2">
-                                <span v-if="!userAbleToSave" class="text-[12px] font-normal text-red-800">Your
-                                    video needs a title</span>
-                                <button @click="toggleVideoEdit(video.id)" class="w-[74.9px] h-[36px] rounded-3xl text-[14px] font-medium
-                         items-center text-black bg-[#f2f2f2] hover:bg-[#e5e5e5]">Cancel</button>
-                                <button :disabled="!userAbleToSave" class="w-[62.2px] h-[36px] rounded-3xl text-[14px] font-medium
-                         items-center text-white hover:bg-[#272727]"
-                                    :style="{ backgroundColor: userAbleToSave ? 'black' : 'gray' }">Save</button>
-                            </div>
-                        </div> -->
                     </div>
                 </div>
                 <div class="video-info w-[70%] relative h-full flex flex-row justify-end items-center text-[13px] font-normal

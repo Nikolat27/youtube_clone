@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from "axios";
 import { useToast } from 'vue-toastification';
@@ -62,18 +62,27 @@ watch(() => isRegisterShown.value, () => {
 onMounted(() => {
     document.title = "Register"
 })
+
+onUnmounted(() => {
+    document.title = "YouTube"
+
+    loginPassword.value = ''
+    registerPassword.value = ''
+    registerPassword2.value = ''
+})
 </script>
 
 <template>
     <form v-if="!isRegisterShown" @submit="submitLoginForm">
         <div class="mx-auto mt-20 shadow-inner flex flex-col h-[600px] w-[300px] justify-center items-center
-        gap-y-4 sign-up-container border-2 rounded-lg">
+            gap-y-4 sign-up-container border-2 rounded-lg">
             <img draggable="false" src="@/assets/icons/svg-icons/youtube-tv-icon.svg" class="w-30 h-20 mb-7 mt-[-100px]"
                 alt="">
             <p class="mb-7 mt-[-15px] text-2xl">Sign in</p>
             <input type="text" placeholder="Username" v-model="loginUsername">
             <input type="password" placeholder="Password" v-model="loginPassword">
-            <button type="submit" class="bg-red-600 text-white w-24 h-9 text-center rounded-lg shadow-lg">Log
+            <button type="submit"
+                class="bg-red-600 text-white w-24 h-9 text-center rounded-lg shadow-lg login-btn-1 cursor-pointer">Log
                 in</button>
             <a @click="toggleRegisterShowing" class="cursor-pointer">
                 <p class="text-blue-700 italic">Don`t have an Account? <span class="underline">Sign up</span></p>
@@ -94,7 +103,8 @@ onMounted(() => {
             <input type="email" placeholder="Email" v-model="registerEmail">
             <input type="password" placeholder="Password" v-model="registerPassword">
             <input type="password" placeholder="Repeat Password" v-model="registerPassword2">
-            <button class="bg-red-600 text-white w-24 h-9 text-center rounded-lg shadow-lg">Register</button>
+            <button
+                class="bg-red-600 text-white w-24 h-9 text-center rounded-lg shadow-lg cursor-pointer">Register</button>
             <a @click="toggleRegisterShowing" class="cursor-pointer">
                 <p class="text-blue-700 italic">Already have an account? <span class="underline">Sign in</span></p>
             </a>

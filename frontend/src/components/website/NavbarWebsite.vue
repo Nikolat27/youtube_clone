@@ -143,6 +143,7 @@ watch(() => searchBarText.value, () => {
 
 })
 
+
 const router = useRouter()
 const searchVideo = (query) => {
     if (query.length <= 2) {
