@@ -32,7 +32,6 @@ import string
 import random
 import ffmpeg
 
-
 UPLOAD_DIR = Path("uploaded_videos")
 UPLOAD_DIR.mkdir(exist_ok=True)
 
@@ -69,9 +68,11 @@ async def video_thumbnail_generator(user_id, video_path, video_unique_id, durati
 
 
 async def static_file(file_url):
+    from main import websiteUrl
+
     if not file_url:
         return ""
-    return f"http://127.0.0.1:8000/static/{file_url}"
+    return f"{websiteUrl}/static/{file_url}"
 
 
 @router.post("/upload")
@@ -162,6 +163,8 @@ async def update_subtitle(
 # Video part
 @router.get("/get")
 async def get_video(video_id: int = Query()):
+    from main import websiteUrl
+
     video = Video.query.filter_by(id=video_id).first()
 
     playlists = [playlist.id for playlist in video.playlists if video.playlists]
@@ -172,7 +175,7 @@ async def get_video(video_id: int = Query()):
             "video_id": video_id,
             "title": video.title,
             "description": video.description,
-            "thumbnail_url": f"http://127.0.0.1:8000/static/{video.thumbnail_url}",
+            "thumbnail_url": f"{websiteUrl}/static/{video.thumbnail_url}",
             "audience": "kids" if video.audience else "not-kids",
             "ageRestriction": "yes" if video.age_restriction else "no",
             "language": video.language,
@@ -268,6 +271,8 @@ async def list_video(
     sort_type: str = Query(None, alias="queries[sortByType]"),
     sort_order: str = Query(None, alias="queries[sortByOrder]"),
 ):
+    from main import websiteUrl
+
     user_id = await get_current_user_id(user_session_id)
 
     videos = Video.query.with_entities(
@@ -309,7 +314,7 @@ async def list_video(
             "video_type": video_type,
             "description": video.description,
             "duration": await get_video_duration(video.file_url),
-            "thumbnail_url": f"http://127.0.0.1:8000/static/{video.thumbnail_url}",
+            "thumbnail_url": f"{websiteUrl}/static/{video.thumbnail_url}",
             "visibility": video.visibility,
             "restriction": video.age_restriction,
             "created_at": await time_formatter(video.created_at),
@@ -666,22 +671,6 @@ async def playlist_last_video_unique_id(video):
 
 
 async def playlist_last_video_thumbnail_url(video):
-    return f"http://127.0.0.1:8000/static/{video.thumbnail_url}"
+    from main import websiteUrl
 
-
-# @router.get("/thumbnail-generator") # This func is using moviepy
-# async def video_thumbnail_generator():
-#     start_time = datetime.datetime.now()
-#     video = VideoFileClip(
-#         r"C:\Users\Sam\Desktop\youtube_clone\backend\uploaded_videos\1\ad_video_file\eaURRkDyNYq3.mp4"
-#     )
-#     UPLOAD_DIR_USER = Path(UPLOAD_DIR / "1" / "generated_thumbnail")
-#     UPLOAD_DIR_USER.mkdir(parents=True, exist_ok=True)
-#     thumbnail_output = UPLOAD_DIR_USER / "thumbnail-file.jpg"
-#     random_time = random.uniform(0, video.duration)
-#     frame = video.get_frame(random_time)
-#     img = Image.fromarray(frame)
-#     img.save(thumbnail_output)
-#     video.close()
-#     end_time = datetime.datetime.now()
-#     return end_time - start_time
+    return f"{websiteUrl}/static/{video.thumbnail_url}"

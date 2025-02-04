@@ -37,21 +37,22 @@ import requests
 from googleapiclient.discovery import build
 import yt_dlp
 import redis
-import socket
 import shutil
 import random
 import string
 import uuid
+
 
 # Replace with your API key
 API_KEY = "AIzaSyD4tVMAI9kvBA7DghHz3QDrA3UJEe6u7as"
 YOUTUBE_API_SERVICE_NAME = "youtube"
 YOUTUBE_API_VERSION = "v3"
 
+
 router = APIRouter(prefix="/videos", tags=["videos"])
 
 redis_client = redis.Redis(
-    host="127.0.0.1", port=6379, db=0, decode_responses=True, charset="utf-8"
+    host="10.202.8.215", port=6379, db=0, decode_responses=True, charset="utf-8"
 )
 
 
@@ -67,7 +68,8 @@ async def time_difference(created_time):
 
 
 async def static_file(file_url):
-    return f"http://127.0.0.1:8000/static/{file_url}"
+    from main import websiteUrl
+    return f"{websiteUrl}/static/{file_url}"
 
 
 async def check_video_exist(video_id):
@@ -101,8 +103,9 @@ def get_channel_name(user_id):
 
 
 def get_channel_profile(user_id):
+    from main import websiteUrl
     user = User.query.filter_by(id=user_id).first()
-    return f"http://127.0.0.1:8000/static/{user.channel.profile_picture_url}"
+    return f"{websiteUrl}/static/{user.channel.profile_picture_url}"
 
 
 def get_channel_unique_identifier(user_id):

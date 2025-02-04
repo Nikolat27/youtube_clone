@@ -17,6 +17,7 @@ from sqlalchemy import desc, asc, select
 from fastapi_pagination.ext.sqlalchemy import paginate
 import math
 
+
 router = APIRouter(prefix="/channel", tags=["channel"])
 
 
@@ -26,7 +27,8 @@ async def time_difference(created_at):
 
 
 async def static_file(file_url):
-    return f"http://127.0.0.1:8000/static/{file_url}"
+    from main import websiteUrl
+    return f"{websiteUrl}/static/{file_url}"
 
 
 async def check_subscription(user_session_id, channel_id):

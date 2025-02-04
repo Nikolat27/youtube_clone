@@ -5,8 +5,9 @@ import uvicorn
 from routers import studio, users, videos, channel, playlist
 from fastapi_pagination import add_pagination
 
-app = FastAPI()
+websiteUrl = "http://10.202.8.215:8000/"
 
+app = FastAPI()
 origins = ["http://localhost", "http://localhost:5000", "http://localhost:8000"]
 
 app.add_middleware(  # Cors middleware

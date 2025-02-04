@@ -15,6 +15,7 @@ from sqlalchemy import desc
 import random
 import string
 
+
 router = APIRouter(prefix="/users", tags=["users"])
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -216,6 +217,7 @@ async def logout(user_session_id: str = Query()):
 @router.get("/profile-picture")
 async def get_user_profile(user_session_id: str = Query()):
     from dependencies import get_current_user_id
+    from main import websiteUrl
 
     user_id = await get_current_user_id(user_session_id)
 
@@ -226,7 +228,7 @@ async def get_user_profile(user_session_id: str = Query()):
         .filter_by(owner_id=user_id)
         .first()
     )
-    profile_picture = f"http://127.0.0.1:8000/static/{channel.profile_picture_url}"
+    profile_picture = f"{websiteUrl}/static/{channel.profile_picture_url}"
     return JSONResponse(
         {
             "profile_picture": profile_picture or "",
@@ -238,23 +240,26 @@ async def get_user_profile(user_session_id: str = Query()):
 
 
 async def get_sender_profile(user_id):
+    from main import websiteUrl
+
     channel = (
         Channel.query.with_entities(Channel.profile_picture_url)
         .filter_by(owner_id=user_id)
         .first()
     )
-    return f"http://127.0.0.1:8000/static/{channel.profile_picture_url}"
+    return f"{websiteUrl}/static/{channel.profile_picture_url}"
 
 
 async def get_video_thumbnail(video_id):
     from database.models.user import Video
+    from main import websiteUrl
 
     video = (
         Video.query.with_entities(Video.thumbnail_url)
         .filter_by(unique_id=video_id)
         .first()
     )
-    return f"http://127.0.0.1:8000/static/{video.thumbnail_url}"
+    return f"{websiteUrl}/static/{video.thumbnail_url}"
 
 
 async def time_difference(created_at):

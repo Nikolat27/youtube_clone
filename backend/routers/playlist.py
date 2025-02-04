@@ -15,6 +15,7 @@ from datetime import datetime
 import secrets
 from database.models.base import session
 
+
 router = APIRouter(prefix="/playlist", tags=["playlists"])
 
 
@@ -157,7 +158,9 @@ async def playlist_last_video_unique_id(video):
 
 
 async def playlist_last_video_thumbnail_url(video):
-    return f"http://127.0.0.1:8000/static/{video.thumbnail_url}"
+    from main import websiteUrl
+
+    return f"{websiteUrl}/static/{video.thumbnail_url}"
 
 
 async def get_username(user_id):
@@ -183,6 +186,8 @@ async def get_playlist(
     filter: str = Query(),
     user_session_id: str = Query(None),
 ):
+    from main import websiteUrl
+
     playlist = Playlist.query.filter_by(id=playlist_id).first()
 
     if (
@@ -212,7 +217,7 @@ async def get_playlist(
                 "unique_id": video.unique_id,
                 "title": video.title,
                 "created_at": await time_difference(video.created_at),
-                "thumbnail_url": f"http://127.0.0.1:8000/static/{video.thumbnail_url}",
+                "thumbnail_url": f"{websiteUrl}/static/{video.thumbnail_url}",
                 "channel_name": await video_channel(video.user_id),
             }
             for video in videos.order_by(desc(Video.created_at))
