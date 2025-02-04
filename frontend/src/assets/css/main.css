@@ -415,14 +415,6 @@ a {
     height: 40px;
 }
 
-.video-detail-upload-info p {
-    font-family: Roboto, Arial;
-    margin-bottom: 3px;
-    margin-top: 0;
-    justify-content: center;
-    align-items: center;
-}
-
 .video-detail-channel-sub-count {
     font-size: 12px;
     color: gray;

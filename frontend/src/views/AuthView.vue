@@ -3,6 +3,7 @@ import { ref, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from "axios";
 import { useToast } from 'vue-toastification';
+import { sharedState } from '@/sharedState';
 
 const toast = useToast()
 const router1 = useRoute();
@@ -15,7 +16,7 @@ const loginUsername = ref('')
 const loginPassword = ref('')
 const submitLoginForm = (event) => {
     event.preventDefault(); // For preventing the page from refreshing
-    axios.post("http://localhost:8000/users/login", {
+    axios.post(`${sharedState.websiteUrl}/users/login`, {
         username: loginUsername.value,
         password: loginPassword.value,
 
@@ -41,7 +42,7 @@ const registerPassword2 = ref('')
 
 const submitRegisterForm = async (event) => {
     event.preventDefault(); // To prevent the page from refreshing
-    await axios.post('http://localhost:8000/users/register', {
+    await axios.post(`${sharedState.websiteUrl}/users/register`, {
         username: registerUsername.value,
         email: registerEmail.value,
         password1: registerPassword.value,

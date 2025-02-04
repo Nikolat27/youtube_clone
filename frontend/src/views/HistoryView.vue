@@ -4,6 +4,7 @@ import { useToast } from 'vue-toastification';
 import { useRoute, useRouter } from 'vue-router';
 import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
 import axios from 'axios';
+import { sharedState } from '@/sharedState';
 
 const toast = useToast()
 const router1 = useRoute()
@@ -16,7 +17,7 @@ const isDeleteCommentsDialogOpen = ref(false)
 
 const clearAllUserWatchHistory = () => {
     const user_session_id = sessionStorage.getItem("user_session_id")
-    axios.delete("http://127.0.0.1:8000/videos/clear-all-user-watch-history", {
+    axios.delete(`${sharedState.websiteUrl}/videos/clear-all-user-watch-history`, {
         params: {
             user_session_id: user_session_id
         }
@@ -30,7 +31,7 @@ const clearAllUserWatchHistory = () => {
 }
 
 const toggleWatchHistory = () => {
-    axios.get("http://127.0.0.1:8000/videos/toggle-watch-history", {
+    axios.get(`${sharedState.websiteUrl}/videos/toggle-watch-history`, {
         params: {
             user_session_id: sessionStorage.getItem("user_session_id")
         }
@@ -45,7 +46,7 @@ const toggleWatchHistory = () => {
 }
 
 const clearAllUserCommentsReplies = () => {
-    axios.delete("http://127.0.0.1:8000/videos/clear-user-comments-replies", {
+    axios.delete(`${sharedState.websiteUrl}/videos/clear-user-comments-replies`, {
         params: {
             user_session_id: sessionStorage.getItem("user_session_id")
         }
@@ -86,7 +87,7 @@ const historyEnable = ref(null)
 
 const retrieveVideos = async (user_session_id) => {
     isLoading.value = true
-    await axios.get("http://127.0.0.1:8000/videos/user-watch-history", {
+    await axios.get(`${sharedState.websiteUrl}/videos/user-watch-history`, {
         params: {
             user_session_id: user_session_id
         }
@@ -104,7 +105,7 @@ const MountPage = (user_session_id) => {
 
 const removeVideoFromWatchHistory = (video_id) => {
     const user_session_id = sessionStorage.getItem("user_session_id")
-    axios.delete(`http://127.0.0.1:8000/videos/delete-user-watch-history/${video_id}`, {
+    axios.delete(`${sharedState.websiteUrl}/videos/delete-user-watch-history/${video_id}`, {
         params: {
             user_session_id: user_session_id
         }
@@ -117,7 +118,7 @@ const removeVideoFromWatchHistory = (video_id) => {
 
 const isUserAuthenticated = ref(false)
 const userAuthentication = async (user_session_id) => {
-    await axios.get("http://127.0.0.1:8000/users/is_authenticated", {
+    await axios.get(`${sharedState.websiteUrl}/users/is_authenticated`, {
         params: {
             user_session_id: user_session_id
         }

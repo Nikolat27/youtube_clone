@@ -3,6 +3,7 @@ import { ref, onMounted, computed, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import axios from 'axios';
+import { sharedState } from '@/sharedState';
 
 const router = useRouter();
 
@@ -36,7 +37,7 @@ const submitFormData = async () => {
     if (formData.image_file) {
         newFormData.append("image_file", formData.image_file)
     }
-    axios.post("http://127.0.0.1:8000/studio/community/create", newFormData).then(() => {
+    axios.post(`${sharedState.websiteUrl}/studio/community/create`, newFormData).then(() => {
         toast.success("Your community Created successfully!")
     }).catch((error) => console.log(error))
 }
@@ -46,7 +47,7 @@ const goBack = () => {
 
 onMounted(() => {
     // post page is just for authenticated Users
-    axios.get("http://localhost:8000/users/is_authenticated", {
+    axios.get(`${sharedState.websiteUrl}/users/is_authenticated`, {
         params: {
             user_session_id: sessionStorage.getItem("user_session_id")
         }

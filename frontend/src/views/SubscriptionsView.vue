@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 import { useToast } from 'vue-toastification';
 import ScaleLoader from 'vue-spinner/src/ScaleLoader.vue';
+import { sharedState } from '@/sharedState';
 
 const toast = useToast()
 const router1 = useRoute()
@@ -14,7 +15,7 @@ const longVideos = reactive([])
 const shortVideos = reactive([])
 
 const MountPage = (user_session_id) => {
-    axios.get("http://127.0.0.1:8000/videos/subscriptions-list", {
+    axios.get(`${sharedState.websiteUrl}/videos/subscriptions-list`, {
         params: {
             user_session_id: user_session_id
         }
@@ -51,7 +52,7 @@ const updateScrollButtons = (maxWidth, currentScrolled) => {
 
 const isUserAuthenticated = ref(false)
 const userAuthentication = async (user_session_id) => {
-    await axios.get("http://127.0.0.1:8000/users/is_authenticated", {
+    await axios.get(`${sharedState.websiteUrl}/users/is_authenticated`, {
         params: {
             user_session_id: user_session_id
         }

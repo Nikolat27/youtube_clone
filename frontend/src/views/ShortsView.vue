@@ -41,7 +41,7 @@ const submitVideoComment = (parentId = null) => {
         submitFormData.append("parent_id", parentId)
     }
 
-    axios.post(`http://127.0.0.1:8000/videos/comment/add/`, submitFormData).then((response) => {
+    axios.post(`${sharedState.websiteUrl}/videos/comment/add/`, submitFormData).then((response) => {
         if (response.status == 201) {
             retrieveVideoComments(videoInfo.id);
             openComments = {}
@@ -104,7 +104,7 @@ const retrieveCommentReplies = async (comment_id) => {
 
     toggleUserComment(comment_id, 'replyContainerVisible')
     if (openComments[comment_id]?.replyContainerVisible) {
-        await axios.get(`http://127.0.0.1:8000/videos/replies/list/${comment_id}`, {
+        await axios.get(`${sharedState.websiteUrl}/videos/replies/list/${comment_id}`, {
             params: {
                 user_session_id: sessionStorage.getItem("user_session_id")
             }
@@ -204,7 +204,7 @@ let videoInfo = reactive({
 
 const youtubeVideoLink = ref(null)
 const retrieveVideoDetail = async (videoId, user_session_id) => {
-    await axios.get(`http://127.0.0.1:8000/videos/detail/${videoId}`, {
+    await axios.get(`${sharedState.websiteUrl}/videos/detail/${videoId}`, {
         params: {
             unique_id: router1.query.unique_id,
             user_session_id: user_session_id
@@ -217,7 +217,8 @@ const retrieveVideoDetail = async (videoId, user_session_id) => {
         }
         isChannelSubscribed.value = videoInfo.is_channel_subed
     }).catch((error) => {
-        console.log(error)
+        console.log("hi")
+        console.error(error)
     })
 }
 
@@ -226,7 +227,7 @@ const comments = reactive([])
 const commentRetrievingLoading = ref(false)
 const retrieveVideoComments = async (videoId) => {
     commentRetrievingLoading.value = true
-    await axios.get(`http://127.0.0.1:8000/videos/comment/list/${videoId}`, {
+    await axios.get(`${sharedState.websiteUrl}/videos/comment/list/${videoId}`, {
         params: {
             user_session_id: sessionStorage.getItem("user_session_id")
         }
@@ -241,7 +242,7 @@ const retrieveVideoComments = async (videoId) => {
 
 
 const likeComment = async (commentId, actionType, replyId = null) => {
-    await axios.get(`http://127.0.0.1:8000/videos/comment/like/${replyId ? replyId : commentId}`, {
+    await axios.get(`${sharedState.websiteUrl}/videos/comment/like/${replyId ? replyId : commentId}`, {
         params: {
             user_session_id: sessionStorage.getItem("user_session_id"),
             action_type: actionType
@@ -266,7 +267,7 @@ const likeComment = async (commentId, actionType, replyId = null) => {
 const deleteComment = (commentId) => {
     if (!confirm("Confirm that you wanna delete your comment.")) return;
 
-    axios.delete(`http://127.0.0.1:8000/videos/comment/delete/${commentId}`, {
+    axios.delete(`${sharedState.websiteUrl}/videos/comment/delete/${commentId}`, {
         params: {
             user_id: userId.value
         }
@@ -286,7 +287,7 @@ const subscribeChannel = (channelId) => {
         toast.error("You have Login to subscribe a channel!")
         return;
     }
-    axios.get(`http://127.0.0.1:8000/channel/subscribe/${channelId}`, {
+    axios.get(`${sharedState.websiteUrl}/channel/subscribe/${channelId}`, {
         params: {
             user_session_id: sessionStorage.getItem("user_session_id")
         }
@@ -302,7 +303,7 @@ const subscribeChannel = (channelId) => {
 const userId = ref(null)
 const userProfileImgSrc = ref(null)
 const retrieveUserProfileImg = async (user_session_id) => {
-    await axios.get("http://127.0.0.1:8000/users/profile-picture", {
+    await axios.get(`${sharedState.websiteUrl}/users/profile-picture`, {
         params: {
             user_session_id: user_session_id
         }
@@ -320,7 +321,7 @@ const retrieveUserProfileImg = async (user_session_id) => {
 const totalLikes = ref(null)
 const likeSituation = ref(null)
 const userLikeSituation = async (video_id, user_session_id) => {
-    await axios.get(`http://127.0.0.1:8000/videos/like-situation/${video_id}/${user_session_id}`).then((response) => {
+    await axios.get(`${sharedState.websiteUrl}/videos/like-situation/${video_id}/${user_session_id}`).then((response) => {
         if (response.status == 200) {
             likeSituation.value = response.data.data
             totalLikes.value = response.data.total_likes
@@ -337,7 +338,7 @@ const likeVideo = (action_type) => { // true == 'like', false == 'dislike', null
         toast.error("You have to be Logged in!")
         return;
     }
-    axios.get(`http://127.0.0.1:8000/videos/like/${videoInfo.id}/${action_type}/${user_session_id}`).then(() => {
+    axios.get(`${sharedState.websiteUrl}/videos/like/${videoInfo.id}/${action_type}/${user_session_id}`).then(() => {
         userLikeSituation(router1.params.id, user_session_id)
     }).catch((error) => {
         toast.error("Error: ", error)
@@ -346,7 +347,7 @@ const likeVideo = (action_type) => { // true == 'like', false == 'dislike', null
 
 
 const playAnotherVideo = (direction) => {
-    axios.get(`http://127.0.0.1:8000/videos/${direction}-video/${router1.params.id}/short_video`).then((response) => {
+    axios.get(`${sharedState.websiteUrl}/videos/${direction}-video/${router1.params.id}/short_video`).then((response) => {
         if (response.status == 200) {
             router2.push({ name: 'short_detail', params: { id: response.data.unique_id }, state: { is_first: response.data.is_first, is_last: response.data.is_last } })
         }
@@ -356,7 +357,7 @@ const playAnotherVideo = (direction) => {
 
 const isUserAuthenticated = ref(false)
 const userAuthentication = async (user_session_id) => {
-    await axios.get("http://127.0.0.1:8000/users/is_authenticated", {
+    await axios.get(`${sharedState.websiteUrl}/users/is_authenticated`, {
         params: {
             user_session_id: user_session_id
         }
@@ -401,7 +402,7 @@ watch(() => router1.params.id, () => {
 
 const videoWatchTimeTracker = () => {
     endTime.value = new Date().getTime()
-    axios.get(`http://127.0.0.1:8000/videos/stream/watch-time/${router1.params.id}`, {
+    axios.get(`${sharedState.websiteUrl}/videos/stream/track-views/${router1.params.id}`, {
         params: {
             watch_time: totalWatchTime.value,
             duration: videoRef.value.duration,
@@ -552,7 +553,7 @@ onMounted(async () => {
                                         <p class="text-[13px] font-medium">@{{ comment.username }}</p>
                                         <span class="text-[12px] font-normal ml-2 text-[#918b8b]">{{
                                             comment.created_at
-                                            }} days ago</span>
+                                        }} days ago</span>
                                         <div v-if="comment.user_id === userId"
                                             class="flex justify-self-end ml-auto mr-4">
                                             <button @click="deleteComment(comment.id)">

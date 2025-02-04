@@ -1,6 +1,7 @@
 import { reactive } from 'vue';
 
 export const sharedState = reactive({
+    websiteUrl: 'http://127.0.0.1:8000',
     isPlaylistCreationOpen: { 'open': false, 'playlist_id': null },
     isVideoUploadingOpen: { 'open': false, 'video_type': 'long_video' }, // long_video and short_video
     isVideoCreationOpen: { 'open': false, 'video_id': null },

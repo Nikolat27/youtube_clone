@@ -4,6 +4,7 @@ import axios from 'axios';
 import { useToast } from 'vue-toastification';
 import { useRoute, useRouter } from 'vue-router';
 import ClipLoader from 'vue-spinner/src/ClipLoader.vue';
+import { sharedState } from '@/sharedState';
 
 const toast = useToast()
 const router1 = useRoute()
@@ -26,7 +27,7 @@ const toggleChannelOptions = (channelId) => {
 
 const toggleChannelNotification = (channelId, type) => {
     const user_session_id = sessionStorage.getItem("user_session_id")
-    axios.get(`http://127.0.0.1:8000/channel/notification/${channelId}`, {
+    axios.get(`${sharedState.websiteUrl}/channel/notification/${channelId}`, {
         params: {
             user_session_id: user_session_id,
             notification: type
@@ -43,7 +44,7 @@ const toggleChannelNotification = (channelId, type) => {
 
 const channelSubscribe = (channelId) => {
     const user_session_id = sessionStorage.getItem("user_session_id")
-    axios.get(`http://127.0.0.1:8000/channel/subscribe/${channelId}`, {
+    axios.get(`${sharedState.websiteUrl}/channel/subscribe/${channelId}`, {
         params: {
             user_session_id: user_session_id
         }
@@ -60,7 +61,7 @@ const channels = reactive([])
 const MountPage = (user_session_id) => {
     openChannelOption.pop()
     isLoading.value = true
-    axios.get("http://127.0.0.1:8000/channel/feed/subscriptions", {
+    axios.get(`${sharedState.websiteUrl}/channel/feed/subscriptions`, {
         params: {
             user_session_id: user_session_id
         }
@@ -73,7 +74,7 @@ const MountPage = (user_session_id) => {
 
 const isUserAuthenticated = ref(false)
 const userAuthentication = async (user_session_id) => {
-    await axios.get("http://127.0.0.1:8000/users/is_authenticated", {
+    await axios.get(`${sharedState.websiteUrl}/users/is_authenticated`, {
         params: {
             user_session_id: user_session_id
         }
@@ -105,8 +106,6 @@ onMounted(async () => {
         <div class="text-[36px] font-bold mb-12">
             All Subscriptions
         </div>
-
-
         <div v-if="!isLoading">
             <div v-for="channel in channels" :key="channel.unique_identifier" class="flex flex-row w-[920px]">
                 <router-link :to="`/channel-page/${channel.unique_identifier}`">

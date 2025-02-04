@@ -4,6 +4,7 @@ import { useToast } from 'vue-toastification';
 import { useRoute, useRouter } from 'vue-router';
 import ScaleLoader from 'vue-spinner/src/ScaleLoader.vue';
 import axios from 'axios';
+import { sharedState } from '@/sharedState';
 
 const toast = useToast();
 const router1 = useRoute();
@@ -42,7 +43,7 @@ const playlistIsEmpty = ref(false)
 const playlistInfo = reactive([])
 const retrievePlaylist = (playlistId, filter) => {
     isLoading.value = true
-    axios.get(`http://127.0.0.1:8000/playlist/${playlistId}`, {
+    axios.get(`${sharedState.websiteUrl}/playlist/${playlistId}`, {
         params: {
             filter: filter,
             user_session_id: sessionStorage.getItem("user_session_id")
@@ -72,7 +73,7 @@ const playPlaylistVideo = (playlistId, uniqueId) => {
 }
 
 const shufflePlaylistVideo = (playlistId) => {
-    axios.get(`http://127.0.0.1:8000/playlist/shuffle/${playlistId}`).then((response) => {
+    axios.get(`${sharedState.websiteUrl}/playlist/shuffle/${playlistId}`).then((response) => {
         if (response.status == 200) {
             playPlaylistVideo(playlistId, response.data.data);
         }

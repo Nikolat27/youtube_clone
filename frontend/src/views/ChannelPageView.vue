@@ -3,6 +3,7 @@ import { ref, onMounted, reactive } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import axios from 'axios';
+import { sharedState } from '@/sharedState';
 
 const toast = useToast()
 const router1 = useRoute()
@@ -51,7 +52,7 @@ const channelNotification = ref(null)
 
 const channelInfo = reactive({})
 const retrieveChannelInfo = (uniqueIdentifier) => {
-    axios.get(`http://127.0.0.1:8000/channel/${uniqueIdentifier}`, {
+    axios.get(`${sharedState.websiteUrl}/channel/${uniqueIdentifier}`, {
         params: {
             user_session_id: sessionStorage.getItem("user_session_id")
         }
@@ -69,7 +70,7 @@ const channelSubscribe = (channelId) => {
         toast.error("You have Login to subscribe a channel!")
         return;
     }
-    axios.get(`http://127.0.0.1:8000/channel/subscribe/${channelId}`, {
+    axios.get(`${sharedState.websiteUrl}/channel/subscribe/${channelId}`, {
         params: {
             user_session_id: sessionStorage.getItem("user_session_id")
         }
@@ -82,7 +83,7 @@ const channelSubscribe = (channelId) => {
 }
 
 const toggleChannelNotification = (channelId, notification) => {
-    axios.get(`http://127.0.0.1:8000/channel/notification/${channelId}`, {
+    axios.get(`${sharedState.websiteUrl}/channel/notification/${channelId}`, {
         params: {
             user_session_id: sessionStorage.getItem("user_session_id"),
             notification: notification
@@ -100,7 +101,7 @@ const toggleChannelNotification = (channelId, notification) => {
 }
 
 const checkUserAuthentication = (user_session_id) => {
-    axios.get("http://127.0.0.1:8000/users/is_authenticated", {
+    axios.get(`${sharedState.websiteUrl}/users/is_authenticated`, {
         params: {
             user_session_id: user_session_id
         }

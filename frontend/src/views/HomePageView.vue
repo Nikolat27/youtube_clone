@@ -43,7 +43,7 @@ const totalPages = ref(null)
 
 const retrieveVideos = () => {
     isLoading.value = true
-    axios.get("http://127.0.0.1:8000/videos/", {
+    axios.get(`${sharedState.websiteUrl}/videos/`, {
         params: {
             size: size.value,
             page: page.value,
@@ -63,7 +63,7 @@ const retrieveVideos = () => {
 const loadMoreVideos = async () => {
     infiniteIsLoading.value = true
     page.value += 1
-    await axios.get("http://127.0.0.1:8000/videos/load-more", {
+    await axios.get(`${sharedState.websiteUrl}/videos/load-more`, {
         params: {
             page: page.value,
             size: size.value,

@@ -4,7 +4,6 @@ import axios from 'axios';
 import { useToast } from 'vue-toastification';
 import { useRoute } from 'vue-router';
 import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
-
 import { sharedState } from '@/sharedState';
 import kebabMenuSrc from '@/assets/icons/svg-icons/kebab-menu.svg'
 import djangoIcon from '@/assets/img/Django.png'
@@ -22,7 +21,7 @@ let size = 5
 
 const retrieveSearchVideos = async (searchQuery) => {
     isLoading.value = true
-    await axios.get("http://127.0.0.1:8000/videos/search", {
+    await axios.get(`${sharedState.websiteUrl}/videos/search`, {
         params: {
             "query": searchQuery,
             "size": size
@@ -37,7 +36,7 @@ const retrieveSearchVideos = async (searchQuery) => {
 }
 
 const downloadVideo = (videoId) => {
-    axios.get(`http://127.0.0.1:8000/videos/download/${videoId}`).then((response) => {
+    axios.get(`${sharedState.websiteUrl}/videos/download/${videoId}`).then((response) => {
         console.log(response.data.data)
     }).catch((error) => console.log(error))
 }

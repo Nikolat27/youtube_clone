@@ -33,7 +33,7 @@ const playPlaylist = (playlistId) => {
 }
 
 const deletePlaylist = (playlistId) => {
-    axios.delete(`http://127.0.0.1:8000/playlist/delete/${playlistId}`).then((response) => {
+    axios.delete(`${sharedState.websiteUrl}/playlist/delete/${playlistId}`).then((response) => {
         if (response.status == 202) {
             const user_session_id = sessionStorage.getItem("user_session_id");
             retrievePlaylists(user_session_id, currentSortBy.value);
@@ -68,7 +68,7 @@ const currentSortBy = ref('latest')
 let playlists = reactive([])
 const retrievePlaylists = (user_session_id, sortBy) => {
     isLoading.value = true
-    axios.get("http://127.0.0.1:8000/playlist/", {
+    axios.get(`${sharedState.websiteUrl}/playlist/`, {
         params: {
             user_session_id: user_session_id,
             sortBy: sortBy

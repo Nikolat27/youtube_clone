@@ -58,7 +58,7 @@ watch(() => userCommentText.value, () => { })
 const commentRetrievingLoading = ref(false)
 const retrieveVideoComments = async (videoId) => {
     commentRetrievingLoading.value = true
-    await axios.get(`http://127.0.0.1:8000/videos/comment/list/${videoId}`, {
+    await axios.get(`${sharedState.websiteUrl}/videos/comment/list/${videoId}`, {
         params: {
             user_session_id: sessionStorage.getItem("user_session_id")
         }
@@ -76,7 +76,7 @@ const retrieveCommentReplies = async (commentId) => {
     replyRetrievingLoading.value = true
     toggleReplyContainer(commentId)
 
-    await axios.get(`http://127.0.0.1:8000/videos/replies/list/${commentId}`, {
+    await axios.get(`${sharedState.websiteUrl}/videos/replies/list/${commentId}`, {
         params: {
             user_session_id: sessionStorage.getItem("user_session_id")
         }
@@ -116,7 +116,7 @@ const submitVideoComment = (parentId = null) => {
         submitFormData.append("parent_id", parentId)
     }
 
-    axios.post("http://127.0.0.1:8000/videos/comment/add", submitFormData).then((response) => {
+    axios.post(`${sharedState.websiteUrl}/videos/comment/add`, submitFormData).then((response) => {
         if (response.status == 201) {
             retrieveVideoComments(videoInfo.id);
             commentStates.value = {}; // Closing the opened Tabs (for replies)
@@ -277,7 +277,7 @@ const handleVideoProgress = () => {
 
         // This part is for tracking the video`s watch time for users
         if (adFinished.value) {
-            axios.get(`http://127.0.0.1:8000/videos/stream/current-time/${route.params.id}?random_uuid=${videoInfo.random_uuid}`, {
+            axios.get(`${sharedState.websiteUrl}/videos/stream/current-time/${route.params.id}?random_uuid=${videoInfo.random_uuid}`, {
                 params: {
                     current_time: videoRef.value.currentTime,
                     video_duration: videoRef.value.duration,
@@ -426,7 +426,7 @@ const likeVideo = (action_type) => { // true == 'like', false == 'dislike', null
         toast.error("You have to be Logged in!")
         return;
     }
-    axios.get(`http://127.0.0.1:8000/videos/like/${videoInfo.id}/${action_type}/${user_session_id}`).then(() => {
+    axios.get(`${sharedState.websiteUrl}/videos/like/${videoInfo.id}/${action_type}/${user_session_id}`).then(() => {
         userLikeSituation(route.params.id, user_session_id)
     }).catch((error) => {
         toast.error(error)
@@ -455,7 +455,7 @@ let videoInfo = reactive({
 
 const likeSituation = ref(null)
 const userLikeSituation = async (video_id, user_session_id) => {
-    await axios.get(`http://127.0.0.1:8000/videos/like-situation/${video_id}/${user_session_id}`).then((response) => {
+    await axios.get(`${sharedState.websiteUrl}/videos/like-situation/${video_id}/${user_session_id}`).then((response) => {
         if (response.status == 200) {
             likeSituation.value = response.data.data
             totalLikes.value = response.data.total_likes
@@ -473,7 +473,7 @@ const saveVideoToPlaylist = async () => {
         return;
     }
 
-    await axios.get(`http://127.0.0.1:8000/playlist/save-video-to-playlist/${route.params.id}`, {
+    await axios.get(`${sharedState.websiteUrl}/playlist/save-video-to-playlist/${route.params.id}`, {
         params: {
             user_session_id: user_session_id,
             playlists: playlistSaves.value
@@ -495,7 +495,7 @@ const toggleChannelOptions = () => isChannelOptionsOpen.value = !isChannelOption
 const isChannelSubscribed = ref(null)
 const channelNotification = ref(null)
 const toggleChannelNotification = (channelId, notification) => {
-    axios.get(`http://127.0.0.1:8000/channel/notification/${channelId}`, {
+    axios.get(`${sharedState.websiteUrl}/channel/notification/${channelId}`, {
         params: {
             user_session_id: sessionStorage.getItem("user_session_id"),
             notification: notification
@@ -515,10 +515,10 @@ const toggleChannelNotification = (channelId, notification) => {
 
 const subscribeChannel = (channelId) => {
     if (!isUserAuthenticated.value) {
-        toast.error("You have Login to subscribe a channel!")
+        toast.error("You have to be Logged in to subscribe a channel!")
         return;
     }
-    axios.get(`http://127.0.0.1:8000/channel/subscribe/${channelId}`, {
+    axios.get(`${sharedState.websiteUrl}/channel/subscribe/${channelId}`, {
         params: {
             user_session_id: sessionStorage.getItem("user_session_id")
         }
@@ -533,7 +533,7 @@ const subscribeChannel = (channelId) => {
 
 const youtubeVideoLink = ref(null)
 const retrieveVideoDetail = async (videoId, user_session_id) => {
-    await axios.get(`http://127.0.0.1:8000/videos/detail/${videoId}`, {
+    await axios.get(`${sharedState.websiteUrl}/videos/detail/${videoId}`, {
         params: {
             unique_id: route.query.unique_id,
             user_session_id: user_session_id
@@ -559,7 +559,7 @@ const retrieveVideoDetail = async (videoId, user_session_id) => {
 
 const isUserAuthenticated = ref(false)
 const userAuthentication = async (user_session_id) => {
-    await axios.get("http://127.0.0.1:8000/users/is_authenticated", {
+    await axios.get(`${sharedState.websiteUrl}/users/is_authenticated`, {
         params: {
             user_session_id: user_session_id
         }
@@ -575,7 +575,7 @@ const userAuthentication = async (user_session_id) => {
 const userId = ref(null)
 const userProfileImgSrc = ref(null)
 const retrieveUserProfileImg = async (user_session_id) => {
-    await axios.get("http://127.0.0.1:8000/users/profile-picture", {
+    await axios.get(`${sharedState.websiteUrl}/users/profile-picture`, {
         params: {
             user_session_id: user_session_id
         }
@@ -596,7 +596,7 @@ const toggleSharingTab = () => {
 
 const downloadVideo = (videoId) => {
     toast.info("Your download has Started!")
-    axios.get(`http://127.0.0.1:8000/videos/download/${videoId}`).then((response) => {
+    axios.get(`${sharedState.websiteUrl}/videos/download/${videoId}`).then((response) => {
         if (response.status == 200) {
             toast.success("Your Video downloaded Successfully!")
         }
@@ -606,7 +606,7 @@ const downloadVideo = (videoId) => {
 }
 
 const likeComment = (commentId, actionType, replyId = null) => {
-    axios.get(`http://127.0.0.1:8000/videos/comment/like/${replyId ? replyId : commentId}`, {
+    axios.get(`${sharedState.websiteUrl}/videos/comment/like/${replyId ? replyId : commentId}`, {
         params: {
             user_session_id: sessionStorage.getItem("user_session_id"),
             action_type: actionType
@@ -629,7 +629,7 @@ const likeComment = (commentId, actionType, replyId = null) => {
 
 const playlistInfo = reactive([])
 const retrievePlaylist = (playlistId, filter) => {
-    axios.get(`http://127.0.0.1:8000/playlist/${playlistId}`, {
+    axios.get(`${sharedState.websiteUrl}/playlist/${playlistId}`, {
         params: {
             filter: filter,
             user_session_id: sessionStorage.getItem("user_session_id") ?? null
@@ -656,7 +656,7 @@ watch(isSaveDivOpen, (newVal) => {
 const playlistSaves = ref([])
 const allPlaylists = reactive([])
 const retrieveAllUserPlaylists = () => {
-    axios.get(`http://127.0.0.1:8000/playlist/user-all-playlists/${route.params.id}`, {
+    axios.get(`${sharedState.websiteUrl}/playlist/user-all-playlists/${route.params.id}`, {
         params: {
             user_session_id: sessionStorage.getItem("user_session_id")
         }
@@ -674,7 +674,7 @@ const playPlaylistVideo = (videoId, playlistId) => {
 }
 
 const shufflePlaylistVideo = (playlistId) => {
-    axios.get(`http://127.0.0.1:8000/playlist/shuffle/${playlistId}`).then((response) => {
+    axios.get(`${sharedState.websiteUrl}/playlist/shuffle/${playlistId}`).then((response) => {
         if (response.status == 200) {
             playPlaylistVideo(response.data.data, playlistId);
         }
@@ -687,7 +687,7 @@ const currentVideoIndex = ref(null)
 const nextVideoTitle = ref(null)
 
 const retrievePlaylistVideoInfo = (videoId, playlistId) => {
-    axios.get(`http://127.0.0.1:8000/playlist/video-info/${playlistId}/${videoId}`).then((response) => {
+    axios.get(`${sharedState.websiteUrl}/playlist/video-info/${playlistId}/${videoId}`).then((response) => {
         if (response.status == 200) {
             currentVideoIndex.value = response.data.current_video_index;
             nextVideoTitle.value = response.data.next_video_title
@@ -697,7 +697,7 @@ const retrievePlaylistVideoInfo = (videoId, playlistId) => {
 
 
 const addWatchHistory = (videoId, user_session_id) => {
-    axios.get(`http://127.0.0.1:8000/videos/add-watch-history/${videoId}`, {
+    axios.get(`${sharedState.websiteUrl}/videos/add-watch-history/${videoId}`, {
         params: {
             user_session_id: user_session_id
         }
@@ -749,7 +749,7 @@ const skipAd = async () => { // a.k.a finish the ad
     // Set the ad as finished
     adFinished.value = true;
     isAdPlaying.value = false;
-    await axios.get(`http://127.0.0.1:8000/videos/ads/complete/${videoInfo.ad_unique_id}`, {
+    await axios.get(`${sharedState.websiteUrl}/videos/ads/complete/${videoInfo.ad_unique_id}`, {
         params: {
             user_session_id: sessionStorage.getItem("user_session_id"),
             random_uuid: videoInfo.random_uuid
@@ -763,7 +763,7 @@ const skipAd = async () => { // a.k.a finish the ad
 
 const isVideoSavedInPlaylist = ref(false)
 const checkVideoSavedInPlaylist = () => {
-    axios.get(`http://127.0.0.1:8000/playlist/check-video-saved/${route.params.id}`, {
+    axios.get(`${sharedState.websiteUrl}/playlist/check-video-saved/${route.params.id}`, {
         params: {
             user_session_id: sessionStorage.getItem("user_session_id")
         }
@@ -790,7 +790,7 @@ const handleWindowResize = () => {
 const handleVideoPlay = () => {
     isMainVideoEnded.value = false
     if (isAdPlaying.value) {
-        axios.get(`http://127.0.0.1:8000/videos/ads/start/${videoInfo.ad_unique_id}`, {
+        axios.get(`${sharedState.websiteUrl}/videos/ads/start/${videoInfo.ad_unique_id}`, {
             params: {
                 user_session_id: sessionStorage.getItem("user_session_id")
             }
@@ -806,7 +806,7 @@ const handleVideoPause = () => {
     let calculateWatchTime = (endTime - startTime) / 1000
     totalWatchedTime += calculateWatchTime
     startTime = null
-    axios.get(`http://127.0.0.1:8000/videos/stream/track-views/${route.params.id}?random_uuid=${videoInfo.random_uuid}`, {
+    axios.get(`${sharedState.websiteUrl}/videos/stream/track-views/${route.params.id}?random_uuid=${videoInfo.random_uuid}`, {
         params: {
             watch_time: totalWatchedTime,
             duration: videoRef.value.duration
@@ -1031,8 +1031,9 @@ onUnmounted(() => {
                     </router-link>
                     <router-link :to="`/channel-page/${videoInfo.channel_unique_identifier}`" class="mr-4">
                         <div class="video-detail-upload-info">
-                            <p class="w-auto">{{ videoInfo.channel_name }}</p>
-                            <p class="w-auto">{{ videoInfo.channel_total_subs }} subscribers</p>
+                            <p class="w-auto text-[16px] font-medium">{{ videoInfo.channel_name }}</p>
+                            <p class="w-auto text-[12px] font-normal text-gray-500">{{ videoInfo.channel_total_subs }}
+                                subscribers</p>
                         </div>
                     </router-link>
                     <button @click="editUserVideo" v-if="videoInfo.is_video_for_user" class="w-[93px] h-[36px] rounded-3xl text-white bg-[#065fd4]
@@ -1271,7 +1272,7 @@ onUnmounted(() => {
                     </div>
                 </div>
 
-                <div class="comment-container mb-12">
+                <div class="comment-container mb-12 flex justify-center items-center">
                     <div v-if="isUserAuthenticated && !commentRetrievingLoading">
                         <div class="comments-header mt-4">
                             <div class="comments-stats">
